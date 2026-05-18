@@ -28,7 +28,7 @@ public abstract class LibraryPowerModel : PowerModel,LibraryAbstractModel
         {
             if (IsDynamic)
                 return ImageHelper.GetImagePath("atlases/power_atlas.sprites/" + base.Id.Entry.ToLowerInvariant() + "_" + Mode.ToString() + ".tres");
-            return base.PackedIconPath;
+            return base.PackedIconPath;                                                   
         }
     }
     public new virtual string ResolvedBigIconPath

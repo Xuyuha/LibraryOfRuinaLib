@@ -93,9 +93,9 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\Workspace\\STS2mod\\LibraryOfRuinaLib\\Ruina.csproj",
+      "projectUniqueName": "D:\\Workspace\\STS2mod\\LibraryOfRuinaLib\\LibraryLib.csproj",
       "projectName": "Ruina",
-      "projectPath": "D:\\Workspace\\STS2mod\\LibraryOfRuinaLib\\Ruina.csproj",
+      "projectPath": "D:\\Workspace\\STS2mod\\LibraryOfRuinaLib\\LibraryLib.csproj",
       "packagesPath": "C:\\Users\\xuyuh\\.nuget\\packages\\",
       "outputPath": "D:\\Workspace\\STS2mod\\LibraryOfRuinaLib\\.godot\\mono\\temp\\obj\\",
       "projectStyle": "PackageReference",

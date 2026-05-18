@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "z60Lk6n+oyk=",
+  "dgSpecHash": "Mc35rZCmQy4=",
   "success": true,
-  "projectFilePath": "D:\\Workspace\\STS2mod\\LibraryOfRuinaLib\\Ruina.csproj",
+  "projectFilePath": "D:\\Workspace\\STS2mod\\LibraryOfRuinaLib\\LibraryLib.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\xuyuh\\.nuget\\packages\\godot.sourcegenerators\\4.5.1\\godot.sourcegenerators.4.5.1.nupkg.sha512",
     "C:\\Users\\xuyuh\\.nuget\\packages\\godotsharp\\4.5.1\\godotsharp.4.5.1.nupkg.sha512",

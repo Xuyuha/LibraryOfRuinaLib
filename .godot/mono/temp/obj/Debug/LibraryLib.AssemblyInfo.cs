@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Ruina")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2cd8472d094710fefeedcd5265796f300b3a0eb0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e9c3802875c064da78022778f9c991c3b726520a")]
 [assembly: System.Reflection.AssemblyProductAttribute("Ruina")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Ruina")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
