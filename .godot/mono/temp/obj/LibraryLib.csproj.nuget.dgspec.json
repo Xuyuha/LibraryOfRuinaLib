@@ -1,29 +1,37 @@
 {
   "format": 1,
   "restore": {
-    "D:\\Workspace\\STS2mod\\LibraryOfRuinaLib\\LibraryLib.csproj": {}
+    "D:\\XK134\\Documents\\Sts2_mod\\LibraryOfRuinaLib\\LibraryLib.csproj": {}
   },
   "projects": {
-    "D:\\Workspace\\STS2mod\\LibraryOfRuinaLib\\LibraryLib.csproj": {
+    "D:\\XK134\\Documents\\Sts2_mod\\LibraryOfRuinaLib\\LibraryLib.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Workspace\\STS2mod\\LibraryOfRuinaLib\\LibraryLib.csproj",
-        "projectName": "Ruina",
-        "projectPath": "D:\\Workspace\\STS2mod\\LibraryOfRuinaLib\\LibraryLib.csproj",
-        "packagesPath": "C:\\Users\\xuyuh\\.nuget\\packages\\",
-        "outputPath": "D:\\Workspace\\STS2mod\\LibraryOfRuinaLib\\.godot\\mono\\temp\\obj\\",
+        "projectUniqueName": "D:\\XK134\\Documents\\Sts2_mod\\LibraryOfRuinaLib\\LibraryLib.csproj",
+        "projectName": "LibraryOfRuinaLib",
+        "projectPath": "D:\\XK134\\Documents\\Sts2_mod\\LibraryOfRuinaLib\\LibraryLib.csproj",
+        "packagesPath": "C:\\Users\\XK134\\.nuget\\packages\\",
+        "outputPath": "D:\\XK134\\Documents\\Sts2_mod\\LibraryOfRuinaLib\\.godot\\mono\\temp\\obj\\",
         "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
         "configFilePaths": [
-          "C:\\Users\\xuyuh\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\XK134\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
           "net9.0"
         ],
         "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
           "net9.0": {
+            "framework": "net9.0",
             "targetAlias": "net9.0",
             "projectReferences": {}
           }
@@ -38,10 +46,11 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "9.0.300"
+        "SdkAnalysisLevel": "10.0.300"
       },
       "frameworks": {
         "net9.0": {
+          "framework": "net9.0",
           "targetAlias": "net9.0",
           "dependencies": {
             "Godot.SourceGenerators": {
@@ -50,11 +59,6 @@
               "autoReferenced": true
             },
             "GodotSharp": {
-              "target": "Package",
-              "version": "[4.5.1, )",
-              "autoReferenced": true
-            },
-            "GodotSharpEditor": {
               "target": "Package",
               "version": "[4.5.1, )",
               "autoReferenced": true
@@ -76,7 +80,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.312/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.300/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

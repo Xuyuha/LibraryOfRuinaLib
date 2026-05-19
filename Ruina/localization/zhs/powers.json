@@ -1,0 +1,11 @@
+{
+  "LibrarySlashResistancePower.title": "斩击抗性",
+  "LibrarySlashResistancePower.description": "斩击伤害系数初始为 1。仅当队伍中存在已登记参与方，且攻击牌已在参与方 mod 中登记为斩击时，斩击攻击伤害乘以当前系数。系数仅能通过卡牌或其它战斗效果改变，不会因攻击命中或怪物行动自动变化。单项系数范围 0.25～2。",
+  "LibrarySlashResistancePower.smartDescription": "斩击伤害系数：[gold]{CoeffText}[/gold]。",
+  "LibraryBluntResistancePower.title": "打击抗性",
+  "LibraryBluntResistancePower.description": "打击伤害系数初始为 1。仅当队伍中存在已登记参与方，且攻击牌已登记为打击时，打击攻击伤害乘以当前系数。系数仅能通过卡牌或其它战斗效果改变。单项系数范围 0.25～2。",
+  "LibraryBluntResistancePower.smartDescription": "打击伤害系数：[gold]{CoeffText}[/gold]。",
+  "LibraryPierceResistancePower.title": "突刺抗性",
+  "LibraryPierceResistancePower.description": "突刺伤害系数初始为 1。仅当队伍中存在已登记参与方，且攻击牌已登记为突刺时，突刺攻击伤害乘以当前系数。系数仅能通过卡牌或其它战斗效果改变。单项系数范围 0.25～2。",
+  "LibraryPierceResistancePower.smartDescription": "突刺伤害系数：[gold]{CoeffText}[/gold]。"
+}

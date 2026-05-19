@@ -1,0 +1,11 @@
+{
+  "LibrarySlashResistancePower.title": "Slash resistance",
+  "LibrarySlashResistancePower.description": "Slash damage multiplier starts at 1. While a registered participant is in combat and the Attack card is registered as Slash, Slash damage is multiplied by the current coefficient. The coefficient changes only via cards or other effects—not automatically on hit or when this enemy attacks. Range per kind: 0.25–2.",
+  "LibrarySlashResistancePower.smartDescription": "Slash damage coefficient: [gold]{CoeffText}[/gold].",
+  "LibraryBluntResistancePower.title": "Blunt resistance",
+  "LibraryBluntResistancePower.description": "Blunt damage multiplier starts at 1. Applies to registered Blunt Attack cards from registered participants. Coefficient changes only via cards or other effects. Range: 0.25–2.",
+  "LibraryBluntResistancePower.smartDescription": "Blunt damage coefficient: [gold]{CoeffText}[/gold].",
+  "LibraryPierceResistancePower.title": "Pierce resistance",
+  "LibraryPierceResistancePower.description": "Pierce damage multiplier starts at 1. Applies to registered Pierce Attack cards from registered participants. Coefficient changes only via cards or other effects. Range: 0.25–2.",
+  "LibraryPierceResistancePower.smartDescription": "Pierce damage coefficient: [gold]{CoeffText}[/gold]."
+}

@@ -10,6 +10,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Ruina\localization\zhs\powers.json" LogicalName="LibraryOfRuinaLib.Localization.zhs.powers.json" />
+    <EmbeddedResource Include="Ruina\localization\eng\powers.json" LogicalName="LibraryOfRuinaLib.Localization.eng.powers.json" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Reference Include="sts2">
       <HintPath>libs\sts2.dll</HintPath>
       <Private>false</Private>
