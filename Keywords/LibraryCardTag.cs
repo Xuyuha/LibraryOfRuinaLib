@@ -1,7 +1,7 @@
 using MegaCrit.Sts2.Core.Entities.Cards;
 
-namespace Ruina.Keywords;
-public class RuinaCardTag
+namespace Library.Keywords;
+public class LibraryCardTag
 {
     public static readonly CardTag Bleed = (CardTag)379;
     public static readonly CardTag Burn = (CardTag)380;

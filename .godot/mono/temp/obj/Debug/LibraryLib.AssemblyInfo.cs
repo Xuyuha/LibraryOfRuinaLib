@@ -10,12 +10,12 @@
 using System;
 using System.Reflection;
 
-[assembly: System.Reflection.AssemblyCompanyAttribute("Ruina")]
+[assembly: System.Reflection.AssemblyCompanyAttribute("LibraryOfRuinaLib")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e9c3802875c064da78022778f9c991c3b726520a")]
-[assembly: System.Reflection.AssemblyProductAttribute("Ruina")]
-[assembly: System.Reflection.AssemblyTitleAttribute("Ruina")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+12cdf28f559ff504f121bdd5aaeab9744393d668")]
+[assembly: System.Reflection.AssemblyProductAttribute("LibraryOfRuinaLib")]
+[assembly: System.Reflection.AssemblyTitleAttribute("LibraryOfRuinaLib")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
 
 // 由 MSBuild WriteCodeFragment 类生成。

@@ -4,7 +4,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <OutputType>Library</OutputType>
-    <AssemblyName>Ruina</AssemblyName>
+    <AssemblyName>LibraryOfRuinaLib</AssemblyName>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <RemoveUnnecessaryUsings>true</RemoveUnnecessaryUsings>
   </PropertyGroup>
