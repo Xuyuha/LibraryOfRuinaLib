@@ -12,7 +12,7 @@ using MegaCrit.Sts2.Core.Nodes.Combat;
 using Library.Utils;
 
 namespace Library.Models;
-public abstract class LibraryPowerModel : PowerModel,LibraryAbstractModel
+public abstract class LibraryPowerModel : PowerModel,LibraryAbstractModel//实现了动态的power展示
 {
     private NPower? _boundNPower;
     private int _mode = 0;
