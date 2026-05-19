@@ -5,7 +5,7 @@ using MegaCrit.Sts2.Core.Models;
 using Library.Models;
 namespace Library.Utils;
 
-public static class LibraryHooks
+public static class LibraryHooks//钩子类，用于在不同事件发生时触发不同的逻辑
 {
     public static async Task AfterEffect(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource)
     {
