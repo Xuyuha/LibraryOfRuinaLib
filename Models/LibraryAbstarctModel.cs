@@ -3,9 +3,8 @@ using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models;
 
 namespace Library.Models;
-public interface LibraryAbstractModel//库模型接口，定义了库模型的基本行为
+public interface LibraryAbstractModel//库模型接口，定义了库里的钩子，还有很多钩子没写
 {
-    
     public virtual Task AfterEffect(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource)
     {
         return Task.CompletedTask;

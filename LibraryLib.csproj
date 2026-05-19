@@ -30,6 +30,6 @@
   </ItemGroup>
 
   <Target Name="CopyToMods" AfterTargets="Build">
-    <Copy SourceFiles="$(OutputPath)$(AssemblyName).dll" DestinationFolder="..\mods\Ruina\" />
+    <Copy SourceFiles="$(OutputPath)$(AssemblyName).dll" DestinationFolder="..\mods\LibraryOfRuinaLib\" />
   </Target>
 </Project>

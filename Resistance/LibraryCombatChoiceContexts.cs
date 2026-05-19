@@ -40,7 +40,6 @@ public static class LibraryCombatChoiceContexts
                 }
             }
         }
-
         return new BlockingPlayerChoiceContext();
     }
 }
