@@ -10,7 +10,6 @@ using MegaCrit.Sts2.Core.Random;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Commands.Builders;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using Library.Resistance;
 using Library.Utils;
 using MegaCrit.Sts2.Core.ValueProps;
 using MegaCrit.Sts2.Core.Entities.Players;
@@ -26,7 +25,7 @@ public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究�
 		Card,
 		Monster
 	}
-    private LibraryDamageKind _damageType = LibraryDamageKind.None;
+    private LibraryDamageType _damageType = LibraryDamageType.None;
 	private readonly decimal _damagePerHit;
 	private readonly CalculatedDamageVar? _calculatedDamageVar;
 
@@ -46,7 +45,8 @@ public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究�
 
 	private bool _shouldPlayAnimation = true;
 
-	private readonly List<List<DamageResult>> _results = new List<List<DamageResult>>();
+	private readonly List<List<DamageResult>> _damageResults = new List<List<DamageResult>>();
+	private readonly List<List<LibraryChaoResult>> _chaoResults = new List<List<LibraryChaoResult>>();
 
 	private string? _attackerAnimName;
 
@@ -86,7 +86,9 @@ public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究�
 
 	public bool IsRandomlyTargeted { get; private set; }
 
-	public IEnumerable<List<DamageResult>> Results => _results;
+	public IEnumerable<List<DamageResult>> DamageResults => _damageResults;
+
+	public IEnumerable<List<LibraryChaoResult>> ChaoResults => _chaoResults;
 
 	public string? HitSfx { get; private set; }
 
@@ -301,9 +303,13 @@ public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究�
 		_hitCount++;
 	}
 
-	public void AddResultsInternal(IEnumerable<DamageResult> results)
+	public void AddDamageResultsInternal(IEnumerable<DamageResult> results)
 	{
-		_results.Add(results.ToList());
+		_damageResults.Add(results.ToList());
+	}
+	public void AddChaoResultsInternal(IEnumerable<LibraryChaoResult> results)
+	{
+		_chaoResults.Add(results.ToList());
 	}
 	private IReadOnlyList<Creature> GetPossibleTargets()
 	{
@@ -336,7 +342,7 @@ public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究�
 			_ => throw new ArgumentOutOfRangeException("side", side, null), 
 		};
 	}
-	public LibraryAttackCommand WithDamageType(LibraryDamageKind type)
+	public LibraryAttackCommand WithDamageType(LibraryDamageType type)
 	{
 		_damageType = type;
 		return this;
@@ -437,7 +443,7 @@ public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究�
 			{
 				if (!_doesRandomTargetingAllowDuplicates)
 				{
-					validTargets = validTargets.Where((LibraryCreature c) => _results.SelectMany((List<DamageResult> r) => r).All((DamageResult r) => r.Receiver != c)).ToList();
+					validTargets = validTargets.Where((LibraryCreature c) => _damageResults.SelectMany((List<DamageResult> r) => r).All((DamageResult r) => r.Receiver != c)).ToList();
 					if (validTargets.Count == 0)
 					{
 						throw new InvalidOperationException("No valid targets for attack with duplicates disallowed. If you're in a test, you probably need to add more enemies. If you're in real gameplay, something is wrong.");
@@ -495,9 +501,10 @@ public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究�
 			{
 				await _beforeDamage();
 			}
-			AddResultsInternal(await LibraryCreatureCmd.Damage(amount: (_calculatedDamageVar == null) ?_damagePerHit : _calculatedDamageVar.Calculate(singleTarget), choiceContext: choiceContext ?? new BlockingPlayerChoiceContext(), targets: (singleTarget != null) ? new List<LibraryCreature>(1) { singleTarget } : ((IEnumerable<LibraryCreature>)validTargets), props: DamageProps, dealer: Attacker as LibraryCreature, cardSource: ModelSource as CardModel,type : _damageType));
+			AddDamageResultsInternal(await LibraryCreatureCmd.Damage(amount: (_calculatedDamageVar == null) ?_damagePerHit : _calculatedDamageVar.Calculate(singleTarget), choiceContext: choiceContext ?? new BlockingPlayerChoiceContext(), targets: (singleTarget != null) ? new List<LibraryCreature>(1) { singleTarget } : ((IEnumerable<LibraryCreature>)validTargets), props: DamageProps, dealer: Attacker as LibraryCreature, cardSource: ModelSource as CardModel,type : _damageType));
+			await LibraryCreatureCmd.ChaoDamage(amount: (_calculatedDamageVar == null) ?_damagePerHit : _calculatedDamageVar.Calculate(singleTarget), choiceContext: choiceContext ?? new BlockingPlayerChoiceContext(), targets: (singleTarget != null) ? new List<LibraryCreature>(1) { singleTarget } : ((IEnumerable<LibraryCreature>)validTargets), props: DamageProps, dealer: Attacker as LibraryCreature, cardSource: ModelSource as CardModel,type : _damageType);
 		}
-		CombatManager.Instance.History.CreatureAttacked(combatState, Attacker, _results.SelectMany((List<DamageResult> r) => r).ToList());
+		CombatManager.Instance.History.CreatureAttacked(combatState, Attacker, _damageResults.SelectMany((List<DamageResult> r) => r).ToList());
 		await LibraryHooks.AfterAttack(combatState, choiceContext ?? new BlockingPlayerChoiceContext(), this,_damageType);
 		return this;
 	}
