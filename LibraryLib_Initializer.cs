@@ -16,7 +16,7 @@ public class Entry
 
         var harmony = new Harmony("LibraryOfRuinaLib");
         harmony.PatchAll();
-        Log.Info("成功加载 LibraryOfRuinaLib（含抗性子系统）");
+        Log.Info("成功加载 LibraryOfRuinaLib基础库");
         ScriptManagerBridge.LookupScriptsInAssembly(typeof(Entry).Assembly);
     }
 }
