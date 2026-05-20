@@ -1,6 +1,7 @@
 #nullable enable
 using System.Threading.Tasks;
 using HarmonyLib;
+using Library.Models;
 using Library.Resistance;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Creatures;
@@ -20,13 +21,12 @@ internal static class LibraryResistanceCreatureAddedPatch
     private static async Task ContinueAfterCreatureAdded(Task prior, Creature creature)
     {
         await prior;
-        if (!creature.IsEnemy)
+        if (!creature.IsEnemy || creature.Monster is not LibraryMonsterModel)
         {
             return;
         }
 
-        ICombatState? cs = creature.CombatState;
-        if (cs == null || !LibraryResistance.CombatHasRelevantParticipant(cs))
+        if (creature.CombatState == null)
         {
             return;
         }

@@ -1,3 +1,4 @@
+#nullable enable
 using Godot;
 using MegaCrit.Sts2.Core.Audio.Debug;
 using MegaCrit.Sts2.Core.Combat;
@@ -9,6 +10,7 @@ using MegaCrit.Sts2.Core.Random;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Commands.Builders;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
+using Library.Resistance;
 using Library.Utils;
 using MegaCrit.Sts2.Core.ValueProps;
 using MegaCrit.Sts2.Core.Entities.Players;
@@ -24,7 +26,7 @@ public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究�
 		Card,
 		Monster
 	}
-    private LibraryDamageType _damageType = LibraryDamageType.None;
+    private LibraryDamageKind _damageType = LibraryDamageKind.None;
 	private readonly decimal _damagePerHit;
 	private readonly CalculatedDamageVar? _calculatedDamageVar;
 
@@ -307,19 +309,19 @@ public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究�
 	{
 		if (IsSingleTargeted)
 		{
-			return new List<Creature>{_singleTarget};
+			return new List<Creature>{_singleTarget!};
 		}
 		if (IsMultiTargeted)
 		{
 			if (_sourceType == SourceType.Monster)
 			{
-				return _combatState.PlayerCreatures;
+				return _combatState!.PlayerCreatures;
 			}
 			if (Attacker == null)
 			{
 				throw new InvalidOperationException("We require an attacker to be able to grab its opponents");
 			}
-			return _combatState.GetOpponentsOf(Attacker);
+			return _combatState!.GetOpponentsOf(Attacker);
 		}
 		throw new InvalidOperationException("No targets set, a Targeting method must be called before Execute");
 	}
@@ -334,7 +336,7 @@ public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究�
 			_ => throw new ArgumentOutOfRangeException("side", side, null), 
 		};
 	}
-	public LibraryAttackCommand WithDamageType(LibraryDamageType type)
+	public LibraryAttackCommand WithDamageType(LibraryDamageKind type)
 	{
 		_damageType = type;
 		return this;
@@ -355,7 +357,7 @@ public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究�
 
 	public async Task<LibraryAttackCommand> Execute(PlayerChoiceContext? choiceContext)
 	{
-		ICombatState combatState = Attacker?.CombatState;
+		ICombatState? combatState = Attacker?.CombatState;
 		if (Attacker == null)
 		{
 			throw new InvalidOperationException("No attacker set.");
@@ -426,10 +428,10 @@ public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究�
 			{
 				NDebugAudioManager.Instance?.Play(TmpHitSfx);
 			}
-			LibraryCreature singleTarget;
+			LibraryCreature? singleTarget;
 			if (!IsRandomlyTargeted)
 			{
-				singleTarget = ((validTargets.Count != 1) ? null : validTargets[0]);
+				singleTarget = (validTargets.Count != 1) ? null : validTargets[0];
 			}
 			else
 			{

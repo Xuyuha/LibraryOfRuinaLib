@@ -3,12 +3,13 @@ using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Players;
 using Library.Models;
+using Library.Resistance;
 using MegaCrit.Sts2.Core.ValueProps;
 using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Models;
 
 namespace Library.Entities.Creatures;
-public class LibraryCreature : Creature//扩展Creature，添加Chao值属性
+public class LibraryCreature : Creature
 {
     public LibraryCreature(MonsterModel monster, CombatSide side, string? slotName) : base(monster, side, slotName)
     {
@@ -28,7 +29,7 @@ public class LibraryCreature : Creature//扩展Creature，添加Chao值属性
         _damageResistance = [1,1,1,1];
         _chaoResistance = [1,1,1,1];
     }
-        
+
     private decimal[] _damageResistance;
     private decimal[] _chaoResistance;
     private int _currentChaoValue;
@@ -69,30 +70,22 @@ public class LibraryCreature : Creature//扩展Creature，添加Chao值属性
         };
     }
 
-    public decimal GetDamageResistance(LibraryDamageType type) =>_damageResistance[(int)type] ;
-    public decimal GetChaoResistance(LibraryDamageType type) =>_chaoResistance[(int)type] ;
-    private void SetDamageResistance(LibraryDamageType type,decimal resistanceValue) 
+    public decimal GetDamageResistance(LibraryDamageKind type) =>_damageResistance[(int)type] ;
+    public decimal GetChaoResistance(LibraryDamageKind type) =>_chaoResistance[(int)type] ;
+    private void SetDamageResistance(LibraryDamageKind type,decimal resistanceValue)
     {
-        //伤害抗性图标改变逻辑
         _damageResistance[(int)type] = resistanceValue;
     }
-    private void SetChaoResistance(LibraryDamageType type,decimal resistanceValue) {
-        //混乱抗性图标改变逻辑
+    private void SetChaoResistance(LibraryDamageKind type,decimal resistanceValue) {
         _chaoResistance[(int)type] = resistanceValue;
     }
-    
-    public async Task SetChaoResistance(PlayerChoiceContext choiceContext, Creature? dealer,LibraryDamageType type,decimal resistanceValue)
+
+    public async Task SetChaoResistance(PlayerChoiceContext choiceContext, Creature? dealer,LibraryDamageKind type,decimal resistanceValue)
     {
-        //LibraryHooks.TrySetChaoResistance();
-        //LibraryHooks.BeforeSetChaoResistance();
         SetChaoResistance(type,resistanceValue);
-        //LibraryHooks.AfterSetChaoResistance();
     }
-    public async Task SetDamageResistance(PlayerChoiceContext choiceContext, Creature? dealer,LibraryDamageType type,decimal resistanceValue)
+    public async Task SetDamageResistance(PlayerChoiceContext choiceContext, Creature? dealer,LibraryDamageKind type,decimal resistanceValue)
     {
-        //LibraryHooks.TrySetDamageResistance();
-        //LibraryHooks.BeforeSetDamageResistance();
         SetDamageResistance(type,resistanceValue);
-        //LibraryHooks.AfterSetDamageResistance();
     }
 }

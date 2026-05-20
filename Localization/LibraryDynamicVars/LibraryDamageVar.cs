@@ -17,9 +17,9 @@
 // 	{
 // 		Props = props;
 // 	}
-//     public LibraryDamageType DamageType { get; set; }
+//     public LibraryDamageKind DamageType { get; set; }
 
-// 	public LibraryDamageVar(string name, decimal damage, ValueProp props,LibraryDamageType damageType)
+// 	public LibraryDamageVar(string name, decimal damage, ValueProp props,LibraryDamageKind damageType)
 // 		: base(name, damage)
 // 	{
 // 		DamageType = damageType;

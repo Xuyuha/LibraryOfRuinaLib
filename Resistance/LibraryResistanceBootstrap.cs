@@ -1,12 +1,10 @@
 #nullable enable
-using System.Linq;
 using System.Threading.Tasks;
+using Library.Models;
 using Library.Resistance.Powers;
 using MegaCrit.Sts2.Core.Commands;
-using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using MegaCrit.Sts2.Core.Models;
 
 namespace Library.Resistance;
 
@@ -19,57 +17,50 @@ internal static class LibraryResistanceBootstrap
             return;
         }
 
-        if (!LibraryResistance.CombatHasRelevantParticipant(enemy.CombatState))
+        if (enemy.Monster is not LibraryMonsterModel)
         {
             return;
         }
 
         PlayerChoiceContext ctx = LibraryCombatChoiceContexts.Resolve(choiceContext, enemy.CombatState);
-
-        if (!enemy.HasPower<LibrarySlashResistancePower>())
-        {
-            await PowerCmd.Apply<LibrarySlashResistancePower>(ctx, enemy, 100m, enemy, null, silent: true);
-        }
-
-        if (!enemy.HasPower<LibraryBluntResistancePower>())
-        {
-            await PowerCmd.Apply<LibraryBluntResistancePower>(ctx, enemy, 100m, enemy, null, silent: true);
-        }
-
-        if (!enemy.HasPower<LibraryPierceResistancePower>())
-        {
-            await PowerCmd.Apply<LibraryPierceResistancePower>(ctx, enemy, 100m, enemy, null, silent: true);
-        }
+        await EnsureStaggerResistance(enemy, ctx);
     }
-}
 
-internal static class LibraryResistanceBundle
-{
-    internal static void ApplyDeltaAllKinds(Creature enemy, decimal delta)
+    private static async Task EnsureStaggerResistance(Creature enemy, PlayerChoiceContext ctx)
     {
-        if (!enemy.IsEnemy || !enemy.IsAlive)
+        if (enemy.HasPower<LibraryStaggerResistancePower>())
         {
             return;
         }
 
-        enemy.GetPower<LibrarySlashResistancePower>()?.ApplyCoefficientDelta(delta);
-        enemy.GetPower<LibraryBluntResistancePower>()?.ApplyCoefficientDelta(delta);
-        enemy.GetPower<LibraryPierceResistancePower>()?.ApplyCoefficientDelta(delta);
-        if (enemy.CombatState != null)
-        {
-            LibraryResistance.NotifyCoefficientsChanged(enemy.CombatState);
-        }
-    }
-
-    internal static void SetAllKindsAbsolute(Creature enemy, decimal coefficient)
-    {
-        if (!enemy.IsEnemy || !enemy.IsAlive)
+        if (enemy.Monster is not LibraryMonsterModel model)
         {
             return;
         }
 
-        enemy.GetPower<LibrarySlashResistancePower>()?.SetCoefficientAbsolute(coefficient);
-        enemy.GetPower<LibraryBluntResistancePower>()?.SetCoefficientAbsolute(coefficient);
-        enemy.GetPower<LibraryPierceResistancePower>()?.SetCoefficientAbsolute(coefficient);
+        int? stagger = model.DefaultStaggerResistance;
+        if (stagger is not { } amount || amount <= 0)
+        {
+            return;
+        }
+
+        await PowerCmd.Apply<LibraryStaggerResistancePower>(ctx, enemy, amount, enemy, null, silent: true);
+
+        LibraryCreatureResistanceData? data = model.DefaultStaggerResistanceData;
+        if (data == null)
+        {
+            return;
+        }
+
+        var power = enemy.GetPower<LibraryStaggerResistancePower>();
+        if (power != null)
+        {
+            power.ResistanceData.SlashChaos = data.SlashChaos;
+            power.ResistanceData.PierceChaos = data.PierceChaos;
+            power.ResistanceData.BluntChaos = data.BluntChaos;
+            power.ResistanceData.SlashPhysical = data.SlashPhysical;
+            power.ResistanceData.PiercePhysical = data.PiercePhysical;
+            power.ResistanceData.BluntPhysical = data.BluntPhysical;
+        }
     }
 }

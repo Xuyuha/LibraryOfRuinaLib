@@ -7,7 +7,7 @@
 // {
 //     DynamicVar MinDamage;
 //     DynamicVar FloatDamage;
-//     LibraryDamageType DamageType;
+//     LibraryDamageKind DamageType;
 //     public abstract Task DiceEffct (PlayerChoiceContext choiceContext, CardPlay cardPlay);
 //     public async Task TriggerEffct (PlayerChoiceContext choiceContext, CardPlay cardPlay){
 //         if(!LibraryHooks.TryDiceEffect(choiceContext, cardPlay.Target, cardPlay.Card))return;

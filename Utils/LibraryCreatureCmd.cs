@@ -1,5 +1,6 @@
 using Godot;
 using Library.Entities.Creatures;
+using Library.Resistance;
 using Library.Utils;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
@@ -22,52 +23,52 @@ using MegaCrit.Sts2.Core.Runs.History;
 using MegaCrit.Sts2.Core.ValueProps;
 public static class LibraryCreatureCmd
 {
-	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, LibraryCreature target, DamageVar damageVar, CardModel cardSource ,LibraryDamageType type = LibraryDamageType.None)
+	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, LibraryCreature target, DamageVar damageVar, CardModel cardSource ,LibraryDamageKind type = LibraryDamageKind.None)
 	{
 		return await Damage(choiceContext, target, damageVar.BaseValue, damageVar.Props, cardSource,type);
 	}
 
-	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, LibraryCreature target, decimal amount, ValueProp props, CardModel cardSource ,LibraryDamageType type = LibraryDamageType.None)
+	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, LibraryCreature target, decimal amount, ValueProp props, CardModel cardSource ,LibraryDamageKind type = LibraryDamageKind.None)
 	{
 		return await Damage(choiceContext, new List<LibraryCreature> { target }, amount, props, cardSource.Owner.Creature as LibraryCreature, cardSource,type);
 	}
 
-	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, IEnumerable<LibraryCreature> targets, DamageVar damageVar, LibraryCreature dealer ,LibraryDamageType type = LibraryDamageType.None)
+	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, IEnumerable<LibraryCreature> targets, DamageVar damageVar, LibraryCreature dealer ,LibraryDamageKind type = LibraryDamageKind.None)
 	{
 		return await Damage(choiceContext, targets, damageVar.BaseValue, damageVar.Props, dealer,type);
 	}
 
-	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, IEnumerable<LibraryCreature> targets, decimal amount, ValueProp props, LibraryCreature dealer ,LibraryDamageType type = LibraryDamageType.None)
+	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, IEnumerable<LibraryCreature> targets, decimal amount, ValueProp props, LibraryCreature dealer ,LibraryDamageKind type = LibraryDamageKind.None)
 	{
 		return await Damage(choiceContext, targets, amount, props, dealer, null,type);
 	}
 
-	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, LibraryCreature target, DamageVar damageVar, LibraryCreature dealer ,LibraryDamageType type = LibraryDamageType.None)
+	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, LibraryCreature target, DamageVar damageVar, LibraryCreature dealer ,LibraryDamageKind type = LibraryDamageKind.None)
 	{
 		return await Damage(choiceContext, target, damageVar.BaseValue, damageVar.Props, dealer,type);
 	}
 
-	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, LibraryCreature target, decimal amount, ValueProp props, LibraryCreature dealer ,LibraryDamageType type = LibraryDamageType.None)
+	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, LibraryCreature target, decimal amount, ValueProp props, LibraryCreature dealer ,LibraryDamageKind type = LibraryDamageKind.None)
 	{
 		return await Damage(choiceContext, new List<LibraryCreature> { target }, amount, props, dealer, null,type);
 	}
 
-	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, LibraryCreature target, DamageVar damageVar, LibraryCreature? dealer, CardModel? cardSource ,LibraryDamageType type = LibraryDamageType.None)
+	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, LibraryCreature target, DamageVar damageVar, LibraryCreature? dealer, CardModel? cardSource ,LibraryDamageKind type = LibraryDamageKind.None)
 	{
 		return await Damage(choiceContext, new List<LibraryCreature> { target }, damageVar.BaseValue, damageVar.Props, dealer, cardSource,type);
 	}
 
-	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, LibraryCreature target, decimal amount, ValueProp props, LibraryCreature? dealer, CardModel? cardSource ,LibraryDamageType type = LibraryDamageType.None)
+	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, LibraryCreature target, decimal amount, ValueProp props, LibraryCreature? dealer, CardModel? cardSource ,LibraryDamageKind type = LibraryDamageKind.None)
 	{
 		return await Damage(choiceContext, new List<LibraryCreature> { target }, amount, props, dealer, cardSource,type);
 	}
 
-	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, IEnumerable<LibraryCreature> targets, DamageVar damageVar, LibraryCreature? dealer, CardModel? cardSource ,LibraryDamageType type = LibraryDamageType.None)
+	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, IEnumerable<LibraryCreature> targets, DamageVar damageVar, LibraryCreature? dealer, CardModel? cardSource ,LibraryDamageKind type = LibraryDamageKind.None)
 	{
 		return await Damage(choiceContext, targets, damageVar.BaseValue, damageVar.Props, dealer, cardSource,type);
 	}
 
-	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, IEnumerable<LibraryCreature> targets, decimal amount, ValueProp props, LibraryCreature? dealer, CardModel? cardSource ,LibraryDamageType type = LibraryDamageType.None)
+	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, IEnumerable<LibraryCreature> targets, decimal amount, ValueProp props, LibraryCreature? dealer, CardModel? cardSource ,LibraryDamageKind type = LibraryDamageKind.None)
 	{
 	if (dealer != null && dealer.IsDead)
 	{
