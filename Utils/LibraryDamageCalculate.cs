@@ -10,7 +10,7 @@ public static class LibraryDamageCalculate//计算伤害和Chao值
             return amount;
         return target.GetDamageResistance(type)*amount;
     }
-    public static decimal CalculateChao(decimal amount,LibraryCreature target, ValueProp props, LibraryDamageType type)
+    public static decimal CalculateChaoAmount(decimal amount,LibraryCreature target, ValueProp props, LibraryDamageType type)
     {
         if(!props.IsPoweredAttack())
             return amount;
