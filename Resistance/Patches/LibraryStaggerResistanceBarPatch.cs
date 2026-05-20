@@ -4,7 +4,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using Godot;
 using HarmonyLib;
-using Library.Resistance.Powers;
+using Library.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 
@@ -72,10 +72,10 @@ internal static class LibraryStaggerResistanceBarUi
         Creature? creature = GetCreature(healthBar);
         if (creature == null) return;
 
-        var power = creature.GetPower<LibraryStaggerResistancePower>();
+        var libCreature = creature as LibraryCreature;
         State state = GetOrCreateState(healthBar);
 
-        bool shouldShow = power != null && creature.IsAlive && power.MaxResistanceValue > 0;
+        bool shouldShow = libCreature != null && creature.IsAlive && libCreature.MaxChaoValue > 0;
 
         if (!shouldShow)
         {
@@ -91,8 +91,8 @@ internal static class LibraryStaggerResistanceBarUi
 
         state.BarContainer.Visible = true;
         SyncLayout(healthBar, state);
-        UpdateFill(power!, state);
-        UpdateLabel(power!, state);
+        UpdateFill(libCreature!, state);
+        UpdateLabel(libCreature!, state);
     }
 
     private static void CreateBarNodes(NHealthBar healthBar, State state)
@@ -239,16 +239,16 @@ internal static class LibraryStaggerResistanceBarUi
     }
 
     private static void UpdateFill(
-        LibraryStaggerResistancePower power,
+        LibraryCreature creature,
         State state)
     {
         if (state.Fill == null) return;
 
-        int currentAmount = power.Amount;
-        int maxResistance = power.MaxResistanceValue;
+        int currentAmount = creature.CurrentChaoValue;
+        int maxResistance = creature.MaxChaoValue;
         if (maxResistance <= 0) maxResistance = Math.Max(1, currentAmount);
 
-        bool isStunned = power.IsStunPending;
+        bool isStunned = creature.IsStunPending;
         float maxFgWidth = state.MaxFgWidth;
 
         if (maxFgWidth <= 0f || maxResistance <= 0)
@@ -270,16 +270,16 @@ internal static class LibraryStaggerResistanceBarUi
     }
 
     private static void UpdateLabel(
-        LibraryStaggerResistancePower power,
+        LibraryCreature creature,
         State state)
     {
         if (state.ValueLabel == null) return;
 
-        int currentAmount = power.Amount;
-        int maxResistance = power.MaxResistanceValue;
+        int currentAmount = creature.CurrentChaoValue;
+        int maxResistance = creature.MaxChaoValue;
         if (maxResistance <= 0) maxResistance = Math.Max(1, currentAmount);
 
-        bool isStunned = power.IsStunPending;
+        bool isStunned = creature.IsStunPending;
 
         state.ValueLabel.Text = $"{currentAmount}/{maxResistance}";
 

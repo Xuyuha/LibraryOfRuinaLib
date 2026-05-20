@@ -1,6 +1,8 @@
 using System.Text.Json.Serialization;
 using Godot;
 using Library.Entities.Creatures;
+using Library.Resistance;
+using Library.Resistance.Patches;
 using Library.Utils;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
@@ -14,6 +16,7 @@ using MegaCrit.Sts2.Core.Hooks;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Models.Cards;
 using MegaCrit.Sts2.Core.Nodes;
 using MegaCrit.Sts2.Core.Nodes.Rooms;
 using MegaCrit.Sts2.Core.Nodes.Vfx;
@@ -245,10 +248,14 @@ public static class LibraryCreatureCmd
 			}
 		}
 		await CreatureCmd.Kill(killedCreatures);
+
+		await ApplyStaggerReduction(choiceContext, results, props, dealer, cardSource);
+
 		await Cmd.CustomScaledWait(0.1f, 0.2f);
 		return results;
 	}
 	public static async Task<IEnumerable<LibraryChaoResult>> ChaoDamage(PlayerChoiceContext choiceContext, IEnumerable<Creature> targets, decimal amount, ValueProp props, Creature? dealer, CardModel? cardSource ,LibraryDamageType type = LibraryDamageType.None)
+	//我暂时没用这个方法，走的是我当时自己用的简易混乱值判定，根据原始伤害对原版attack commmand进行patch，因此也没有检测攻击类型，后续选择一个统一的方法来用。
 	{
 		if (dealer != null && dealer.IsDead)
 		{
@@ -340,5 +347,69 @@ public static class LibraryCreatureCmd
 		}
 		await Cmd.CustomScaledWait(0.1f, 0.2f);
 		return results;
+	}
+
+	internal static async Task ApplyStaggerReduction(PlayerChoiceContext choiceContext, IEnumerable<DamageResult> results, ValueProp props, Creature? dealer, CardModel? cardSource)
+	{
+		foreach (DamageResult dmgResult in results)
+		{
+			if (dmgResult.Receiver is not LibraryCreature libCreature
+				|| libCreature.MaxChaoValue <= 0
+				|| dmgResult.UnblockedDamage <= 0
+				|| !libCreature.IsAlive
+				|| libCreature.IsStunPending)
+				continue;
+
+			bool isOrbDmg = LibraryStaggerResistanceOrbDamageContext.IsOrbDamage(dealer);
+			if (props.HasFlag(ValueProp.Unpowered) && !isOrbDmg)
+				continue;
+
+			int loss;
+			if (props.IsPoweredAttack() && cardSource?.Type == CardType.Attack)
+				loss = LibraryDamageCalculate.CalculateAttackCardResistanceLoss(
+					dmgResult.UnblockedDamage, 1, libCreature.MaxHp);
+			else
+				loss = LibraryDamageCalculate.CalculateOtherDamageResistanceLoss(
+					dmgResult.UnblockedDamage, libCreature.MaxHp);
+
+			if (loss > 0)
+			{
+				loss = LibraryDamageCalculate.ApplyChaosResistanceMultiplier(loss, cardSource, libCreature);
+				await ReduceStaggerResistance(choiceContext, libCreature, loss);
+			}
+		}
+	}
+
+	public static async Task ReduceStaggerResistance(PlayerChoiceContext ctx, LibraryCreature creature, int amount)
+	{
+		int next = Math.Max(0, creature.CurrentChaoValue - amount);
+		if (next == creature.CurrentChaoValue) return;
+		creature.SetCurrentChaoValueInternal(next);
+		if (next <= 0 && !creature.RestoreChaoOnNextOwnerTurn && creature.IsAlive)
+		{
+			creature.RestoreChaoOnNextOwnerTurn = true;
+			creature.SaveAndSetStunResistance();
+			await CreatureCmd.Stun(creature, creature.Monster?.NextMove.Id);
+		}
+	}
+
+	public static async Task ReduceStaggerResistance(Creature creature, int amount, Creature? dealer, CardModel? cardSource)
+	{
+		if (creature is not LibraryCreature lc || lc.MaxChaoValue <= 0) return;
+		await ReduceStaggerResistance(new ThrowingPlayerChoiceContext(), lc, amount);
+	}
+
+	public static void SetStaggerResistance(Creature creature, int value)
+	{
+		if (creature is not LibraryCreature lc) return;
+		lc.SetCurrentChaoValueInternal(Math.Max(0, value));
+	}
+
+	public static void SetMaxStaggerResistance(Creature creature, int value, bool clampCurrent = true)
+	{
+		if (creature is not LibraryCreature lc) return;
+		lc.SetMaxChaoValueInternal(value);
+		if (clampCurrent)
+			lc.SetCurrentChaoValueInternal(Math.Min(lc.CurrentChaoValue, value));
 	}
 }

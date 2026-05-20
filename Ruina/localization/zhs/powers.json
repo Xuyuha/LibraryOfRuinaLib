@@ -1,13 +1,16 @@
 {
   "LIBRARY_OF_RUINA_STAGGER_RESISTANCE_POWER.title": "混乱抗性",
-  "LIBRARY_OF_RUINA_STAGGER_RESISTANCE_POWER.description": "攻击牌和非能力未格挡伤害会降低此抗性；归零时立刻眩晕，并在下回合恢复。",
-  "LIBRARY_OF_RUINA_STAGGER_RESISTANCE_POWER.smartDescription": "[gold]{OwnerName}[/gold]拥有[blue]{Amount}[/blue]点混乱抗性。[red]攻击牌[/red]与[blue]非能力[/blue]的未格挡伤害会降低抗性；归零时立刻被[gold]击晕[/gold]并获得[blue]2[/blue]层[gold]易伤[/gold]，下个自身回合开始时恢复满抗性。",
+  "LIBRARY_OF_RUINA_STAGGER_RESISTANCE_POWER.description": "攻击牌和非能力未格挡伤害会降低此抗性；归零时立刻眩晕，物理抗性变为致命，下个玩家回合结束后恢复。",
+  "LIBRARY_OF_RUINA_STAGGER_RESISTANCE_POWER.smartDescription": "[gold]{OwnerName}[/gold]拥有[blue]{Amount}[/blue]点混乱抗性。[red]攻击牌[/red]与[blue]非能力[/blue]的未格挡伤害会降低抗性；归零时立刻被[gold]击晕[/gold]，三种物理抗性变为[red]致命[/red]，下个[gold]玩家回合结束[/gold]后恢复满抗性。",
 
   "DAMAGE_TYPE_RESISTANCE_POWER.title": "属性抗性",
   "DAMAGE_TYPE_RESISTANCE_POWER.description": "根据攻击类型的不同，受到的伤害和混乱值损失会有不同的倍率。",
   "DAMAGE_TYPE_RESISTANCE.slash_chaos": "[gold]斩击[/gold]混乱抗性",
   "DAMAGE_TYPE_RESISTANCE.pierce_chaos": "[gold]突刺[/gold]混乱抗性",
   "DAMAGE_TYPE_RESISTANCE.blunt_chaos": "[gold]打击[/gold]混乱抗性",
+  "DAMAGE_TYPE_RESISTANCE.slash_physical": "[gold]斩击[/gold]物理抗性",
+  "DAMAGE_TYPE_RESISTANCE.pierce_physical": "[gold]突刺[/gold]物理抗性",
+  "DAMAGE_TYPE_RESISTANCE.blunt_physical": "[gold]打击[/gold]物理抗性",
   "DAMAGE_TYPE_RESISTANCE.immune": "[gray]免疫(×0)[/gray]",
   "DAMAGE_TYPE_RESISTANCE.resist": "[blue]抵抗(×0.25)[/blue]",
   "DAMAGE_TYPE_RESISTANCE.endure": "[green]耐性(×0.5)[/green]",

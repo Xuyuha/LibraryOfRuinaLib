@@ -1,6 +1,6 @@
 #nullable enable
 using System.Threading.Tasks;
-using Library.Resistance.Powers;
+using Library.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 
@@ -13,6 +13,6 @@ public static class LibraryResistance
         await LibraryResistanceBootstrap.EnsureOnEnemy(enemy, choiceContext);
     }
 
-    public static LibraryStaggerResistancePower? GetStaggerPower(Creature creature) =>
-        creature.GetPower<LibraryStaggerResistancePower>();
+    public static LibraryCreatureResistanceData? GetResistanceData(Creature creature) =>
+        (creature as LibraryCreature)?.ResistanceData;
 }

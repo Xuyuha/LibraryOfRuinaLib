@@ -14,14 +14,13 @@ using MegaCrit.Sts2.Core.Nodes.HoverTips;
 namespace Library.Resistance.Patches;
 
 /// <summary>
-///     在 NHealthBar 上显示混乱抗性图标（斩/刺/打三个小图标）。
-///     根据生物当前的 <see cref="LibraryStaggerResistancePower"/> 动态刷新图标和悬浮提示。
+///     在 NHealthBar 左侧显示物理抗性图标（斩/刺/打），与混乱抗性图标对称。
 /// </summary>
-internal static class LibraryChaosResistanceIconsUi
+internal static class LibraryPhysicalResistanceIconsUi//TODO:你们来做物理抗性相关的方法。
 {
     private const float IconSize = 28f;
     private const float IconSpacing = 1f;
-    private const float RightOffset = 4f;
+    private const float LeftOffset = -4f;
     private const float TopOffset = -52f;
 
     private static readonly LibraryDamageKind[] DisplayOrder =
@@ -97,19 +96,18 @@ internal static class LibraryChaosResistanceIconsUi
 
         var container = new Control
         {
-            Name = "LibraryOfRuinaChaosResistIcons",
+            Name = "LibraryOfRuinaPhysicalResistIcons",
             MouseFilter = Control.MouseFilterEnum.Ignore,
         };
         healthBarNode.AddChild(container);
 
         for (int i = 0; i < 3; i++)
         {
-            int index = i;
             LibraryDamageKind damageKind = DisplayOrder[i];
 
             var hitbox = new Control
             {
-                Name = $"ChaosResistHitbox_{damageKind}",
+                Name = $"PhysicalResistHitbox_{damageKind}",
                 MouseFilter = Control.MouseFilterEnum.Stop,
                 Size = new Vector2(IconSize, IconSize),
                 Position = new Vector2(0f, i * (IconSize + IconSpacing)),
@@ -118,7 +116,7 @@ internal static class LibraryChaosResistanceIconsUi
 
             var icon = new TextureRect
             {
-                Name = $"ChaosResistIcon_{damageKind}",
+                Name = $"PhysicalResistIcon_{damageKind}",
                 MouseFilter = Control.MouseFilterEnum.Ignore,
                 ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
                 StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
@@ -145,12 +143,11 @@ internal static class LibraryChaosResistanceIconsUi
         if (state.Container == null) return;
 
         Control hpBarContainer = healthBar.HpBarContainer;
-        float barWidth = hpBarContainer.Size.X;
 
         float staggerBarY = hpBarContainer.Position.Y - 14f - 2f;
 
         state.Container.Position = new Vector2(
-            hpBarContainer.Position.X + barWidth + RightOffset,
+            hpBarContainer.Position.X + LeftOffset - IconSize,
             staggerBarY + TopOffset
         );
     }
@@ -160,13 +157,13 @@ internal static class LibraryChaosResistanceIconsUi
         for (int i = 0; i < 3; i++)
         {
             LibraryDamageKind damageKind = DisplayOrder[i];
-            LibraryResistanceLevel level = creature.GetChaosResistanceLevel(damageKind);
+            LibraryResistanceLevel level = creature.GetPhysicalResistanceLevel(damageKind);
 
             if (state.Icons[i] == null) continue;
 
             if (level != state.LastLevels[i] || state.Icons[i]!.Texture == null)
             {
-                string texPath = GetChaosIconPath(damageKind, level);
+                string texPath = GetPhysicalIconPath(damageKind, level);
                 state.Icons[i]!.Texture = ResourceLoader.Load<Texture2D>(texPath, null,
                     ResourceLoader.CacheMode.Reuse);
                 state.LastLevels[i] = level;
@@ -174,7 +171,7 @@ internal static class LibraryChaosResistanceIconsUi
         }
     }
 
-    private static string GetChaosIconPath(LibraryDamageKind kind, LibraryResistanceLevel level)
+    private static string GetPhysicalIconPath(LibraryDamageKind kind, LibraryResistanceLevel level)
     {
         string typeStr = kind switch
         {
@@ -184,7 +181,7 @@ internal static class LibraryChaosResistanceIconsUi
             _ => "slash"
         };
         string levelStr = level.GetLocKeySuffix();
-        return $"res://images/resistance/{typeStr}_chaos_{levelStr}.png";
+        return $"res://images/resistance/{typeStr}_{levelStr}.png";
     }
 
     private static void OnIconHovered(NHealthBar healthBar, LibraryDamageKind damageKind, Control hitbox)
@@ -195,13 +192,13 @@ internal static class LibraryChaosResistanceIconsUi
         var libCreature = creature as LibraryCreature;
         if (libCreature == null) return;
 
-        LibraryResistanceLevel level = libCreature.GetChaosResistanceLevel(damageKind);
+        LibraryResistanceLevel level = libCreature.GetPhysicalResistanceLevel(damageKind);
 
         string typeName = damageKind switch
         {
-            LibraryDamageKind.Slash => new LocString("powers", "DAMAGE_TYPE_RESISTANCE.slash_chaos").GetRawText(),
-            LibraryDamageKind.Pierce => new LocString("powers", "DAMAGE_TYPE_RESISTANCE.pierce_chaos").GetRawText(),
-            LibraryDamageKind.Blunt => new LocString("powers", "DAMAGE_TYPE_RESISTANCE.blunt_chaos").GetRawText(),
+            LibraryDamageKind.Slash => new LocString("powers", "DAMAGE_TYPE_RESISTANCE.slash_physical").GetRawText(),
+            LibraryDamageKind.Pierce => new LocString("powers", "DAMAGE_TYPE_RESISTANCE.pierce_physical").GetRawText(),
+            LibraryDamageKind.Blunt => new LocString("powers", "DAMAGE_TYPE_RESISTANCE.blunt_physical").GetRawText(),
             _ => ""
         };
 
@@ -223,16 +220,16 @@ internal static class LibraryChaosResistanceIconsUi
 }
 
 /// <summary>
-///     NHealthBar.RefreshForeground 后刷新混乱抗性图标。
+///     NHealthBar.RefreshForeground 后刷新物理抗性图标。
 /// </summary>
 [HarmonyPatch(typeof(NHealthBar), "RefreshForeground")]
-internal static class LibraryChaosResistanceIconsRefreshPatch
+internal static class LibraryPhysicalResistanceIconsRefreshPatch
 {
     private static void Postfix(NHealthBar __instance)
     {
         try
         {
-            LibraryChaosResistanceIconsUi.Refresh(__instance);
+            LibraryPhysicalResistanceIconsUi.Refresh(__instance);
         }
         catch (Exception)
         {

@@ -1,13 +1,16 @@
 {
   "LIBRARY_OF_RUINA_STAGGER_RESISTANCE_POWER.title": "Stagger Resistance",
-  "LIBRARY_OF_RUINA_STAGGER_RESISTANCE_POWER.description": "Attack cards and non-ability unblocked damage reduce this resistance. At 0, immediately stuns and restores next turn.",
-  "LIBRARY_OF_RUINA_STAGGER_RESISTANCE_POWER.smartDescription": "[gold]{OwnerName}[/gold] has [blue]{Amount}[/blue] Stagger Resistance. Attack cards and non-ability unblocked damage reduce it. At 0, [gold]{OwnerName}[/gold] is immediately [gold]stunned[/gold] and gains [blue]2[/blue] [gold]Vulnerable[/gold]. At the start of its next turn, restore full resistance.",
+  "LIBRARY_OF_RUINA_STAGGER_RESISTANCE_POWER.description": "Attack cards and non-ability unblocked damage reduce this resistance. At 0, immediately stuns with all physical resistances set to Fatal. Restores after next player turn ends.",
+  "LIBRARY_OF_RUINA_STAGGER_RESISTANCE_POWER.smartDescription": "[gold]{OwnerName}[/gold] has [blue]{Amount}[/blue] Stagger Resistance. Attack cards and non-ability unblocked damage reduce it. At 0, [gold]{OwnerName}[/gold] is immediately [gold]stunned[/gold] and all physical resistances become [red]Fatal[/red]. Restores after next [gold]player turn ends[/gold].",
 
   "DAMAGE_TYPE_RESISTANCE_POWER.title": "Damage Type Resistance",
   "DAMAGE_TYPE_RESISTANCE_POWER.description": "Damage and chaos damage loss are multiplied based on the attack type.",
   "DAMAGE_TYPE_RESISTANCE.slash_chaos": "Slash Chaos Resistance",
   "DAMAGE_TYPE_RESISTANCE.pierce_chaos": "Pierce Chaos Resistance",
   "DAMAGE_TYPE_RESISTANCE.blunt_chaos": "Blunt Chaos Resistance",
+  "DAMAGE_TYPE_RESISTANCE.slash_physical": "Slash Physical Resistance",
+  "DAMAGE_TYPE_RESISTANCE.pierce_physical": "Pierce Physical Resistance",
+  "DAMAGE_TYPE_RESISTANCE.blunt_physical": "Blunt Physical Resistance",
   "DAMAGE_TYPE_RESISTANCE.immune": "[gray]Immune (×0)[/gray]",
   "DAMAGE_TYPE_RESISTANCE.resist": "[blue]Resist (×0.25)[/blue]",
   "DAMAGE_TYPE_RESISTANCE.endure": "[green]Endure (×0.5)[/green]",
