@@ -21,7 +21,7 @@ internal static class LibraryChaosResistanceIconsUi
 {
     private const float IconSize = 28f;
     private const float IconSpacing = 1f;
-    private const float RightOffset = 4f;
+    private const float RightOffset = 1f;
     private const float TopOffset = -52f;
 
     private static readonly LibraryDamageKind[] DisplayOrder =

@@ -19,22 +19,22 @@ public abstract class LibraryMonsterModel : MonsterModel, LibraryAbstractModel
     public virtual LibraryCreatureResistanceData? DefaultStaggerResistanceData => null;
 
     // TODO: 恢复时机改为下一个玩家回合结束（不确定要不要这样做）
-    // public override Task AfterTurnEnd(PlayerChoiceContext choiceContext, CombatSide side)
-    // {
-    //     if (side != CombatSide.Player) return Task.CompletedTask;
-    //     foreach (Creature creature in CombatState.Creatures)
-    //     {
-    //         if (creature is not LibraryCreature lc || lc.Side != CombatSide.Enemy || !lc.RestoreChaoOnNextOwnerTurn)
-    //             continue;
-    //         if (lc.StunPlayerTurnsRemaining > 1)
-    //         {
-    //             lc.DecrementStunTurns();
-    //             continue;
-    //         }
-    //         lc.RestoreChaoOnNextOwnerTurn = false;
-    //         lc.RestorePreStunResistance();
-    //         lc.SetCurrentChaoValueInternal(lc.MaxChaoValue);
-    //     }
-    //     return Task.CompletedTask;
-    // }
+    public override Task AfterTurnEnd(PlayerChoiceContext choiceContext, CombatSide side)
+    {
+        if (side != CombatSide.Player) return Task.CompletedTask;
+        foreach (Creature creature in CombatState.Creatures)
+        {
+            if (creature is not LibraryCreature lc || lc.Side != CombatSide.Enemy || !lc.RestoreChaoOnNextOwnerTurn)
+                continue;
+            if (lc.StunPlayerTurnsRemaining > 1)
+            {
+                lc.DecrementStunTurns();
+                continue;
+            }
+            lc.RestoreChaoOnNextOwnerTurn = false;
+            lc.RestorePreStunResistance();
+            lc.SetCurrentChaoValueInternal(lc.MaxChaoValue);
+        }
+        return Task.CompletedTask;
+    }
 }

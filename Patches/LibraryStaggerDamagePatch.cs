@@ -8,6 +8,7 @@ using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Cards;
+using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.ValueProps;
 
 namespace Library.Patches;
@@ -20,6 +21,27 @@ namespace Library.Patches;
     new[] { typeof(PlayerChoiceContext), typeof(IEnumerable<Creature>), typeof(decimal), typeof(ValueProp), typeof(Creature), typeof(CardModel) })]
 internal static class LibraryStaggerDamagePatch
 {
+    // 临时方法：陷入混乱时原版攻击x2，后续删除
+    [HarmonyPrefix]
+    private static void Prefix(
+        IEnumerable<Creature> targets,
+        ref decimal amount,
+        ValueProp props,
+        CardModel? cardSource)
+    {
+        if (cardSource?.Type != CardType.Attack || !props.IsPoweredAttack())
+            return;
+
+        foreach (var target in targets)
+        {
+            if (target is LibraryCreature lc && lc.IsStunPending)
+            {
+                amount *= 2;
+                return;
+            }
+        }
+    }
+
     [HarmonyPostfix]
     private static void Postfix(
         PlayerChoiceContext choiceContext,
