@@ -8,13 +8,13 @@ public static class LibraryDamageCalculate//计算伤害和Chao值
 {
     public static decimal CalculateDamage(decimal amount,LibraryCreature target, ValueProp props, LibraryDamageType type)
     {
-        if(!props.IsPoweredAttack())
+        if(!props.HasFlag(ValueProp.Move) || props.HasFlag(ValueProp.Unpowered))
             return amount;
         return target.GetDamageResistance(type)*amount;
     }
     public static decimal CalculateChaoAmount(decimal amount,LibraryCreature target, ValueProp props, LibraryDamageType type)
     {
-        if(!props.IsPoweredAttack())
+        if(!props.HasFlag(ValueProp.Move) || props.HasFlag(ValueProp.Unpowered))
             return amount;
         return target.GetChaoResistance(type)*amount;
     }

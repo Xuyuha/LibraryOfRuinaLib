@@ -365,7 +365,7 @@ public static class LibraryCreatureCmd
 				continue;
 
 			int loss;
-			if (props.IsPoweredAttack() && cardSource?.Type == CardType.Attack)
+			if (props.HasFlag(ValueProp.Move) && !props.HasFlag(ValueProp.Unpowered) && cardSource?.Type == CardType.Attack)
 				loss = LibraryDamageCalculate.CalculateAttackCardResistanceLoss(
 					dmgResult.UnblockedDamage, 1, libCreature.MaxHp);
 			else
