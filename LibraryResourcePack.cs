@@ -9,8 +9,7 @@ internal static class LibraryResourcePack
 {
     private static readonly string[] PackFileNames =
     {
-        "LibraryOfRuinaLib.pck",
-        "Ruina.pck",
+        "LibraryOfRuinaLib.pck"
     };
 
     private static bool _attempted;

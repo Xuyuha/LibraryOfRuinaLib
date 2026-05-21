@@ -10,6 +10,7 @@ using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using Library.Utils;
+using Library.Hooks;
 
 namespace Library.Models;
 
@@ -125,12 +126,12 @@ public abstract class LibraryPowerModel : PowerModel, LibraryAbstractModel
     /// <summary>
     ///     设置动态模式，并向所有 <see cref="LibraryAbstractModel"/> 监听器派发 before/after 钩子。
     /// </summary>
-    public async Task SetMode(PlayerChoiceContext choiceContext, int mode, Creature? dealer, CardModel? cardSource)
+    public async Task SetPowerMode(PlayerChoiceContext choiceContext, int mode, Creature? dealer, CardModel? cardSource)
     {
         ICombatState combatState = Owner?.CombatState ?? throw new InvalidOperationException("Owner cannot be null");
-        await LibraryHooks.BeforeSetMode(combatState, choiceContext, this, dealer, cardSource, mode);
+        await LibraryHooks.BeforeSetPowerMode(combatState, choiceContext, this, dealer, cardSource, mode);
         Mode = mode;
-        await LibraryHooks.AfterSetMode(combatState, choiceContext, this, dealer, cardSource, mode);
+        await LibraryHooks.AfterSetPowerMode(combatState, choiceContext, this, dealer, cardSource, mode);
     }
 
     private void RefreshIcon()

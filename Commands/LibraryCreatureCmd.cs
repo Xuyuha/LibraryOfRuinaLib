@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using Godot;
 using Library.Entities.Creatures;
+using Library.Hooks;
 using Library.Resistance;
 using Library.Resistance.Patches;
 using Library.Utils;
@@ -71,7 +72,7 @@ public static class LibraryCreatureCmd
 		return await Damage(choiceContext, targets, damageVar.BaseValue, damageVar.Props, dealer, cardSource,type);
 	}
 
-	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, IEnumerable<Creature> targets, decimal amount, ValueProp props, Creature? dealer, CardModel? cardSource ,LibraryDamageType type = LibraryDamageType.None)
+	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, IEnumerable<Creature> targets, decimal damageAmount, ValueProp props, Creature? dealer, CardModel? cardSource ,LibraryDamageType type = LibraryDamageType.None)
 	{
 		if (dealer != null && dealer.IsDead)
 		{
@@ -89,7 +90,7 @@ public static class LibraryCreatureCmd
 		{
 			if(originalTarget.IsPlayer)
 			{
-				await CreatureCmd.Damage(choiceContext, originalTarget, amount, props, dealer, cardSource);
+				await CreatureCmd.Damage(choiceContext, originalTarget, damageAmount, props, dealer, cardSource);
 				continue;
 			}
 			if (originalTarget.IsDead)
@@ -98,8 +99,8 @@ public static class LibraryCreatureCmd
 			}
 			IEnumerable<AbstractModel> modifiers;
 			Log.Info("LibraryDamage");
-			decimal damageAmount = LibraryDamageCalculate.CalculateDamage(amount, originalTarget as LibraryCreature, props, type);
-			decimal modifiedAmount = LibraryHooks.ModifyDamage(runState, combatState, originalTarget, dealer, damageAmount, props, cardSource, ModifyDamageHookType.All, CardPreviewMode.None, out modifiers,type);
+			decimal modifiedAmountbefore = LibraryHooks.ModifyDamage(runState, combatState, originalTarget, dealer, damageAmount, props, cardSource, ModifyDamageHookType.All, CardPreviewMode.None, out modifiers,type);
+			decimal modifiedAmount = LibraryDamageCalculate.CalculateDamage(modifiedAmountbefore, originalTarget as LibraryCreature, props, type);
 			await LibraryHooks.AfterModifyingDamageAmount(runState, combatState, cardSource, modifiers,type);
 			await LibraryHooks.BeforeDamageReceived(choiceContext, runState, combatState, originalTarget, modifiedAmount, props, dealer, cardSource,type);  
 			Creature creature = originalTarget.PetOwner?.Creature ?? originalTarget;
@@ -254,23 +255,23 @@ public static class LibraryCreatureCmd
 		await Cmd.CustomScaledWait(0.1f, 0.2f);
 		return results;
 	}
-	public static async Task<IEnumerable<LibraryChaoResult>> ChaoDamage(PlayerChoiceContext choiceContext, IEnumerable<Creature> targets, decimal amount, ValueProp props, Creature? dealer, CardModel? cardSource ,LibraryDamageType type = LibraryDamageType.None)
-	//我暂时没用这个方法，走的是我当时自己用的简易混乱值判定，根据原始伤害对原版attack commmand进行patch，因此也没有检测攻击类型，后续选择一个统一的方法来用。
-	{
-		if (dealer != null && dealer.IsDead)
+		public static async Task<IEnumerable<LibraryChaoResult>> ChaoDamage(PlayerChoiceContext choiceContext, IEnumerable<Creature> targets, decimal damageAmount, ValueProp props, Creature? dealer, CardModel? cardSource ,LibraryDamageType type = LibraryDamageType.None)
+		//我暂时没用这个方法，走的是我当时自己用的简易混乱值判定，根据原始伤害对原版attack commmand进行patch，因此也没有检测攻击类型，后续选择一个统一的方法来用。
 		{
-			return targets.Select((Creature t) => new LibraryChaoResult(t, props)).ToList();
-		}
-		List<LibraryChaoResult> results = new List<LibraryChaoResult>();
-		List<Creature> targetList = targets.ToList();
-		if (targetList.Count == 0)
-		{
-			return results;
-		}
-		ICombatState combatState = targetList[0].CombatState;
-		IRunState runState = IRunState.GetFrom(targetList.Append(dealer).OfType<Creature>());
-		foreach (Creature Target in targetList)
-		{
+			if (dealer != null && dealer.IsDead)
+			{
+				return targets.Select((Creature t) => new LibraryChaoResult(t, props)).ToList();
+			}
+			List<LibraryChaoResult> results = new List<LibraryChaoResult>();
+			List<Creature> targetList = targets.ToList();
+			if (targetList.Count == 0)
+			{
+				return results;
+			}
+			ICombatState combatState = targetList[0].CombatState;
+			IRunState runState = IRunState.GetFrom(targetList.Append(dealer).OfType<Creature>());
+			foreach (Creature Target in targetList)
+			{
 			if(!Target.IsMonster)
 			{
 				continue;
@@ -281,8 +282,8 @@ public static class LibraryCreatureCmd
 			}
 			IEnumerable<AbstractModel> modifiers;
 			Log.Info("LibraryChaoDamage");
-			decimal damageAmount = LibraryDamageCalculate.CalculateChaoAmount(amount,Target as LibraryCreature, props, type);
-			decimal modifiedAmount = LibraryHooks.ModifyChaoAmount(runState, combatState, Target, dealer, damageAmount, props, cardSource, ModifyDamageHookType.All, CardPreviewMode.None, out modifiers,type);
+			decimal modifiedAmountbefore = LibraryHooks.ModifyChaoDamage(runState, combatState, Target, dealer,damageAmount, props, cardSource, ModifyChaoDamageHookType.All, CardPreviewMode.None, out modifiers,type);
+			decimal modifiedAmount = LibraryDamageCalculate.CalculateChaoAmount(modifiedAmountbefore,Target as LibraryCreature, props, type);
 			await LibraryHooks.AfterModifyingChaoAmount(runState, combatState, cardSource, modifiers,type);
 			await LibraryHooks.BeforeChaoDamageReceived(choiceContext, runState, combatState, Target, modifiedAmount, props, dealer, cardSource,type);  
 			LibraryChaoResult ChaoResult = (Target as LibraryCreature).LoseChaoValueInternal(modifiedAmount, props);
@@ -328,7 +329,7 @@ public static class LibraryCreatureCmd
 				await LibraryHooks.AfterCurrentChaoValueChanged(runState, combatState, Target, -Result.ChaoValueAmount,type);
 			}
 			if (combatState != null)
-			{
+				{
 				await LibraryHooks.AfterChaoDamageGiven(choiceContext, combatState, dealer, Result, props, Target, cardSource,type);
 			}
 			if (!Result.WasStun || !Target.IsDead)
@@ -337,9 +338,9 @@ public static class LibraryCreatureCmd
 			}
 			else
 			{
-				await LibraryHooks.AfterStun(choiceContext, runState, combatState, Target, Result, dealer, cardSource,type);
+				await LibraryHooks.AfterStun(runState, combatState, Target);
 				StunedCreatures.Add(Target);
-			}
+			}	
 		}
 		foreach (var c in StunedCreatures)
 		{
@@ -364,13 +365,16 @@ public static class LibraryCreatureCmd
 			if (props.HasFlag(ValueProp.Unpowered) && !isOrbDmg)
 				continue;
 
+			// 使用缩放前的原始HP作为分母，避免多人HP缩放导致混乱值扣减被稀释
+			int effectiveMaxHp = libCreature.MonsterMaxHpBeforeModification ?? libCreature.MaxHp;
+
 			int loss;
 			if (props.HasFlag(ValueProp.Move) && !props.HasFlag(ValueProp.Unpowered) && cardSource?.Type == CardType.Attack)
 				loss = LibraryDamageCalculate.CalculateAttackCardResistanceLoss(
-					dmgResult.UnblockedDamage, 1, libCreature.MaxHp);
+					dmgResult.UnblockedDamage, 1, effectiveMaxHp);
 			else
 				loss = LibraryDamageCalculate.CalculateOtherDamageResistanceLoss(
-					dmgResult.UnblockedDamage, libCreature.MaxHp);
+					dmgResult.UnblockedDamage, effectiveMaxHp);
 
 			if (loss > 0)
 			{

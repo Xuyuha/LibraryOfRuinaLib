@@ -15,9 +15,11 @@ using MegaCrit.Sts2.Core.ValueProps;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models.Monsters;
 using Library.Entities.Creatures;
+using Library.Hooks;
+using System.Collections;
 
 public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究，AttackCommand几乎没有与任何其他类交互，可以放心重置
-//后续会加上与混乱值相关的方法
+//todo：骰子相关的方法
 {
 	private enum SourceType
 	{
@@ -26,6 +28,7 @@ public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究�
 		Monster
 	}
     private LibraryDamageType _damageType = LibraryDamageType.None;
+	private LibraryDice Dice ;
 	private readonly decimal _damagePerHit;
 	private readonly CalculatedDamageVar? _calculatedDamageVar;
 
@@ -95,11 +98,10 @@ public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究�
 	public string? TmpHitSfx { get; private set; }
 
 	public string? HitVfx { get; private set; }
-
-
-
+	public AttackCommand ToAttackCommand { get; private set; }
 	public LibraryAttackCommand FromCard(CardModel card)
 	{
+		ToAttackCommand = ToAttackCommand.FromCard(card);
 		if (Attacker != null)
 		{
 			throw new InvalidOperationException("Attacker has already been set.");
@@ -119,6 +121,7 @@ public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究�
 
 	public LibraryAttackCommand FromOsty(Creature osty, CardModel card)
 	{
+		ToAttackCommand = ToAttackCommand.FromOsty(osty, card);
 		if (!(osty.Monster is Osty))
 		{
 			throw new ArgumentException("Creature is not Osty");
@@ -133,6 +136,7 @@ public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究�
 
 	public LibraryAttackCommand FromMonster(MonsterModel monster)
 	{
+		ToAttackCommand = ToAttackCommand.FromMonster(monster);
 		if (Attacker != null)
 		{
 			throw new InvalidOperationException("Attacker has already been set.");
@@ -145,6 +149,7 @@ public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究�
 
 	public LibraryAttackCommand Targeting(Creature target )
 	{
+		ToAttackCommand = ToAttackCommand.Targeting(target);	
 		if (_singleTarget != null)
 		{
 			throw new InvalidOperationException("Targets already set.");
@@ -159,7 +164,8 @@ public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究�
 	}
 
 	public LibraryAttackCommand TargetingAllOpponents(ICombatState combatState)
-	{
+	{	
+		ToAttackCommand = ToAttackCommand.TargetingAllOpponents(combatState);
 		if (_singleTarget != null)
 		{
 			throw new InvalidOperationException("Targets already set.");
@@ -178,7 +184,8 @@ public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究�
 	}
 
 	public LibraryAttackCommand TargetingRandomOpponents(ICombatState combatState, bool allowDuplicates = true)
-	{
+	{	
+		ToAttackCommand = ToAttackCommand.TargetingRandomOpponents(combatState, allowDuplicates);
 		if (_singleTarget != null)
 		{
 			throw new InvalidOperationException("Targets already set.");
@@ -199,12 +206,14 @@ public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究�
 
 	public LibraryAttackCommand Unpowered()
 	{
+		ToAttackCommand = ToAttackCommand.Unpowered();
 		DamageProps |= ValueProp.Unpowered;
 		return this;
 	}
 
 	public LibraryAttackCommand WithAttackerAnim(string? animName, float delay, LibraryCreature? visualAttacker = null)
 	{
+		ToAttackCommand = ToAttackCommand.WithAttackerAnim(animName, delay, visualAttacker);
 		if (_attackerAnimName == null)
 		{
 			throw new InvalidOperationException("WithAttackerAnim was called before FromCard/FromMonster/FromOsty, should be called after.");
@@ -217,18 +226,21 @@ public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究�
 
 	public LibraryAttackCommand WithNoAttackerAnim()
 	{
+		ToAttackCommand = ToAttackCommand.WithNoAttackerAnim();
 		_shouldPlayAnimation = false;
 		return this;
 	}
 
 	public LibraryAttackCommand AfterAttackerAnim(Func<Task> afterAttackerAnim)
 	{
+		ToAttackCommand = ToAttackCommand.AfterAttackerAnim(afterAttackerAnim);
 		_afterAttackerAnim = afterAttackerAnim;
 		return this;
 	}
 
 	public LibraryAttackCommand WithAttackerFx(string? vfx = null, string? sfx = null, string? tmpSfx = null)
 	{
+		ToAttackCommand = ToAttackCommand.WithAttackerFx(vfx, sfx, tmpSfx);
 		_attackerVfx = vfx;
 		_attackerSfx = sfx;
 		_tmpAttackerSfx = tmpSfx;
@@ -237,12 +249,14 @@ public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究�
 
 	public LibraryAttackCommand WithAttackerFx(Func<Node2D?> createAttackerVfx)
 	{
+		ToAttackCommand = ToAttackCommand.WithAttackerFx(createAttackerVfx);
 		_customAttackerVfxNodes.Add(createAttackerVfx);
 		return this;
 	}
 
 	public LibraryAttackCommand WithWaitBeforeHit(float fastSeconds, float standardSeconds)
 	{
+		ToAttackCommand = ToAttackCommand.WithWaitBeforeHit(fastSeconds, standardSeconds);
 		_waitBeforeHit[0] = fastSeconds;
 		_waitBeforeHit[1] = standardSeconds;
 		return this;
@@ -250,6 +264,7 @@ public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究�
 
 	public LibraryAttackCommand WithHitFx(string? vfx = null, string? sfx = null, string? tmpSfx = null)
 	{
+		ToAttackCommand = ToAttackCommand.WithHitFx(vfx, sfx, tmpSfx);
 		HitVfx = vfx;
 		HitSfx = sfx;
 		TmpHitSfx = tmpSfx;
@@ -258,53 +273,61 @@ public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究�
 
 	public LibraryAttackCommand SpawningHitVfxOnEachCreature()
 	{
+		ToAttackCommand = ToAttackCommand.SpawningHitVfxOnEachCreature();
 		_spawnVfxOnEachCreature = true;
 		return this;
 	}
 
 	public LibraryAttackCommand WithHitVfxSpawnedAtBase()
 	{
+		ToAttackCommand = ToAttackCommand.WithHitVfxSpawnedAtBase();
 		_spawnVfxOnCreatureCenter = false;
 		return this;
 	}
 
 	public LibraryAttackCommand WithHitVfxNode(Func<Creature, Node2D?> createHitVfxNode)
 	{
+		ToAttackCommand = ToAttackCommand.WithHitVfxNode(createHitVfxNode);
 		_customHitVfxNodes.Add(createHitVfxNode);
 		return this;
 	}
 
 	public LibraryAttackCommand OnlyPlayAnimOnce()
 	{
+		ToAttackCommand = ToAttackCommand.OnlyPlayAnimOnce();
 		_playOnEveryHit = false;
 		return this;
 	}
 
 	public LibraryAttackCommand WithHitCount(int hitCount)
 	{
+		ToAttackCommand = ToAttackCommand.WithHitCount(hitCount);
 		_hitCount = hitCount;
 		return this;
 	}
 
 	public LibraryAttackCommand BeforeDamage(Func<Task> beforeDamage)
 	{
+		ToAttackCommand = ToAttackCommand.BeforeDamage(beforeDamage);
 		_beforeDamage = beforeDamage;
 		return this;
 	}
 
 	public static async Task<AttackContext> CreateContextAsync(ICombatState combatState, PlayerChoiceContext choiceContext, CardModel cardSource)
-	{
+	{	
 		return await AttackContext.CreateAsync(combatState, choiceContext, cardSource);
 	}
 
 
 	public void IncrementHitsInternal()
 	{
+		ToAttackCommand.IncrementHitsInternal();
 		_hitCount++;
 	}
 
 	public void AddDamageResultsInternal(IEnumerable<DamageResult> results)
 	{
+		ToAttackCommand.AddResultsInternal(results);
 		_damageResults.Add(results.ToList());
 	}
 	public void AddChaoResultsInternal(IEnumerable<LibraryChaoResult> results)
@@ -350,11 +373,13 @@ public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究�
 
 	public LibraryAttackCommand(decimal damagePerHit)
 	{
+		ToAttackCommand = new AttackCommand(damagePerHit);
 		_damagePerHit = damagePerHit;
 		_calculatedDamageVar = null;
 	}
 	public LibraryAttackCommand(CalculatedDamageVar calculatedDamageVar)
 	{
+		ToAttackCommand = new AttackCommand(calculatedDamageVar);
 		_damagePerHit = -1m;
 		_calculatedDamageVar = calculatedDamageVar;
 	}
@@ -384,8 +409,8 @@ public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究�
 		{
 			throw new InvalidOperationException("No targets set.");
 		}
-		await LibraryHooks.BeforeAttack(combatState, this,_damageType);
-		decimal attackCount = LibraryHooks.ModifyAttackHitCount(combatState, this, _hitCount,_damageType);
+		await LibraryHooks.BeforeAttack(combatState, this);
+		decimal attackCount = LibraryHooks.ModifyAttackHitCount(combatState, this, _hitCount);
 		for (int i = 0; (decimal)i < attackCount; i++)
 		{
 			if (Attacker.IsDead)
@@ -501,11 +526,11 @@ public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究�
 			{
 				await _beforeDamage();
 			}
-			AddDamageResultsInternal(await LibraryCreatureCmd.Damage(amount: (_calculatedDamageVar == null) ?_damagePerHit : _calculatedDamageVar.Calculate(singleTarget), choiceContext: choiceContext ?? new BlockingPlayerChoiceContext(), targets: (singleTarget != null) ? new List<LibraryCreature>(1) { singleTarget } : ((IEnumerable<LibraryCreature>)validTargets), props: DamageProps, dealer: Attacker as LibraryCreature, cardSource: ModelSource as CardModel,type : _damageType));
-			await LibraryCreatureCmd.ChaoDamage(amount: (_calculatedDamageVar == null) ?_damagePerHit : _calculatedDamageVar.Calculate(singleTarget), choiceContext: choiceContext ?? new BlockingPlayerChoiceContext(), targets: (singleTarget != null) ? new List<LibraryCreature>(1) { singleTarget } : ((IEnumerable<LibraryCreature>)validTargets), props: DamageProps, dealer: Attacker as LibraryCreature, cardSource: ModelSource as CardModel,type : _damageType);
+			AddDamageResultsInternal(await LibraryCreatureCmd.Damage(damageAmount: (_calculatedDamageVar == null) ?_damagePerHit : _calculatedDamageVar.Calculate(singleTarget), choiceContext: choiceContext ?? new BlockingPlayerChoiceContext(), targets: (singleTarget != null) ? new List<LibraryCreature>(1) { singleTarget } : ((IEnumerable<LibraryCreature>)validTargets), props: DamageProps, dealer: Attacker ,cardSource: ModelSource as CardModel,type : _damageType));
+			await LibraryCreatureCmd.ChaoDamage(damageAmount: (_calculatedDamageVar == null) ?_damagePerHit : _calculatedDamageVar.Calculate(singleTarget), choiceContext: choiceContext ?? new BlockingPlayerChoiceContext(), targets: (singleTarget != null) ? new List<LibraryCreature>(1) { singleTarget } : ((IEnumerable<LibraryCreature>)validTargets), props: DamageProps, dealer: Attacker, cardSource: ModelSource as CardModel,type : _damageType);
 		}
 		CombatManager.Instance.History.CreatureAttacked(combatState, Attacker, _damageResults.SelectMany((List<DamageResult> r) => r).ToList());
-		await LibraryHooks.AfterAttack(combatState, choiceContext ?? new BlockingPlayerChoiceContext(), this,_damageType);
+		await LibraryHooks.AfterAttack(combatState, choiceContext ?? new BlockingPlayerChoiceContext(), this);
 		return this;
 	}
 }
