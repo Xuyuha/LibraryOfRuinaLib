@@ -27,6 +27,13 @@ using MegaCrit.Sts2.Core.Runs.History;
 using MegaCrit.Sts2.Core.ValueProps;
 public static class LibraryCreatureCmd
 {
+	public static async Task GainBlock(Creature creature, CardPlay? cardPlay, LibraryDice dice, bool fast = false)
+	{
+		dice.Roll(cardPlay.Card.Owner);
+		int amount = dice.CurrentBaseValue;
+		await CreatureCmd.GainBlock(creature, amount, ValueProp.Move, cardPlay, fast);
+		await dice.TriggerDiceEffect(new BlockingPlayerChoiceContext(), cardPlay);
+	}
 	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, Creature target, DamageVar damageVar, CardModel cardSource ,LibraryDamageType type = LibraryDamageType.None)
 	{
 		return await Damage(choiceContext, target, damageVar.BaseValue, damageVar.Props, cardSource,type);
@@ -250,28 +257,31 @@ public static class LibraryCreatureCmd
 		}
 		await CreatureCmd.Kill(killedCreatures);
 
-		await ApplyStaggerReduction(choiceContext, results, props, dealer, cardSource);
-
 		await Cmd.CustomScaledWait(0.1f, 0.2f);
 		return results;
 	}
-		public static async Task<IEnumerable<LibraryChaoResult>> ChaoDamage(PlayerChoiceContext choiceContext, IEnumerable<Creature> targets, decimal damageAmount, ValueProp props, Creature? dealer, CardModel? cardSource ,LibraryDamageType type = LibraryDamageType.None)
-		//我暂时没用这个方法，走的是我当时自己用的简易混乱值判定，根据原始伤害对原版attack commmand进行patch，因此也没有检测攻击类型，后续选择一个统一的方法来用。
+	public static async Task<IEnumerable<LibraryChaoResult>?> ChaoDamage(PlayerChoiceContext choiceContext, IEnumerable<Creature> targets, decimal damageAmount, ValueProp props, Creature? dealer, CardModel? cardSource ,LibraryDamageType type = LibraryDamageType.None)
+	//我暂时没用这个方法，走的是我当时自己用的简易混乱值判定，根据原始伤害对原版attack commmand进行patch，因此也没有检测攻击类型，后续选择一个统一的方法来用。
+	{
+		targets = targets.Where((Creature c) => c is LibraryCreature lc && lc.HasChaoResistance);
+		if(!targets.Any())
 		{
-			if (dealer != null && dealer.IsDead)
-			{
-				return targets.Select((Creature t) => new LibraryChaoResult(t, props)).ToList();
-			}
-			List<LibraryChaoResult> results = new List<LibraryChaoResult>();
-			List<Creature> targetList = targets.ToList();
-			if (targetList.Count == 0)
-			{
-				return results;
-			}
-			ICombatState combatState = targetList[0].CombatState;
-			IRunState runState = IRunState.GetFrom(targetList.Append(dealer).OfType<Creature>());
-			foreach (Creature Target in targetList)
-			{
+			return null;
+		}
+		if (dealer != null && dealer.IsDead)
+		{
+			return targets.Select((Creature t) => new LibraryChaoResult(t, props)).ToList();
+		}
+		List<LibraryChaoResult> results = new List<LibraryChaoResult>();
+		List<Creature> targetList = targets.ToList();
+		if (targetList.Count == 0)
+		{
+			return results;
+		}
+		ICombatState combatState = targetList[0].CombatState;
+		IRunState runState = IRunState.GetFrom(targetList.Append(dealer).OfType<Creature>());
+		foreach (Creature Target in targetList)
+		{
 			if(!Target.IsMonster)
 			{
 				continue;
@@ -320,100 +330,149 @@ public static class LibraryCreatureCmd
 			// }
 			results.Add(ChaoResult);
 		}
-		List<Creature> StunedCreatures = new List<Creature>();
+		List<LibraryCreature> StunedCreatures = new List<LibraryCreature>();
 		foreach (LibraryChaoResult Result in results)
 		{
-			Creature Target = Result.Receiver;
-			if (Result.ChaoValueAmount > 0)
+			LibraryCreature Target = Result.Receiver as LibraryCreature;
+			if (combatState != null)
 			{
 				await LibraryHooks.AfterCurrentChaoValueChanged(runState, combatState, Target, -Result.ChaoValueAmount,type);
-			}
-			if (combatState != null)
-				{
 				await LibraryHooks.AfterChaoDamageGiven(choiceContext, combatState, dealer, Result, props, Target, cardSource,type);
-			}
-			if (!Result.WasStun || !Target.IsDead)
-			{
 				await LibraryHooks.AfterChaoDamageReceived(choiceContext, runState, combatState, Target, Result, props, dealer, cardSource,type);
 			}
-			else
+			if(Result.WasStun)
 			{
-				await LibraryHooks.AfterStun(runState, combatState, Target);
 				StunedCreatures.Add(Target);
 			}	
 		}
 		foreach (var c in StunedCreatures)
 		{
-			await CreatureCmd.Stun(c);
+			await Stun(c);
 		}
 		await Cmd.CustomScaledWait(0.1f, 0.2f);
 		return results;
 	}
-
-	internal static async Task ApplyStaggerReduction(PlayerChoiceContext choiceContext, IEnumerable<DamageResult> results, ValueProp props, Creature? dealer, CardModel? cardSource)
+	public static async Task SetChaoResistance(PlayerChoiceContext choiceContext, LibraryCreature target, Creature? dealer ,LibraryDamageType type ,LibraryResistanceLevel resistanceValue)
 	{
-		foreach (DamageResult dmgResult in results)
+		if(!target.HasChaoResistance)return;
+		ICombatState combatState = target.CombatState;
+		if(!LibraryHooks.TrySetChaoResistance(combatState,choiceContext, target, dealer,type,resistanceValue))return;
+		await LibraryHooks.BeforeSetChaoResistance(combatState, choiceContext, target, dealer, type, resistanceValue);
+		target.SetChaoResistance(type,resistanceValue);
+		await LibraryHooks.AfterSetChaoResistance(combatState, choiceContext, target, dealer, type);
+	}
+	public static async Task SetPhysicalResistance(PlayerChoiceContext choiceContext, LibraryCreature target, Creature? dealer ,LibraryDamageType type,LibraryResistanceLevel resistanceValue)
+	{
+		ICombatState combatState = target.CombatState;
+		if(!LibraryHooks.TrySetPhysicalResistance(combatState,choiceContext, target, dealer,type,resistanceValue))return;
+		await LibraryHooks.BeforeSetPhysicalResistance(combatState, choiceContext, target, dealer, type, resistanceValue);
+		target.SetPhysicalResistance(type,resistanceValue);
+		await LibraryHooks.AfterSetPhysicalResistance(combatState, choiceContext, target, dealer, type);
+	}	
+	public static async Task SetCurrentChaoValue(LibraryCreature creature, decimal amount)
+	{
+		bool flag = creature.IsDead && amount > 0m;
+		decimal num = creature.CurrentChaoValue;
+		creature.SetCurrentChaoValueInternal(amount);
+		if (amount != num)
 		{
-			if (dmgResult.Receiver is not LibraryCreature libCreature
-				|| libCreature.MaxChaoValue <= 0
-				|| dmgResult.UnblockedDamage <= 0
-				|| !libCreature.IsAlive
-				|| libCreature.IsStunPending)
-				continue;
+			await LibraryHooks.AfterCurrentChaoValueChanged(creature.Player?.RunState ?? creature.CombatState.RunState, creature.CombatState, creature, amount - num,LibraryDamageType.None);
+		}
+		if (creature.CurrentChaoValue == 0 && !creature.IsStunned && creature.MaxChaoValue!=0)
+		{
+			await Stun(creature);
+		}
+	}
+	public static async Task Stun(LibraryCreature creature, string? nextMoveId = null)
+	{
+		await Stun(creature, (IReadOnlyList<Creature> _) => Task.CompletedTask, nextMoveId);
+	}
 
-			bool isOrbDmg = LibraryStaggerResistanceOrbDamageContext.IsOrbDamage(dealer);
-			if (props.HasFlag(ValueProp.Unpowered) && !isOrbDmg)
-				continue;
-
-			// 使用缩放前的原始HP作为分母，避免多人HP缩放导致混乱值扣减被稀释
-			int effectiveMaxHp = libCreature.MonsterMaxHpBeforeModification ?? libCreature.MaxHp;
-
-			int loss;
-			if (props.HasFlag(ValueProp.Move) && !props.HasFlag(ValueProp.Unpowered) && cardSource?.Type == CardType.Attack)
-				loss = LibraryDamageCalculate.CalculateAttackCardResistanceLoss(
-					dmgResult.UnblockedDamage, 1, effectiveMaxHp);
-			else
-				loss = LibraryDamageCalculate.CalculateOtherDamageResistanceLoss(
-					dmgResult.UnblockedDamage, effectiveMaxHp);
-
-			if (loss > 0)
+	public static async Task Stun(LibraryCreature creature, Func<IReadOnlyList<Creature>, Task> stunMove, string? nextMoveId = null)
+	{
+		await LibraryHooks.BeforeStun(creature.CombatState, creature);
+		creature.StunInternal(Wrapper, nextMoveId);
+		await LibraryHooks.AfterStun(creature.CombatState, creature);
+		return;
+		async Task Wrapper(IReadOnlyList<Creature> c)
+		{
+			NStunnedVfx vfx = NStunnedVfx.Create(creature);
+			if (vfx != null)
 			{
-				loss = LibraryDamageCalculate.ApplyChaosResistanceMultiplier(loss, cardSource, libCreature);
-				await ReduceStaggerResistance(choiceContext, libCreature, loss);
+				Node vfxContainer = creature.GetVfxContainer();
+				if (vfxContainer != null)
+				{
+					Callable.From(delegate
+					{
+						vfxContainer.AddChildSafely(vfx);
+					}).CallDeferred();
+				}
 			}
+			await stunMove(c);
 		}
 	}
 
-	public static async Task ReduceStaggerResistance(PlayerChoiceContext ctx, LibraryCreature creature, int amount)
+	public static async Task GainMaxChaoValue(LibraryCreature creature, decimal amount)
 	{
-		int next = Math.Max(0, creature.CurrentChaoValue - amount);
-		if (next == creature.CurrentChaoValue) return;
-		creature.SetCurrentChaoValueInternal(next);
-		if (next <= 0 && !creature.RestoreChaoOnNextOwnerTurn && creature.IsAlive)
+		if (amount < 0m)
 		{
-			creature.RestoreChaoOnNextOwnerTurn = true;
-			creature.SaveAndSetStunResistance();
-			await CreatureCmd.Stun(creature, creature.Monster?.NextMove.Id);
+			throw new ArgumentException("amount must be non-negative. Use LoseMaxHp for max HP loss.");
+		}
+		decimal num = await SetMaxChaoValue(creature, (decimal)creature.MaxChaoValue + amount);
+		await HealChaoValue(creature, num);
+	}
+
+	public static async Task LoseMaxChaoValue(PlayerChoiceContext choiceContext, LibraryCreature creature, decimal amount, bool isFromCard)
+	{
+		if (amount < 0m)
+		{
+			throw new ArgumentException("amount must be non-negative. Use GainMaxHp for max HP gain.");
+		}
+		decimal newMaxChaoValue = (decimal)creature.MaxChaoValue - amount;
+		MapPointHistoryEntry mapPointHistoryEntry = creature.Player?.RunState.CurrentMapPointHistoryEntry;
+		if (mapPointHistoryEntry != null)
+		{
+			mapPointHistoryEntry.GetEntry(creature.Player.NetId).MaxHpLost += (int)amount;
+		}
+		if (newMaxChaoValue < (decimal)creature.CurrentChaoValue)
+		{
+			await ChaoDamage(choiceContext, new List<LibraryCreature>() { creature }, (decimal)creature.CurrentChaoValue - newMaxChaoValue, isFromCard ? (ValueProp.Unblockable | ValueProp.Unpowered | ValueProp.Move) : (ValueProp.Unblockable | ValueProp.Unpowered), null, null);
+		}
+		await SetMaxChaoValue(creature, Math.Max(1.0m, newMaxChaoValue));
+	}
+
+	public static async Task<decimal> SetMaxChaoValue(LibraryCreature creature, decimal amount)
+	{
+		int oldMaxChaoValue = creature.MaxChaoValue;
+		creature.SetMaxChaoValueInternal(Math.Max(0m, amount));
+		int newMaxChaoValue = creature.MaxChaoValue;
+		if (creature.MaxChaoValue <= 0)
+		{
+			await Stun(creature);
+		}
+		return newMaxChaoValue - oldMaxChaoValue;
+	}
+	public static async Task HealChaoValue(LibraryCreature creature, decimal amount)
+	{
+		if (CombatManager.Instance.IsEnding && !creature.IsPlayer)
+		{
+			return;
+		}
+		decimal num = Math.Min(amount, creature.MaxChaoValue - creature.CurrentChaoValue);
+		creature.HealChaoInternal(num);
+		if (CombatManager.Instance.IsInProgress)
+		{
+			await Cmd.CustomScaledWait(0.1f, 0.25f);
+		}
+		if (amount > 0m && creature.CombatState != null)
+		{
+			await LibraryHooks.AfterCurrentChaoValueChanged(creature.Player?.RunState ?? creature.CombatState.RunState, creature.CombatState, creature, amount,LibraryDamageType.None);
 		}
 	}
 
-	public static async Task ReduceStaggerResistance(Creature creature, int amount, Creature? dealer, CardModel? cardSource)
+	public static async Task SetMaxAndCurrentChaoValue(LibraryCreature creature, decimal amount)
 	{
-		if (creature is not LibraryCreature lc || lc.MaxChaoValue <= 0) return;
-		await ReduceStaggerResistance(new ThrowingPlayerChoiceContext(), lc, amount);
-	}
-
-	public static void SetStaggerResistance(Creature creature, int value)
-	{
-		if (creature is not LibraryCreature lc) return;
-		lc.SetCurrentChaoValueInternal(Math.Max(0, value));
-	}
-
-	public static void SetMaxStaggerResistance(Creature creature, int value, bool clampCurrent = true)
-	{
-		if (creature is not LibraryCreature lc) return;
-		lc.SetMaxChaoValueInternal(value);
-		if (clampCurrent)
-			lc.SetCurrentChaoValueInternal(Math.Min(lc.CurrentChaoValue, value));
+		await SetMaxChaoValue(creature, amount);
+		await SetCurrentChaoValue(creature, amount);
 	}
 }

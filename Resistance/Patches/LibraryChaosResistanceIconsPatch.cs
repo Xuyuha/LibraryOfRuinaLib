@@ -24,8 +24,8 @@ internal static class LibraryChaosResistanceIconsUi
     private const float RightOffset = 1f;
     private const float TopOffset = -52f;
 
-    private static readonly LibraryDamageKind[] DisplayOrder =
-        [LibraryDamageKind.Slash, LibraryDamageKind.Pierce, LibraryDamageKind.Blunt];
+    private static readonly LibraryDamageType[] DisplayOrder =
+        [LibraryDamageType.Slash, LibraryDamageType.Pierce, LibraryDamageType.Blunt];
 
     private static readonly FieldInfo? CreatureField =
         AccessTools.Field(typeof(NHealthBar), "_creature");
@@ -105,11 +105,11 @@ internal static class LibraryChaosResistanceIconsUi
         for (int i = 0; i < 3; i++)
         {
             int index = i;
-            LibraryDamageKind damageKind = DisplayOrder[i];
+            LibraryDamageType damageType = DisplayOrder[i];
 
             var hitbox = new Control
             {
-                Name = $"ChaosResistHitbox_{damageKind}",
+                Name = $"ChaosResistHitbox_{damageType}",
                 MouseFilter = Control.MouseFilterEnum.Stop,
                 Size = new Vector2(IconSize, IconSize),
                 Position = new Vector2(0f, i * (IconSize + IconSpacing)),
@@ -118,7 +118,7 @@ internal static class LibraryChaosResistanceIconsUi
 
             var icon = new TextureRect
             {
-                Name = $"ChaosResistIcon_{damageKind}",
+                Name = $"ChaosResistIcon_{damageType}",
                 MouseFilter = Control.MouseFilterEnum.Ignore,
                 ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
                 StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
@@ -129,7 +129,7 @@ internal static class LibraryChaosResistanceIconsUi
             hitbox.AddChild(icon);
 
             hitbox.Connect(Control.SignalName.MouseEntered, Callable.From(() =>
-                OnIconHovered(healthBar, damageKind, hitbox)));
+                OnIconHovered(healthBar, damageType, hitbox)));
             hitbox.Connect(Control.SignalName.MouseExited, Callable.From(() =>
                 OnIconUnhovered(hitbox)));
 
@@ -159,14 +159,14 @@ internal static class LibraryChaosResistanceIconsUi
     {
         for (int i = 0; i < 3; i++)
         {
-            LibraryDamageKind damageKind = DisplayOrder[i];
-            LibraryResistanceLevel level = creature.GetChaosResistanceLevel(damageKind);
+            LibraryDamageType damageType = DisplayOrder[i];
+            LibraryResistanceLevel level = creature.GetChaosResistanceLevel(damageType);
 
             if (state.Icons[i] == null) continue;
 
             if (level != state.LastLevels[i] || state.Icons[i]!.Texture == null)
             {
-                string texPath = GetChaosIconPath(damageKind, level);
+                string texPath = GetChaosIconPath(damageType, level);
                 state.Icons[i]!.Texture = ResourceLoader.Load<Texture2D>(texPath, null,
                     ResourceLoader.CacheMode.Reuse);
                 state.LastLevels[i] = level;
@@ -174,20 +174,13 @@ internal static class LibraryChaosResistanceIconsUi
         }
     }
 
-    private static string GetChaosIconPath(LibraryDamageKind kind, LibraryResistanceLevel level)
+    private static string GetChaosIconPath(LibraryDamageType type, LibraryResistanceLevel level)
     {
-        string typeStr = kind switch
-        {
-            LibraryDamageKind.Slash => "slash",
-            LibraryDamageKind.Pierce => "pierce",
-            LibraryDamageKind.Blunt => "blunt",
-            _ => "slash"
-        };
         string levelStr = level.GetLocKeySuffix();
-        return $"res://images/resistance/{typeStr}_chaos_{levelStr}.png";
+        return $"res://images/resistance/{type.String()}_chaos_{levelStr}.png";
     }
 
-    private static void OnIconHovered(NHealthBar healthBar, LibraryDamageKind damageKind, Control hitbox)
+    private static void OnIconHovered(NHealthBar healthBar, LibraryDamageType damageType, Control hitbox)
     {
         Creature? creature = GetCreature(healthBar);
         if (creature == null) return;
@@ -195,15 +188,9 @@ internal static class LibraryChaosResistanceIconsUi
         var libCreature = creature as LibraryCreature;
         if (libCreature == null) return;
 
-        LibraryResistanceLevel level = libCreature.GetChaosResistanceLevel(damageKind);
+        LibraryResistanceLevel level = libCreature.GetChaosResistanceLevel(damageType);
 
-        string typeName = damageKind switch
-        {
-            LibraryDamageKind.Slash => new LocString("powers", "DAMAGE_TYPE_RESISTANCE.slash_chaos").GetRawText(),
-            LibraryDamageKind.Pierce => new LocString("powers", "DAMAGE_TYPE_RESISTANCE.pierce_chaos").GetRawText(),
-            LibraryDamageKind.Blunt => new LocString("powers", "DAMAGE_TYPE_RESISTANCE.blunt_chaos").GetRawText(),
-            _ => ""
-        };
+        string typeName = new LocString("powers", $"DAMAGE_TYPE_RESISTANCE.{damageType.String()}_chaos").GetRawText();
 
         string levelText = new LocString("powers",
             $"DAMAGE_TYPE_RESISTANCE.{level.GetLocKeySuffix()}").GetRawText();

@@ -4,10 +4,50 @@ using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Cards;
 using MegaCrit.Sts2.Core.ValueProps;
 using MegaCrit.Sts2.Core.Commands.Builders;
+using Library.Utils;
+using Library.Entities.Creatures;
+using Library.Resistance;
 
 namespace Library.Models;
-public interface LibraryAbstractModel//库模型接口，定义了库里的钩子，还有很多钩子没写
+public interface ILibraryAbstractModel//库模型接口，定义了库里的钩子，还有很多钩子没写
 {
+    public virtual Task BeforeDiceEffect(PlayerChoiceContext choiceContext, Creature? target, CardModel cardSource, LibraryDice dice)
+    {
+        return Task.CompletedTask;
+    }
+    public virtual Task AfterDiceEffect(PlayerChoiceContext choiceContext, Creature? target, CardModel cardSource, LibraryDice dice)
+    {
+        return Task.CompletedTask;
+    }
+    public virtual Task BeforeSetChaoResistance(PlayerChoiceContext choiceContext,LibraryCreature target,Creature? dealer, LibraryDamageType type,LibraryResistanceLevel resistanceValue)
+    {
+        return Task.CompletedTask;
+    }
+    public virtual Task AfterSetChaoResistance(PlayerChoiceContext choiceContext,LibraryCreature target,Creature? dealer, LibraryDamageType type)
+    {
+        return Task.CompletedTask;
+    }
+    public virtual bool TrySetChaoResistance(PlayerChoiceContext choiceContext,LibraryCreature target,Creature? dealer, LibraryDamageType type,LibraryResistanceLevel resistanceValue)
+    {
+        return true;
+    }
+    public virtual bool TrySetPhysicalResistance(PlayerChoiceContext choiceContext,LibraryCreature target,Creature? dealer,LibraryDamageType type,LibraryResistanceLevel resistanceValue)
+    {
+        return true;
+    }
+    public virtual Task BeforeSetPhysicalResistance(PlayerChoiceContext choiceContext,LibraryCreature target,Creature? dealer,LibraryDamageType type,LibraryResistanceLevel resistanceValue)
+    {
+        return Task.CompletedTask;
+    }
+    public virtual Task AfterSetPhysicalResistance(PlayerChoiceContext choiceContext,LibraryCreature target,Creature? dealer,LibraryDamageType type)
+    {
+        return Task.CompletedTask;
+    }
+
+    public virtual bool TryDiceEffect(PlayerChoiceContext choiceContext,Creature? target, CardModel cardSource, LibraryDice dice)
+    {
+        return true;
+    }
     public virtual Task AfterAttack(PlayerChoiceContext choiceContext, LibraryAttackCommand command)
     {
         return Task.CompletedTask;

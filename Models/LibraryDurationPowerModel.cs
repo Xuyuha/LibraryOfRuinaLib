@@ -181,7 +181,7 @@ public abstract class LibraryDurationPowerModel : LibraryPowerModel, ISecondaryD
     }
 
     /// <inheritdoc />
-    public override async Task AfterTurnEnd(PlayerChoiceContext choiceContext, CombatSide side)
+    public override async Task AfterSideTurnEnd(PlayerChoiceContext choiceContext, CombatSide side,IEnumerable<Creature> participants)
     {
         if (side != DecaySide || IsPermanent)
             return;

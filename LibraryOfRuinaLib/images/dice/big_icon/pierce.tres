@@ -1,0 +1,7 @@
+[gd_resource type="AtlasTexture" load_steps=2 format=3 uid="uid://cio18ies281qa"]
+
+[ext_resource type="Texture2D" uid="uid://c15nkh1pdvq33" path="res://images/dice/big_icon/pierce.png" id="1_2amgi"]
+
+[resource]
+atlas = ExtResource("1_2amgi")
+region = Rect2(0, 0, 244, 237)

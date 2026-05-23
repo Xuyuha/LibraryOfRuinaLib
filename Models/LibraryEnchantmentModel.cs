@@ -1,7 +1,8 @@
+using Library.Models;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.ValueProps;
 
-public class LibraryEnchantmentModel : EnchantmentModel
+public class LibraryEnchantmentModel : EnchantmentModel , ILibraryAbstractModel
 {
     public virtual decimal EnchantChaoDamageAdditive(decimal originalDamage, ValueProp props)
     {

@@ -23,8 +23,8 @@ internal static class LibraryPhysicalResistanceIconsUi//TODO:你们来做物理�
     private const float LeftOffset = 1f;
     private const float TopOffset = -52f;
 
-    private static readonly LibraryDamageKind[] DisplayOrder =
-        [LibraryDamageKind.Slash, LibraryDamageKind.Pierce, LibraryDamageKind.Blunt];
+    private static readonly LibraryDamageType[] DisplayOrder =
+        [LibraryDamageType.Slash, LibraryDamageType.Pierce, LibraryDamageType.Blunt];
 
     private static readonly FieldInfo? CreatureField =
         AccessTools.Field(typeof(NHealthBar), "_creature");
@@ -65,7 +65,7 @@ internal static class LibraryPhysicalResistanceIconsUi//TODO:你们来做物理�
         State state = GetOrCreateState(healthBar);
 
         bool shouldShow = libCreature != null
-            && creature.IsAlive && libCreature.MaxChaoValue > 0;
+            && creature.IsAlive;
 
         if (!shouldShow)
         {
@@ -103,11 +103,11 @@ internal static class LibraryPhysicalResistanceIconsUi//TODO:你们来做物理�
 
         for (int i = 0; i < 3; i++)
         {
-            LibraryDamageKind damageKind = DisplayOrder[i];
+            LibraryDamageType damageType = DisplayOrder[i];
 
             var hitbox = new Control
             {
-                Name = $"PhysicalResistHitbox_{damageKind}",
+                Name = $"PhysicalResistHitbox_{damageType}",
                 MouseFilter = Control.MouseFilterEnum.Stop,
                 Size = new Vector2(IconSize, IconSize),
                 Position = new Vector2(0f, i * (IconSize + IconSpacing)),
@@ -116,7 +116,7 @@ internal static class LibraryPhysicalResistanceIconsUi//TODO:你们来做物理�
 
             var icon = new TextureRect
             {
-                Name = $"PhysicalResistIcon_{damageKind}",
+                Name = $"PhysicalResistIcon_{damageType}",
                 MouseFilter = Control.MouseFilterEnum.Ignore,
                 ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
                 StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
@@ -127,7 +127,7 @@ internal static class LibraryPhysicalResistanceIconsUi//TODO:你们来做物理�
             hitbox.AddChild(icon);
 
             hitbox.Connect(Control.SignalName.MouseEntered, Callable.From(() =>
-                OnIconHovered(healthBar, damageKind, hitbox)));
+                OnIconHovered(healthBar, damageType, hitbox)));
             hitbox.Connect(Control.SignalName.MouseExited, Callable.From(() =>
                 OnIconUnhovered(hitbox)));
 
@@ -161,14 +161,14 @@ internal static class LibraryPhysicalResistanceIconsUi//TODO:你们来做物理�
     {
         for (int i = 0; i < 3; i++)
         {
-            LibraryDamageKind damageKind = DisplayOrder[i];
-            LibraryResistanceLevel level = creature.GetPhysicalResistanceLevel(damageKind);
+            LibraryDamageType damageType = DisplayOrder[i];
+            LibraryResistanceLevel level = creature.GetPhysicalResistanceLevel(damageType);
 
             if (state.Icons[i] == null) continue;
 
             if (level != state.LastLevels[i] || state.Icons[i]!.Texture == null)
             {
-                string texPath = GetPhysicalIconPath(damageKind, level);
+                string texPath = GetPhysicalIconPath(damageType, level);
                 state.Icons[i]!.Texture = ResourceLoader.Load<Texture2D>(texPath, null,
                     ResourceLoader.CacheMode.Reuse);
                 state.LastLevels[i] = level;
@@ -176,20 +176,13 @@ internal static class LibraryPhysicalResistanceIconsUi//TODO:你们来做物理�
         }
     }
 
-    private static string GetPhysicalIconPath(LibraryDamageKind kind, LibraryResistanceLevel level)
+    private static string GetPhysicalIconPath(LibraryDamageType type, LibraryResistanceLevel level)
     {
-        string typeStr = kind switch
-        {
-            LibraryDamageKind.Slash => "slash",
-            LibraryDamageKind.Pierce => "pierce",
-            LibraryDamageKind.Blunt => "blunt",
-            _ => "slash"
-        };
         string levelStr = level.GetLocKeySuffix();
-        return $"res://images/resistance/{typeStr}_{levelStr}.png";
+        return $"res://images/resistance/{type.String()}_{levelStr}.png";
     }
 
-    private static void OnIconHovered(NHealthBar healthBar, LibraryDamageKind damageKind, Control hitbox)
+    private static void OnIconHovered(NHealthBar healthBar, LibraryDamageType damageType, Control hitbox)
     {
         Creature? creature = GetCreature(healthBar);
         if (creature == null) return;
@@ -197,15 +190,9 @@ internal static class LibraryPhysicalResistanceIconsUi//TODO:你们来做物理�
         var libCreature = creature as LibraryCreature;
         if (libCreature == null) return;
 
-        LibraryResistanceLevel level = libCreature.GetPhysicalResistanceLevel(damageKind);
+        LibraryResistanceLevel level = libCreature.GetPhysicalResistanceLevel(damageType);
 
-        string typeName = damageKind switch
-        {
-            LibraryDamageKind.Slash => new LocString("powers", "DAMAGE_TYPE_RESISTANCE.slash_physical").GetRawText(),
-            LibraryDamageKind.Pierce => new LocString("powers", "DAMAGE_TYPE_RESISTANCE.pierce_physical").GetRawText(),
-            LibraryDamageKind.Blunt => new LocString("powers", "DAMAGE_TYPE_RESISTANCE.blunt_physical").GetRawText(),
-            _ => ""
-        };
+        string typeName = damageType == LibraryDamageType.None?"" :new LocString("powers", $"DAMAGE_TYPE_RESISTANCE.{damageType.String()}_physical").GetRawText();
 
         string levelText = new LocString("powers",
             $"DAMAGE_TYPE_RESISTANCE.{level.GetLocKeySuffix()}").GetRawText();

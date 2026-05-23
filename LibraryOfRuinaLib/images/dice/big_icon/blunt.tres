@@ -1,0 +1,7 @@
+[gd_resource type="AtlasTexture" load_steps=2 format=3 uid="uid://dm0drd7ojxbsl"]
+
+[ext_resource type="Texture2D" uid="uid://b8l7trasxeiow" path="res://images/dice/big_icon/blunt.png" id="1_qqdxi"]
+
+[resource]
+atlas = ExtResource("1_qqdxi")
+region = Rect2(0, 0, 243, 244)

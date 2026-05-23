@@ -11,6 +11,9 @@ using MegaCrit.Sts2.Core.Models.Singleton;
 using MegaCrit.Sts2.Core.Random;
 using MegaCrit.Sts2.Core.MonsterMoves.MonsterMoveStateMachine;
 using MegaCrit.Sts2.Core.MonsterMoves.Intents;
+using MegaCrit.Sts2.Core.Nodes.Combat;
+using Library.Resistance.Patches;
+using Library.Hooks;
 
 namespace Library.Entities.Creatures;
 public class LibraryCreature : Creature//扩展Creature，添加Chao值属性
@@ -19,32 +22,22 @@ public class LibraryCreature : Creature//扩展Creature，添加Chao值属性
     public LibraryCreature(MonsterModel monster, CombatSide side, string? slotName) : base(monster, side, slotName)
     {
 		Log.Info("LibraryCreature Create");
+        _resistanceData = new();
         if(monster is LibraryMonsterModel libraryMonsterModel){
-            _damageResistance = libraryMonsterModel.DefaultDamageResistance;
-            _chaoResistance = libraryMonsterModel.DefaultChaoResistance;
-            if (libraryMonsterModel.DefaultStaggerResistanceData is { } data)
+            if (libraryMonsterModel.DefaultChaoResistanceData != null)
             {
-                _resistanceData = new LibraryCreatureResistanceData
-                {
-                    SlashChaos = data.SlashChaos,
-                    PierceChaos = data.PierceChaos,
-                    BluntChaos = data.BluntChaos,
-                    SlashPhysical = data.SlashPhysical,
-                    PiercePhysical = data.PiercePhysical,
-                    BluntPhysical = data.BluntPhysical,
-                };
+                _resistanceData.ChaosResistance = new LibraryCreatureResistanceData.Resistance(libraryMonsterModel.DefaultChaoResistanceData);
+            }
+            if (libraryMonsterModel.DefaultPhysicalResistanceData != null)
+            {
+                _resistanceData.PhysicalResistance = new LibraryCreatureResistanceData.Resistance(libraryMonsterModel.DefaultPhysicalResistanceData);
             }
         }
-        else{
-            _damageResistance = [1,1,1,1];
-            _chaoResistance = [1,1,1,1];
-        }
     }
-    private decimal[] _damageResistance;
-    private decimal[] _chaoResistance;
     private int _currentChaoValue;
     private int _maxChaoValue;
-    private LibraryCreatureResistanceData _resistanceData = new();
+    public bool HasChaoResistance => Monster is LibraryMonsterModel libraryMonsterModel && libraryMonsterModel.HasChaoResistance;
+    private LibraryCreatureResistanceData _resistanceData;
     private LibraryCreatureResistanceData? _preStunResistanceData;
     private int _stunPlayerTurnsRemaining;
     public bool RestoreChaoOnNextOwnerTurn { get; set; }
@@ -54,34 +47,19 @@ public class LibraryCreature : Creature//扩展Creature，添加Chao值属性
 
     public void SaveAndSetStunResistance()
     {
-        _preStunResistanceData = new LibraryCreatureResistanceData
-        {
-            SlashPhysical = _resistanceData.SlashPhysical,
-            BluntPhysical = _resistanceData.BluntPhysical,
-            PiercePhysical = _resistanceData.PiercePhysical,
-            SlashChaos = _resistanceData.SlashChaos,
-            BluntChaos = _resistanceData.BluntChaos,
-            PierceChaos = _resistanceData.PierceChaos,
-        };
-        _resistanceData.SlashPhysical = LibraryResistanceLevel.Fatal;
-        _resistanceData.BluntPhysical = LibraryResistanceLevel.Fatal;
-        _resistanceData.PiercePhysical = LibraryResistanceLevel.Fatal;
-        _stunPlayerTurnsRemaining = 2;
+        _preStunResistanceData = _resistanceData;
+        _resistanceData = new(LibraryResistanceLevel.Fatal);
+        RestoreChaoOnNextOwnerTurn = true;
+        LibraryPhysicalResistanceIconsUi.Refresh(HealthBar);
+        LibraryChaosResistanceIconsUi.Refresh(HealthBar);
     }
 
     public void RestorePreStunResistance()
     {
-        if (_preStunResistanceData is { } saved)
-        {
-            _resistanceData.SlashPhysical = saved.SlashPhysical;
-            _resistanceData.BluntPhysical = saved.BluntPhysical;
-            _resistanceData.PiercePhysical = saved.PiercePhysical;
-            _resistanceData.SlashChaos = saved.SlashChaos;
-            _resistanceData.BluntChaos = saved.BluntChaos;
-            _resistanceData.PierceChaos = saved.PierceChaos;
-            _preStunResistanceData = null;
-        }
-        _stunPlayerTurnsRemaining = 0;
+        _resistanceData = _preStunResistanceData;
+        _preStunResistanceData = null;
+        LibraryPhysicalResistanceIconsUi.Refresh(HealthBar);
+        LibraryChaosResistanceIconsUi.Refresh(HealthBar);
     }
     public void DecrementStunTurns()
     {
@@ -91,26 +69,23 @@ public class LibraryCreature : Creature//扩展Creature，添加Chao值属性
     public event Action<int, int>? CurrentChaoValueChanged;
     public event Action<Creature>? Stuned;
     public event Action<int, int>? MaxChaoValueChanged;
-
-    //待添加混乱条public HpDisplay HpDisplay { get; set; }
-    
     public int? MonsterMaxChaoValueBeforeModification { get; private set; }
     public int MaxChaoValue
     {
-	get
-	{
-		return _maxChaoValue;
-	}
-	private set
-	{
-		if (_maxChaoValue != value)
-		{
-			int maxChaoValue = _maxChaoValue;
-			_maxChaoValue = value;
-			this.MaxChaoValueChanged?.Invoke(maxChaoValue, _maxChaoValue);
-		}
-	}
-}
+        get
+        {
+            return _maxChaoValue;
+        }
+        private set
+        {
+            if (_maxChaoValue != value)
+            {
+                int maxChaoValue = _maxChaoValue;
+                _maxChaoValue = value;
+                this.MaxChaoValueChanged?.Invoke(maxChaoValue, _maxChaoValue);
+            }
+        }
+    }
     public int CurrentChaoValue
     {
         get
@@ -131,6 +106,12 @@ public class LibraryCreature : Creature//扩展Creature，添加Chao值属性
             }
         }
     }
+    public void HealChaoInternal(decimal amount)
+    {
+        if(!HasChaoResistance)return;
+        SetCurrentChaoValueInternal((decimal)CurrentChaoValue + amount);
+    }
+
     public void ScaleMonsterChaoValueForMultiplayer( EncounterModel? encounter, int playerCount, int actIndex)
     {
         if(playerCount != 1)
@@ -140,9 +121,11 @@ public class LibraryCreature : Creature//扩展Creature，添加Chao值属性
         }
     }
     public void SetCurrentChaoValueInternal(decimal amount){
+        if(!HasChaoResistance)return;
         CurrentChaoValue = (int)Math.Min(amount, MaxChaoValue);
     }
     public void SetMaxChaoValueInternal(decimal amount){
+        if(!HasChaoResistance)return;
         if (amount < 0m)
         {
             throw new ArgumentException("amount must be non-negative.");
@@ -156,9 +139,9 @@ public class LibraryCreature : Creature//扩展Creature，添加Chao值属性
         {
             throw new InvalidOperationException("Can't set unique monster Chao value for a player.");
         }
-        if (Monster is LibraryMonsterModel model && model.MaxInitialChao > 0)
+        if (Monster is LibraryMonsterModel model && model.DefaultChaoResistance > 0)
         {
-            MonsterMaxChaoValueBeforeModification = _currentChaoValue = _maxChaoValue = model.MaxInitialChao;
+            MonsterMaxChaoValueBeforeModification = _currentChaoValue = _maxChaoValue = model.DefaultChaoResistance;
         }
     }
     public double GetChaoValuePercentRemaining() => (double)CurrentChaoValue / (double)MaxChaoValue;
@@ -169,9 +152,10 @@ public class LibraryCreature : Creature//扩展Creature，添加Chao值属性
         }
         return chaoValue * (decimal)playerCount * MultiplayerScalingModel.GetMultiplayerScaling(encounter, actIndex);
     }
-    public LibraryChaoResult LoseChaoValueInternal(decimal amount, ValueProp props)
-    {
-        bool flag = CurrentHp > 0 && amount >= (decimal)CurrentHp;
+    public LibraryChaoResult? LoseChaoValueInternal(decimal amount, ValueProp props)
+    {   
+        if(!HasChaoResistance)return null;
+        bool flag = CurrentChaoValue > 0 && amount >= (decimal)CurrentChaoValue;
         int currentChaoValue = CurrentChaoValue;
         int num = (int)Math.Min(amount, 999999999m);
         CurrentChaoValue = Math.Max(CurrentChaoValue - num, 0);
@@ -179,7 +163,7 @@ public class LibraryCreature : Creature//扩展Creature，添加Chao值属性
         {
 		    OverStunChaoValue = flag ? Math.Max(num - currentChaoValue, 0) : 0,
             ChaoValueAmount = currentChaoValue - CurrentChaoValue,
-            WasStun = CurrentChaoValue == 0,
+            WasStun = CurrentChaoValue == 0 && !IsStunned,
         };
     }
     public new void StunInternal(Func<IReadOnlyList<Creature>, Task> stunMove, string? nextMoveId)
@@ -190,7 +174,7 @@ public class LibraryCreature : Creature//扩展Creature，添加Chao值属性
         }
         if (CombatState != null && !IsDead)
         {
-            //更改抗性图标
+            SaveAndSetStunResistance();
             if (string.IsNullOrEmpty(nextMoveId))
             {
                 List<MonsterState> stateLog = Monster?.MoveStateMachine?.StateLog!;
@@ -204,48 +188,50 @@ public class LibraryCreature : Creature//扩展Creature，添加Chao值属性
             Monster?.SetMoveImmediate(state);
         }
     }
+    public NHealthBar? HealthBar => GetCreatureNode()?.GetNode<NCreatureStateDisplay>("%HealthBar")?.GetNode<NHealthBar>("%HealthBar");
+    public LibraryResistanceLevel GetChaosResistanceLevel(LibraryDamageType type) => type switch{
+        LibraryDamageType.Blunt=>_resistanceData.ChaosResistance.Blunt,
+        LibraryDamageType.Slash=>_resistanceData.ChaosResistance.Slash,
+        LibraryDamageType.Pierce=>_resistanceData.ChaosResistance.Pierce,
+        _=>LibraryResistanceLevel.Normal
+    } ;
+    public LibraryResistanceLevel GetPhysicalResistanceLevel(LibraryDamageType type) => type switch{
+        LibraryDamageType.Blunt=>_resistanceData.PhysicalResistance.Blunt,
+        LibraryDamageType.Slash=>_resistanceData.PhysicalResistance.Slash,
+        LibraryDamageType.Pierce=>_resistanceData.PhysicalResistance.Pierce,
+        _=>LibraryResistanceLevel.Normal
+    } ;
 
-
-    public decimal GetDamageResistance(LibraryDamageType type) =>_damageResistance[(int)type] ;
-    public decimal GetChaoResistance(LibraryDamageType type) =>_chaoResistance[(int)type] ;
-    public LibraryResistanceLevel GetChaosResistanceLevel(LibraryDamageKind kind) => _resistanceData.GetChaosResistance(kind);
-    public LibraryResistanceLevel GetPhysicalResistanceLevel(LibraryDamageKind kind) => _resistanceData.GetPhysicalResistance(kind);
-    public decimal GetChaosMultiplier(LibraryDamageKind kind)
+    public void SetPhysicalResistance(LibraryDamageType type,LibraryResistanceLevel resistanceValue) 
     {
-        if (kind == LibraryDamageKind.None) return 1m;
-        return _resistanceData.GetChaosResistance(kind).GetMultiplier();
+        switch (type)
+        {
+            case LibraryDamageType.Blunt:
+                _resistanceData.PhysicalResistance.Blunt = resistanceValue;
+                break;
+            case LibraryDamageType.Slash:
+                _resistanceData.PhysicalResistance.Slash = resistanceValue;
+                break;
+            case LibraryDamageType.Pierce:
+                _resistanceData.PhysicalResistance.Pierce = resistanceValue;
+                break;
+        }
+        LibraryPhysicalResistanceIconsUi.Refresh(HealthBar);
     }
-    private void SetDamageResistance(LibraryDamageType type,decimal resistanceValue) 
-    {
-        //待添加伤害抗性图标改变逻辑
-        _damageResistance[(int)type] = resistanceValue;
-    }
-    private void SetChaoResistance(LibraryDamageType type,decimal resistanceValue) {
-        //待添加混乱抗性图标改变逻辑
-        _chaoResistance[(int)type] = resistanceValue;
-    }
-    private void SetDamageResistance(decimal[] resistanceValue) 
-    {
-        //待添加伤害抗性图标改变逻辑
-        _damageResistance = resistanceValue;
-    }
-    private void SetChaoResistance(decimal[] resistanceValue) {
-        //待添加混乱抗性图标改变逻辑
-        _chaoResistance = resistanceValue;
-    }
-    
-    public async Task SetChaoResistance(PlayerChoiceContext choiceContext, Creature? dealer,LibraryDamageType type,decimal resistanceValue)
-    {
-        //LibraryHooks.TrySetChaoResistance();
-        //LibraryHooks.BeforeSetChaoResistance();
-        SetChaoResistance(type,resistanceValue);
-        //LibraryHooks.AfterSetChaoResistance();
-    }
-    public async Task SetDamageResistance(PlayerChoiceContext choiceContext, Creature? dealer,LibraryDamageType type,decimal resistanceValue)
-    {
-        //LibraryHooks.TrySetDamageResistance();
-        //LibraryHooks.BeforeSetDamageResistance();
-        SetDamageResistance(type,resistanceValue);
-        //LibraryHooks.AfterSetDamageResistance();
+    public void SetChaoResistance(LibraryDamageType type,LibraryResistanceLevel resistanceValue) {
+        if(!HasChaoResistance)return;
+        switch (type)
+        {
+            case LibraryDamageType.Blunt:
+                _resistanceData.ChaosResistance.Blunt = resistanceValue;
+                break;
+            case LibraryDamageType.Slash:
+                _resistanceData.ChaosResistance.Slash = resistanceValue;
+                break;
+            case LibraryDamageType.Pierce:
+                _resistanceData.ChaosResistance.Pierce = resistanceValue;
+                break;
+        }
+        LibraryChaosResistanceIconsUi.Refresh(HealthBar);
     }
 }
