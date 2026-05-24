@@ -1,7 +1,7 @@
 public enum LibraryDiceType//伤害类型
 {
     Block ,
-    Strike ,
+    Blunt ,
     Slash ,
-    Puncture
+    Pierce
 }

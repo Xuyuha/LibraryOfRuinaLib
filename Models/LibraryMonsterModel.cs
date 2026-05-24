@@ -5,25 +5,25 @@ using MegaCrit.Sts2.Core.Entities.Creatures;
 using Library.Entities.Creatures;
 using Library.Resistance;
 using MegaCrit.Sts2.Core.Models.Cards;
+using Godot;
 
 namespace Library.Models;
-public abstract class LibraryMonsterModel : MonsterModel, LibraryAbstractModel
+public abstract class LibraryMonsterModel : MonsterModel, ILibraryAbstractModel
 {
-    public virtual int MaxInitialChao => DefaultStaggerResistance ?? 0;
-    public virtual decimal[] DefaultChaoResistance => [1m, 1m, 1m, 1m];
-    public virtual decimal[] DefaultDamageResistance => [1m, 1m, 1m, 1m];
+    public virtual LibraryCreatureResistanceData.Resistance? DefaultPhysicalResistanceData => null;
 
     /// <summary>混乱抗性值。null = 无混乱抗性条。</summary>
-    public virtual int? DefaultStaggerResistance => null;
+    public virtual int DefaultChaoResistance => -1;
+    public bool HasChaoResistance => DefaultChaoResistance > 0;
 
     /// <summary>混乱抗性等级数据（斩/刺/打）。null = 全部 Normal。</summary>
-    public virtual LibraryCreatureResistanceData? DefaultStaggerResistanceData => null;
+    public virtual LibraryCreatureResistanceData.Resistance? DefaultChaoResistanceData => null;
 
     // TODO: 恢复时机改为下一个玩家回合结束（不确定要不要这样做）
     public sealed override async Task AfterSideTurnEnd(PlayerChoiceContext choiceContext, CombatSide side, IEnumerable<Creature> participants)
     {
-        await AfterSideTurnEndInternal(choiceContext, side);
-        if (side != CombatSide.Player) return;
+        await AfterSideTurnEndInternal(choiceContext, side, participants);
+        if (side == CombatSide.Player) return;
         foreach (Creature creature in CombatState.Creatures)
         {
             if (creature is not LibraryCreature lc || lc.Side != CombatSide.Enemy || !lc.RestoreChaoOnNextOwnerTurn)
@@ -39,7 +39,7 @@ public abstract class LibraryMonsterModel : MonsterModel, LibraryAbstractModel
         }
     }
     //子类重写不会覆盖父类方法了
-    protected virtual Task AfterSideTurnEndInternal(PlayerChoiceContext choiceContext, CombatSide side)
+    protected virtual Task AfterSideTurnEndInternal(PlayerChoiceContext choiceContext, CombatSide side, IEnumerable<Creature> participants)
     {
         return Task.CompletedTask;
     }

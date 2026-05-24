@@ -14,17 +14,91 @@ using MegaCrit.Sts2.Core.Commands.Builders;
 using MegaCrit.Sts2.Core.Context;
 using MegaCrit.Sts2.Core.Entities.Multiplayer;
 using Library.Utils;
+using Library.Resistance;
 namespace Library.Hooks;
 
-public static class LibraryHooks//钩子类，用于在不同事件发生时触发不同的逻辑，还有很多只是列举出来，还没开始写
-//todo：时机类钩子不变，计算类钩子需要将原版的其他调用途径patch一下，因为需要展示计算结果
+public static class LibraryHooks
 {
+    public static async Task BeforeSetPhysicalResistance(ICombatState combatState,PlayerChoiceContext choiceContext,LibraryCreature target, Creature? dealer,LibraryDamageType type,LibraryResistanceLevel resistanceValue)
+    {
+        foreach (AbstractModel model in combatState.IterateHookListeners())
+        {
+            if(model is ILibraryAbstractModel libraryAbstractModel)
+            {
+                await libraryAbstractModel.BeforeSetPhysicalResistance(choiceContext, target, dealer, type, resistanceValue);
+                model.InvokeExecutionFinished();
+            }
+        }
+    }
+    public static bool TrySetPhysicalResistance(ICombatState combatState, PlayerChoiceContext choiceContext,LibraryCreature target, Creature? dealer,LibraryDamageType type,LibraryResistanceLevel resistanceValue)
+    {
+        foreach (AbstractModel model in combatState.IterateHookListeners())
+        {
+            if (model is ILibraryAbstractModel libraryModel)
+            {
+                if (!libraryModel.TrySetPhysicalResistance(choiceContext, target, dealer, type, resistanceValue))
+                {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+    public static async Task AfterSetPhysicalResistance(ICombatState combatState,PlayerChoiceContext choiceContext,LibraryCreature target, Creature? dealer,LibraryDamageType type)
+    {
+        foreach (AbstractModel model in combatState.IterateHookListeners())
+        {
+            if(model is ILibraryAbstractModel libraryAbstractModel)
+            {
+                await libraryAbstractModel.AfterSetPhysicalResistance(choiceContext, target, dealer, type);
+                model.InvokeExecutionFinished();
+            }
+        }
+    }
+    public static async Task BeforeSetChaoResistance(ICombatState combatState,PlayerChoiceContext choiceContext,LibraryCreature target, Creature? dealer,LibraryDamageType type,LibraryResistanceLevel resistanceValue)
+    {
+        foreach (AbstractModel model in combatState.IterateHookListeners())
+        {
+            if(model is ILibraryAbstractModel libraryAbstractModel)
+            {
+                await libraryAbstractModel.BeforeSetChaoResistance(choiceContext, target, dealer, type, resistanceValue);
+                model.InvokeExecutionFinished();
+            }
+        }
+    }
+    public static bool TrySetChaoResistance(ICombatState combatState, PlayerChoiceContext choiceContext,LibraryCreature target, Creature? dealer,LibraryDamageType type,LibraryResistanceLevel resistanceValue)
+    {
+        foreach (AbstractModel model in combatState.IterateHookListeners())
+        {
+            if (model is ILibraryAbstractModel libraryModel)
+            {
+                if (!libraryModel.TrySetChaoResistance(choiceContext, target, dealer, type, resistanceValue))
+                {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+    public static async Task AfterSetChaoResistance(ICombatState combatState,PlayerChoiceContext choiceContext,LibraryCreature target, Creature? dealer,LibraryDamageType type)
+    {
+        foreach (AbstractModel model in combatState.IterateHookListeners())
+        {
+            if(model is ILibraryAbstractModel libraryAbstractModel)
+            {
+                await libraryAbstractModel.AfterSetChaoResistance(choiceContext, target, dealer, type);
+                model.InvokeExecutionFinished();
+            }
+        }
+    }
+
+
     public static async Task AfterAttack(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryAttackCommand command) 
     {
         foreach (AbstractModel model in combatState.IterateHookListeners())
         {
             await model.AfterAttack(choiceContext, command.ToAttackCommand);
-            if(model is LibraryAbstractModel libraryAbstractModel)
+            if(model is ILibraryAbstractModel libraryAbstractModel)
             {
                 await libraryAbstractModel.AfterAttack(choiceContext, command);
             }
@@ -36,7 +110,7 @@ public static class LibraryHooks//钩子类，用于在不同事件发生时触�
         foreach (AbstractModel model in combatState.IterateHookListeners())
         {
             await model.AfterBlockBroken(target);
-            if(model is LibraryAbstractModel libraryAbstractModel)
+            if(model is ILibraryAbstractModel libraryAbstractModel)
             {
                 await libraryAbstractModel.AfterBlockBroken(target, type);
             }
@@ -47,7 +121,7 @@ public static class LibraryHooks//钩子类，用于在不同事件发生时触�
     {
         foreach (AbstractModel model in combatState.IterateHookListeners())
         {
-            if(model is LibraryAbstractModel libraryAbstractModel)
+            if(model is ILibraryAbstractModel libraryAbstractModel)
             {
                 choiceContext.PushModel(model);
                 await libraryAbstractModel.AfterChaoDamageGiven(choiceContext, dealer, results, props, target, cardSource, type);
@@ -60,7 +134,7 @@ public static class LibraryHooks//钩子类，用于在不同事件发生时触�
     {
         foreach (AbstractModel model in runState.IterateHookListeners(combatState))
         {
-            if(model is LibraryAbstractModel libraryAbstractModel)
+            if(model is ILibraryAbstractModel libraryAbstractModel)
             {
                 choiceContext.PushModel(model);
                 await libraryAbstractModel.AfterChaoDamageReceived(choiceContext, target, result, props, dealer, cardSource, type);
@@ -70,7 +144,7 @@ public static class LibraryHooks//钩子类，用于在不同事件发生时触�
         }
         foreach (AbstractModel model in runState.IterateHookListeners(combatState))
         {
-            if(model is LibraryAbstractModel libraryAbstractModel)
+            if(model is ILibraryAbstractModel libraryAbstractModel)
             {
                 choiceContext.PushModel(model);
                 await libraryAbstractModel.AfterChaoDamageReceivedLate(choiceContext, target, result, props, dealer, cardSource, type);
@@ -83,7 +157,7 @@ public static class LibraryHooks//钩子类，用于在不同事件发生时触�
     {
         foreach (AbstractModel model in runState.IterateHookListeners(combatState))
         {
-            if(model is LibraryAbstractModel libraryAbstractModel)
+            if(model is ILibraryAbstractModel libraryAbstractModel)
             {
                 await libraryAbstractModel.AfterCurrentChaoValueChanged(target, amount, type);
                 model.InvokeExecutionFinished();
@@ -95,7 +169,7 @@ public static class LibraryHooks//钩子类，用于在不同事件发生时触�
         foreach (AbstractModel model in runState.IterateHookListeners(combatState))
         {
             await model.AfterCurrentHpChanged(creature, delta);
-            if(model is LibraryAbstractModel libraryAbstractModel)
+            if(model is ILibraryAbstractModel libraryAbstractModel)
             {
                 await libraryAbstractModel.AfterCurrentHpChanged(creature, delta, type);
             }
@@ -108,7 +182,7 @@ public static class LibraryHooks//钩子类，用于在不同事件发生时触�
         {
             choiceContext.PushModel(model);
             await model.AfterDamageGiven(choiceContext, dealer, results, props, target, cardSource);
-            if(model is LibraryAbstractModel libraryAbstractModel)
+            if(model is ILibraryAbstractModel libraryAbstractModel)
             {
                 await libraryAbstractModel.AfterDamageGiven(choiceContext, dealer, results, props, target, cardSource, type);
             }
@@ -122,7 +196,7 @@ public static class LibraryHooks//钩子类，用于在不同事件发生时触�
         {
             choiceContext.PushModel(model);
             await model.AfterDamageReceived(choiceContext, target, result, props, dealer, cardSource);
-            if(model is LibraryAbstractModel libraryAbstractModel)
+            if(model is ILibraryAbstractModel libraryAbstractModel)
             {
                 await libraryAbstractModel.AfterDamageReceived(choiceContext, target, result, props, dealer, cardSource, type);
             }
@@ -133,7 +207,7 @@ public static class LibraryHooks//钩子类，用于在不同事件发生时触�
         {
             choiceContext.PushModel(model);
             await model.AfterDamageReceivedLate(choiceContext, target, result, props, dealer, cardSource);
-            if(model is LibraryAbstractModel libraryAbstractModel)
+            if(model is ILibraryAbstractModel libraryAbstractModel)
             {
                 await libraryAbstractModel.AfterDamageReceivedLate(choiceContext, target, result, props, dealer, cardSource, type);
             }
@@ -142,14 +216,21 @@ public static class LibraryHooks//钩子类，用于在不同事件发生时触�
         }
     }
     //TODO Dice类完成后实现
-    public static Task AfterDiceEffect(PlayerChoiceContext choiceContext, Creature? target, CardModel cardSource,LibraryDice dice, int BaseValue){
-        return Task.CompletedTask;
+    public static async Task AfterDiceEffect(ICombatState combatState, PlayerChoiceContext choiceContext, Creature? target, CardModel cardSource,LibraryDice dice){
+        foreach (AbstractModel model in combatState.IterateHookListeners())
+        {
+            if (model is ILibraryAbstractModel libraryModel)
+            {
+                await libraryModel.AfterDiceEffect(choiceContext,target, cardSource,dice);
+                model.InvokeExecutionFinished();
+            }
+        }
     }
     public static async Task AfterPowerEffect(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource)
     {
         foreach (AbstractModel model in combatState.IterateHookListeners())
         {
-            if (model is LibraryAbstractModel libraryModel)
+            if (model is ILibraryAbstractModel libraryModel)
             {
                 await libraryModel.AfterPowerEffect(choiceContext, power, dealer, cardSource);
                 model.InvokeExecutionFinished();
@@ -162,7 +243,7 @@ public static class LibraryHooks//钩子类，用于在不同事件发生时触�
         {   
             if (modifiers.Contains(modifier))
             {
-                if(modifier is LibraryAbstractModel libraryAbstractModel)
+                if(modifier is ILibraryAbstractModel libraryAbstractModel)
                 {
                     await libraryAbstractModel.AfterModifyingDamageAmount(cardSource,type);
                 }
@@ -178,7 +259,7 @@ public static class LibraryHooks//钩子类，用于在不同事件发生时触�
         {
             if (modifiers.Contains(modifier))
             {
-                if(modifier is LibraryAbstractModel libraryAbstractModel)
+                if(modifier is ILibraryAbstractModel libraryAbstractModel)
                 {
                     await libraryAbstractModel.AfterModifyingHpLostAfterOsty(type);
                 }
@@ -193,7 +274,7 @@ public static class LibraryHooks//钩子类，用于在不同事件发生时触�
         {
             if (modifiers.Contains(modifier))
             {
-                if(modifier is LibraryAbstractModel libraryAbstractModel)
+                if(modifier is ILibraryAbstractModel libraryAbstractModel)
                 {
                     await libraryAbstractModel.AfterModifyingHpLostBeforeOsty(type);
                 }
@@ -208,7 +289,7 @@ public static class LibraryHooks//钩子类，用于在不同事件发生时触�
         {   
             if (modifiers.Contains(modifier))
             {
-                if(modifier is LibraryAbstractModel libraryAbstractModel)
+                if(modifier is ILibraryAbstractModel libraryAbstractModel)
                 {
                     await libraryAbstractModel.AfterModifyingDamageAmount(cardSource,type);
                     modifier.InvokeExecutionFinished();
@@ -220,7 +301,7 @@ public static class LibraryHooks//钩子类，用于在不同事件发生时触�
     {
         foreach (AbstractModel model in combatState.IterateHookListeners())
         {
-            if (model is LibraryAbstractModel libraryModel)
+            if (model is ILibraryAbstractModel libraryModel)    
             {
                 await libraryModel.AfterPowerReduce(choiceContext, power, dealer, cardSource);
                 model.InvokeExecutionFinished();
@@ -231,29 +312,29 @@ public static class LibraryHooks//钩子类，用于在不同事件发生时触�
     {
         foreach (AbstractModel model in combatState.IterateHookListeners())
         {
-            if (model is LibraryAbstractModel libraryModel)
+            if (model is ILibraryAbstractModel libraryModel)    
             {
                 await libraryModel.AfterSetPowerMode(choiceContext, power, dealer, cardSource, mode);
             }
         }
     }
 
-    public static async Task BeforeStun(IRunState runState, ICombatState? combatState, Creature creature)
+    public static async Task BeforeStun(ICombatState? combatState, Creature creature)
     {
-        foreach (AbstractModel model in runState.IterateHookListeners(combatState))
+        foreach (AbstractModel model in combatState.IterateHookListeners())
         {
-            if(model is LibraryAbstractModel libraryModel)
+            if(model is ILibraryAbstractModel libraryModel)    
             {
                 await libraryModel.BeforeStun(creature);
                 model.InvokeExecutionFinished();
             }
         }
     }
-    public static async Task AfterStun(IRunState runState, ICombatState? combatState, Creature creature)
+    public static async Task AfterStun( ICombatState? combatState, Creature creature)
     {
-        foreach (AbstractModel model in runState.IterateHookListeners(combatState))
+        foreach (AbstractModel model in combatState.IterateHookListeners())
         {
-            if (model is LibraryAbstractModel libraryModel)
+            if (model is ILibraryAbstractModel libraryModel)    
             {
                 await libraryModel.AfterStun(creature);
                 model.InvokeExecutionFinished();
@@ -265,7 +346,7 @@ public static class LibraryHooks//钩子类，用于在不同事件发生时触�
         foreach (AbstractModel model in combatState.IterateHookListeners())
         {
             await model.BeforeAttack(command.ToAttackCommand);
-            if (model is LibraryAbstractModel libraryModel)
+            if (model is ILibraryAbstractModel libraryModel)    
             {
                 await libraryModel.BeforeAttack(command);
             }
@@ -278,7 +359,7 @@ public static class LibraryHooks//钩子类，用于在不同事件发生时触�
         {
             choiceContext.PushModel(model);
             await model.BeforeDamageReceived(choiceContext, target, amount, props, dealer, cardSource);
-            if (model is LibraryAbstractModel libraryModel)
+            if (model is ILibraryAbstractModel libraryModel)    
             {
                 await libraryModel.BeforeDamageReceived(choiceContext, target, amount, props, dealer, cardSource,type);
             }
@@ -286,15 +367,21 @@ public static class LibraryHooks//钩子类，用于在不同事件发生时触�
             model.InvokeExecutionFinished();
         }
     }
-    public static Task BeforeDiceEffect(PlayerChoiceContext choiceContext, Creature? target, CardModel cardSource, LibraryDice dice){
-        return Task.CompletedTask;
+    public static async Task BeforeDiceEffect(ICombatState combatState, PlayerChoiceContext choiceContext, Creature? target, CardModel cardSource, LibraryDice dice){
+        foreach (AbstractModel model in combatState.IterateHookListeners())
+        {
+            if (model is ILibraryAbstractModel libraryModel)    
+            {
+                await libraryModel.BeforeDiceEffect(choiceContext,target, cardSource,dice);
+                model.InvokeExecutionFinished();
+            }
+        }
     }
     public static async Task BeforePowerEffect(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource)
     {
         foreach (AbstractModel model in combatState.IterateHookListeners())
         {
-
-            if (model is LibraryAbstractModel libraryModel)
+            if (model is ILibraryAbstractModel libraryModel)    
             {
                 await libraryModel.BeforePowerEffect(choiceContext, power, dealer, cardSource);
                 model.InvokeExecutionFinished();
@@ -305,7 +392,7 @@ public static class LibraryHooks//钩子类，用于在不同事件发生时触�
     {
         foreach (AbstractModel model in combatState.IterateHookListeners())
         {
-            if (model is LibraryAbstractModel libraryModel)
+            if (model is ILibraryAbstractModel libraryModel)    
             {
                 await libraryModel.BeforePowerReduce(choiceContext, power, dealer, cardSource);
                 model.InvokeExecutionFinished();
@@ -316,7 +403,7 @@ public static class LibraryHooks//钩子类，用于在不同事件发生时触�
     {
         foreach (AbstractModel model in combatState.IterateHookListeners())
         {
-            if (model is LibraryAbstractModel libraryModel)
+            if (model is ILibraryAbstractModel libraryModel)    
             {
                 await libraryModel.BeforeSetPowerMode(choiceContext, power, dealer, cardSource, mode);
             }
@@ -326,7 +413,7 @@ public static class LibraryHooks//钩子类，用于在不同事件发生时触�
     {
         foreach (AbstractModel model in runState.IterateHookListeners(combatState))
         {
-            if (model is LibraryAbstractModel libraryModel)
+            if (model is ILibraryAbstractModel libraryModel)    
             {
                 choiceContext.PushModel(model);
                 await libraryModel.BeforeChaoDamageReceived(choiceContext, target, amount, props, dealer, cardSource,type);
@@ -341,7 +428,7 @@ public static class LibraryHooks//钩子类，用于在不同事件发生时触�
         foreach (AbstractModel item in combatState.IterateHookListeners())
         {
             num = item.ModifyAttackHitCount(attackCommand.ToAttackCommand, num);
-            if(item is LibraryAbstractModel libraryAbstractModel)
+            if(item is ILibraryAbstractModel libraryAbstractModel)    
                 num = libraryAbstractModel.ModifyAttackHitCount(attackCommand, num);
         }
         return num;
@@ -439,7 +526,7 @@ public static class LibraryHooks//钩子类，用于在不同事件发生时触�
             foreach (AbstractModel item in runState.IterateHookListeners(combatState))
             {
                 decimal num2 = item.ModifyDamageAdditive(target, num, props, dealer, cardSource);
-                if(item is LibraryAbstractModel libraryAbstractModel)
+                if(item is ILibraryAbstractModel libraryAbstractModel)    
                     num2 = libraryAbstractModel.ModifyDamageAdditive(target, num, props, dealer, cardSource,type);
                 num += num2;
                 if (num2 != 0m)
@@ -453,7 +540,7 @@ public static class LibraryHooks//钩子类，用于在不同事件发生时触�
             foreach (AbstractModel item2 in runState.IterateHookListeners(combatState))
             {
                 decimal num3 = item2.ModifyDamageMultiplicative(target, num, props, dealer, cardSource);;
-                if(item2 is LibraryAbstractModel libraryAbstractModel)
+                if(item2 is ILibraryAbstractModel libraryAbstractModel)    
                     num3 = libraryAbstractModel.ModifyDamageMultiplicative(target, num, props, dealer, cardSource,type);
                 num *= num3;
                 if (num3 != 1m)
@@ -466,7 +553,7 @@ public static class LibraryHooks//钩子类，用于在不同事件发生时触�
         foreach (AbstractModel item3 in runState.IterateHookListeners(combatState))
         {
             decimal num5 = item3.ModifyDamageCap(target, props, dealer, cardSource);
-            if(item3 is LibraryAbstractModel libraryAbstractModel)
+            if(item3 is ILibraryAbstractModel libraryAbstractModel)    
                 num5 = libraryAbstractModel.ModifyDamageCap(target, props, dealer, cardSource,type);
             if (num5 < num4)
             {
@@ -489,7 +576,7 @@ public static class LibraryHooks//钩子类，用于在不同事件发生时触�
         {
             decimal d = num;
             num = item.ModifyHpLostAfterOsty(target, num, props, dealer, cardSource);
-            if(item is LibraryAbstractModel libraryAbstractModel)
+            if(item is ILibraryAbstractModel libraryAbstractModel)    
                 num = libraryAbstractModel.ModifyHpLostAfterOsty(target, num, props, dealer, cardSource,type);
             if (decimal.Truncate(d) != decimal.Truncate(num))
             {
@@ -500,7 +587,7 @@ public static class LibraryHooks//钩子类，用于在不同事件发生时触�
         {
             decimal d2 = num;
             num = item2.ModifyHpLostAfterOstyLate(target, num, props, dealer, cardSource);
-            if(item2 is LibraryAbstractModel libraryAbstractModel)
+            if(item2 is ILibraryAbstractModel libraryAbstractModel)    
                 num = libraryAbstractModel.ModifyHpLostAfterOstyLate(target, num, props, dealer, cardSource,type);
             if (decimal.Truncate(d2) != decimal.Truncate(num))
             {
@@ -518,7 +605,7 @@ public static class LibraryHooks//钩子类，用于在不同事件发生时触�
         foreach (AbstractModel item in runState.IterateHookListeners(combatState))
         {
             num = item.ModifyHpLostBeforeOsty(target, num, props, dealer, cardSource);
-            if(item is LibraryAbstractModel libraryAbstractModel)
+            if(item is ILibraryAbstractModel libraryAbstractModel)    
                 num = libraryAbstractModel.ModifyHpLostBeforeOsty(target, num, props, dealer, cardSource,type);
             if (decimal.Truncate(d) != decimal.Truncate(num))
             {
@@ -529,7 +616,7 @@ public static class LibraryHooks//钩子类，用于在不同事件发生时触�
         {
             decimal d2 = num;
             num = item2.ModifyHpLostBeforeOstyLate(target, num, props, dealer, cardSource);
-            if(item2 is LibraryAbstractModel libraryAbstractModel)
+            if(item2 is ILibraryAbstractModel libraryAbstractModel)     
                 num = libraryAbstractModel.ModifyHpLostBeforeOstyLate(target, num, props, dealer, cardSource,type);
             if (decimal.Truncate(d2) != decimal.Truncate(num))
             {
@@ -636,7 +723,7 @@ public static class LibraryHooks//钩子类，用于在不同事件发生时触�
         {
             foreach (AbstractModel item in runState.IterateHookListeners(combatState))
             {
-                if(item is not LibraryAbstractModel libraryAbstractModel)
+                if(item is not ILibraryAbstractModel libraryAbstractModel)
                     continue;
                 decimal num2 = libraryAbstractModel.ModifyChaoDamageAdditive(target, num, props, dealer, cardSource,type);
                 num += num2;
@@ -650,7 +737,7 @@ public static class LibraryHooks//钩子类，用于在不同事件发生时触�
         {
             foreach (AbstractModel item2 in runState.IterateHookListeners(combatState))
             {
-                if(item2 is not LibraryAbstractModel libraryAbstractModel)
+                if(item2 is not ILibraryAbstractModel libraryAbstractModel)
                     continue;
                 decimal num3 = libraryAbstractModel.ModifyChaoDamageMultiplicative(target, num, props, dealer, cardSource,type);
                 num *= num3;
@@ -663,7 +750,7 @@ public static class LibraryHooks//钩子类，用于在不同事件发生时触�
         decimal num4 = decimal.MaxValue;
         foreach (AbstractModel item3 in runState.IterateHookListeners(combatState))
         {
-            if(item3 is not LibraryAbstractModel libraryAbstractModel)
+            if(item3 is not ILibraryAbstractModel libraryAbstractModel)
                 continue;
             decimal num5 = libraryAbstractModel.ModifyChaoDamageCap(target, props, dealer, cardSource,type);
             if (num5 < num4)
@@ -685,20 +772,30 @@ public static class LibraryHooks//钩子类，用于在不同事件发生时触�
         foreach (AbstractModel item in combatState.IterateHookListeners())
         {
             creature = item.ModifyUnblockedDamageTarget(creature, amount, props, dealer);
-            if(item is LibraryAbstractModel libraryAbstractModel)
+            if(item is ILibraryAbstractModel libraryAbstractModel)
                 creature = libraryAbstractModel.ModifyUnblockedDamageTarget(creature, amount, props, dealer,type);
         }
         return creature;
     }
-    public static bool TryDiceEffect(PlayerChoiceContext choiceContext,Creature? target, CardModel cardSource)
+    public static bool TryDiceEffect(ICombatState combatState,PlayerChoiceContext choiceContext,Creature? target, CardModel cardSource,LibraryDice dice)
     {
+        foreach (AbstractModel model in combatState.IterateHookListeners())
+        {
+            if (model is ILibraryAbstractModel libraryModel)
+            {
+                if (!libraryModel.TryDiceEffect(choiceContext, target, cardSource,dice))
+                {
+                    return false;
+                }
+            }
+        }
         return true;
     }
     public static bool TryPowerEffect(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource)
     {
         foreach (AbstractModel model in combatState.IterateHookListeners())
         {
-            if (model is LibraryAbstractModel libraryModel)
+            if (model is ILibraryAbstractModel libraryModel)
             {
                 if (!libraryModel.TryPowerEffect(choiceContext, power, dealer, cardSource))
                 {
@@ -712,7 +809,7 @@ public static class LibraryHooks//钩子类，用于在不同事件发生时触�
     {
         foreach (AbstractModel model in combatState.IterateHookListeners())
         {
-            if (model is LibraryAbstractModel libraryModel)
+            if (model is ILibraryAbstractModel libraryModel)
             {
                 if (!libraryModel.TryPowerReduce(choiceContext, power, dealer, cardSource))
                 {

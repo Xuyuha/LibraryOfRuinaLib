@@ -23,7 +23,7 @@ namespace Library.Models;
 ///     </list>
 ///     同时通过 Harmony 绑定的 NPower 引用提供动态图标刷新功能。
 /// </summary>
-public abstract class LibraryPowerModel : PowerModel, LibraryAbstractModel
+public abstract class LibraryPowerModel : PowerModel, ILibraryAbstractModel
 {
     private NPower? _boundNPower;
     private int _mode;
@@ -124,7 +124,7 @@ public abstract class LibraryPowerModel : PowerModel, LibraryAbstractModel
     }
 
     /// <summary>
-    ///     设置动态模式，并向所有 <see cref="LibraryAbstractModel"/> 监听器派发 before/after 钩子。
+    ///     设置动态模式，并向所有 <see cref="ILibraryAbstractModel"/> 监听器派发 before/after 钩子。
     /// </summary>
     public async Task SetPowerMode(PlayerChoiceContext choiceContext, int mode, Creature? dealer, CardModel? cardSource)
     {

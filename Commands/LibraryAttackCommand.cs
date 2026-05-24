@@ -16,7 +16,7 @@ using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models.Monsters;
 using Library.Entities.Creatures;
 using Library.Hooks;
-using System.Collections;
+using MegaCrit.Sts2.Core.Entities.Cards;
 
 public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究，AttackCommand几乎没有与任何其他类交互，可以放心重置
 //todo：骰子相关的方法
@@ -28,8 +28,7 @@ public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究�
 		Monster
 	}
     private LibraryDamageType _damageType = LibraryDamageType.None;
-	private LibraryDice Dice ;
-	private readonly decimal _damagePerHit;
+	private decimal _damagePerHit;
 	private readonly CalculatedDamageVar? _calculatedDamageVar;
 
 	private int _hitCount = 1;
@@ -74,8 +73,9 @@ public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究�
 	private Func<Task>? _afterAttackerAnim;
 
 	private Func<Task>? _beforeDamage;
+	public LibraryDice? Dice { get; private set; }
 
-	public LibraryCreature? Attacker { get; private set; }
+	public Creature? Attacker { get; private set; }
 
 	public AbstractModel? ModelSource { get; private set; }
 
@@ -111,7 +111,7 @@ public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究�
 			throw new InvalidOperationException("ModelSource has already been set.");
 		}
 		Player owner = card.Owner;
-		Attacker = owner.Creature as LibraryCreature;
+		Attacker = owner.Creature;
 		_attackerAnimName = "Attack";
 		_attackerAnimDelay = owner.Character.AttackAnimDelay;
 		ModelSource = card;
@@ -179,7 +179,7 @@ public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究�
 			throw new InvalidOperationException("We require an attacker to be able to grab its opponents");
 		}
 		_combatState = combatState;
-		TargetSide = ((Attacker.Side == CombatSide.Enemy) ? CombatSide.Player : CombatSide.Enemy);
+		TargetSide = (Attacker.Side == CombatSide.Enemy) ? CombatSide.Player : CombatSide.Enemy;
 		return this;
 	}
 
@@ -373,12 +373,22 @@ public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究�
 
 	public LibraryAttackCommand(decimal damagePerHit)
 	{
+		Dice = null;
 		ToAttackCommand = new AttackCommand(damagePerHit);
 		_damagePerHit = damagePerHit;
 		_calculatedDamageVar = null;
-	}
+	}	
+	public LibraryAttackCommand(LibraryDice dice)
+	{
+		Dice = dice;
+		ToAttackCommand = new AttackCommand(dice.BaseValue);
+		_damageType = dice.DamageType;
+		_damagePerHit = 0;
+		_calculatedDamageVar = null;
+	}	
 	public LibraryAttackCommand(CalculatedDamageVar calculatedDamageVar)
 	{
+		Dice = null;
 		ToAttackCommand = new AttackCommand(calculatedDamageVar);
 		_damagePerHit = -1m;
 		_calculatedDamageVar = calculatedDamageVar;
@@ -386,7 +396,7 @@ public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究�
 
 
 
-	public async Task<LibraryAttackCommand> Execute(PlayerChoiceContext? choiceContext)
+	public async Task<LibraryAttackCommand> Execute(PlayerChoiceContext? choiceContext,CardPlay cardPlay = null)
 	{
 		ICombatState? combatState = Attacker?.CombatState;
 		if (Attacker == null)
@@ -526,8 +536,11 @@ public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究�
 			{
 				await _beforeDamage();
 			}
-			AddDamageResultsInternal(await LibraryCreatureCmd.Damage(damageAmount: (_calculatedDamageVar == null) ?_damagePerHit : _calculatedDamageVar.Calculate(singleTarget), choiceContext: choiceContext ?? new BlockingPlayerChoiceContext(), targets: (singleTarget != null) ? new List<LibraryCreature>(1) { singleTarget } : ((IEnumerable<LibraryCreature>)validTargets), props: DamageProps, dealer: Attacker ,cardSource: ModelSource as CardModel,type : _damageType));
-			await LibraryCreatureCmd.ChaoDamage(damageAmount: (_calculatedDamageVar == null) ?_damagePerHit : _calculatedDamageVar.Calculate(singleTarget), choiceContext: choiceContext ?? new BlockingPlayerChoiceContext(), targets: (singleTarget != null) ? new List<LibraryCreature>(1) { singleTarget } : ((IEnumerable<LibraryCreature>)validTargets), props: DamageProps, dealer: Attacker, cardSource: ModelSource as CardModel,type : _damageType);
+			Dice?.Roll(Attacker.Player);
+			decimal damage = Dice != null ? Dice.CurrentBaseValue:((_calculatedDamageVar == null) ?_damagePerHit : _calculatedDamageVar.Calculate(singleTarget));
+			AddDamageResultsInternal(await LibraryCreatureCmd.Damage(damageAmount: damage, choiceContext: choiceContext ?? new BlockingPlayerChoiceContext(), targets: (singleTarget != null) ? new List<LibraryCreature>(1) { singleTarget } : ((IEnumerable<LibraryCreature>)validTargets), props: DamageProps, dealer: Attacker ,cardSource: ModelSource as CardModel,type : _damageType));
+			await LibraryCreatureCmd.ChaoDamage(damageAmount: damage, choiceContext: choiceContext ?? new BlockingPlayerChoiceContext(), targets: (singleTarget != null) ? new List<LibraryCreature>(1) { singleTarget } : ((IEnumerable<LibraryCreature>)validTargets), props: DamageProps, dealer: Attacker, cardSource: ModelSource as CardModel,type : _damageType);
+			Dice?.TriggerDiceEffect(choiceContext ?? new BlockingPlayerChoiceContext(),cardPlay);
 		}
 		CombatManager.Instance.History.CreatureAttacked(combatState, Attacker, _damageResults.SelectMany((List<DamageResult> r) => r).ToList());
 		await LibraryHooks.AfterAttack(combatState, choiceContext ?? new BlockingPlayerChoiceContext(), this);

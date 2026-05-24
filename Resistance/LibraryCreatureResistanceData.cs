@@ -8,27 +8,39 @@ namespace Library.Resistance;
 /// </summary>
 public sealed class LibraryCreatureResistanceData
 {
-    public LibraryResistanceLevel SlashPhysical { get; set; } = LibraryResistanceLevel.Normal;
-    public LibraryResistanceLevel BluntPhysical { get; set; } = LibraryResistanceLevel.Normal;
-    public LibraryResistanceLevel PiercePhysical { get; set; } = LibraryResistanceLevel.Normal;
-
-    public LibraryResistanceLevel SlashChaos { get; set; } = LibraryResistanceLevel.Normal;
-    public LibraryResistanceLevel BluntChaos { get; set; } = LibraryResistanceLevel.Normal;
-    public LibraryResistanceLevel PierceChaos { get; set; } = LibraryResistanceLevel.Normal;
-
-    public LibraryResistanceLevel GetPhysicalResistance(LibraryDamageKind kind) => kind switch
-    {
-        LibraryDamageKind.Slash => SlashPhysical,
-        LibraryDamageKind.Blunt => BluntPhysical,
-        LibraryDamageKind.Pierce => PiercePhysical,
-        _ => LibraryResistanceLevel.Normal
+    public class Resistance{
+        public Resistance(LibraryResistanceLevel level){
+            Slash = level;
+            Blunt = level;
+            Pierce = level;
+        }
+        public Resistance():this(LibraryResistanceLevel.Normal){
+        }
+        public Resistance(Resistance other)
+        {
+            Slash = other.Slash;
+            Blunt = other.Blunt;
+            Pierce = other.Pierce;
+        }
+        public LibraryResistanceLevel Slash;
+        public LibraryResistanceLevel Blunt;
+        public LibraryResistanceLevel Pierce;
+    }
+        public LibraryCreatureResistanceData(LibraryResistanceLevel level){
+            PhysicalResistance = new(level);
+            ChaosResistance = new(level);
+        }
+        public LibraryCreatureResistanceData(){
+            PhysicalResistance = new(LibraryResistanceLevel.Normal);
+            ChaosResistance = new(LibraryResistanceLevel.Immune);
+        }
+        public LibraryCreatureResistanceData(Resistance other)
+        {
+            PhysicalResistance = new(other);
+            ChaosResistance = new(other);
+        }
+    public Resistance PhysicalResistance = new(){
     };
-
-    public LibraryResistanceLevel GetChaosResistance(LibraryDamageKind kind) => kind switch
-    {
-        LibraryDamageKind.Slash => SlashChaos,
-        LibraryDamageKind.Blunt => BluntChaos,
-        LibraryDamageKind.Pierce => PierceChaos,
-        _ => LibraryResistanceLevel.Normal
+    public Resistance ChaosResistance= new(){
     };
 }
