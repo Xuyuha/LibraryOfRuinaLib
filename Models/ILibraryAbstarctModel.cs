@@ -9,7 +9,7 @@ using Library.Entities.Creatures;
 using Library.Resistance;
 
 namespace Library.Models;
-public interface ILibraryAbstractModel//库模型接口，定义了库里的钩子，还有很多钩子没写
+public interface ILibraryAbstractModel//库模型接口，定义了库里的钩子
 {
     public virtual Task BeforeDiceEffect(PlayerChoiceContext choiceContext, Creature? target, CardModel cardSource, LibraryDice dice)
     {
