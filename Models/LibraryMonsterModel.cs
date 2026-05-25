@@ -20,9 +20,9 @@ public abstract class LibraryMonsterModel : MonsterModel, ILibraryAbstractModel
     public virtual LibraryCreatureResistanceData.Resistance? DefaultChaoResistanceData => null;
 
     // TODO: 恢复时机改为下一个玩家回合结束（不确定要不要这样做）
-    public override async Task AfterSideTurnEnd(PlayerChoiceContext choiceContext, CombatSide side,IEnumerable<Creature> participants)
+    public sealed override async Task AfterSideTurnEnd(PlayerChoiceContext choiceContext, CombatSide side, IEnumerable<Creature> participants)
     {
-        await AfterTurnEnd(choiceContext, side, participants, null);
+        await AfterSideTurnEndInternal(choiceContext, side, participants);
         if (side == CombatSide.Player) return;
         foreach (Creature creature in CombatState.Creatures)
         {
@@ -39,7 +39,7 @@ public abstract class LibraryMonsterModel : MonsterModel, ILibraryAbstractModel
         }
     }
     //子类重写不会覆盖父类方法了
-    protected virtual Task AfterTurnEnd(PlayerChoiceContext choiceContext, CombatSide side,IEnumerable<Creature> participants,object? _ = null) 
+    protected virtual Task AfterSideTurnEndInternal(PlayerChoiceContext choiceContext, CombatSide side, IEnumerable<Creature> participants)
     {
         return Task.CompletedTask;
     }
