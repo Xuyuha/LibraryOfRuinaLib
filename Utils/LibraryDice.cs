@@ -32,7 +32,7 @@ public class LibraryDice : LibraryDamageVar
     }
     public override string ToString()=>$"\n[img]{DescriptionIconPath}[/img]{BaseValue} - {BaseValue + FloatValue}{DamageAdditive}{DamageResistance}{ChaoAdditive}{ChaoResistance}";
     public decimal DamageResistanceValue = 1m;
-    public virtual bool ShouldUseDefaultTip => true;
+    public  bool ShouldUseDefaultTip {get;set;} = true;
     public decimal ChaoResistanceValue = 0m;
     private int DamageAdditiveValue = 0;
     private int ChaoAdditiveValue = 0;
@@ -82,6 +82,10 @@ public class LibraryDice : LibraryDamageVar
 		}
 		_diceEffct = diceEffct;
 		return this;
+    }
+    public LibraryDice HasUniqueDescriptionTip(){
+        ShouldUseDefaultTip = false;
+        return this;
     }
     public HoverTip DiceTip=>new(Title,GetDescriptionForPile(SourceCard.Pile?.Type ?? PileType.None, SourceCard.CurrentTarget), PackedIcon);
     private LocString GetDescriptionForPile(PileType pileType, Creature? target = null)
