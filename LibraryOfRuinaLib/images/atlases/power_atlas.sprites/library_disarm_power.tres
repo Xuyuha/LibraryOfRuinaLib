@@ -1,0 +1,7 @@
+[gd_resource type="AtlasTexture" load_steps=2 format=3 uid="uid://qq325yywfjt2"]
+
+[ext_resource type="Texture2D" uid="uid://dggx4up6e7uv1" path="res://images/powers/library_disarm_power.png" id="1_pa0wv"]
+
+[resource]
+atlas = ExtResource("1_pa0wv")
+region = Rect2(0, 0, 128, 128)

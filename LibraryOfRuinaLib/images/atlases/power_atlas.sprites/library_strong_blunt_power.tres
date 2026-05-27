@@ -1,0 +1,7 @@
+[gd_resource type="AtlasTexture" load_steps=2 format=3 uid="uid://cpx1yk82u7ftv"]
+
+[ext_resource type="Texture2D" uid="uid://ce0ssnuqosjwm" path="res://images/powers/library_strong_blunt_power.png" id="1_rpt2d"]
+
+[resource]
+atlas = ExtResource("1_rpt2d")
+region = Rect2(0, 0, 206, 195)
