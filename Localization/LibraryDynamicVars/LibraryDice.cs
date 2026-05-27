@@ -69,7 +69,8 @@ public class LibraryDice : LibraryDamageVar
     public async Task TriggerDiceEffect(PlayerChoiceContext choiceContext, CardPlay cardPlay)
     {
         if(_diceEffct == null)return;
-        ICombatState combatState = cardPlay.Card.CombatState;
+        ICombatState? combatState = cardPlay?.Card?.CombatState;
+        if(combatState == null)return;
         if(!LibraryHooks.TryDiceEffect(combatState, choiceContext, cardPlay.Target, cardPlay.Card,this)) return;
         await LibraryHooks.BeforeDiceEffect(combatState, choiceContext, cardPlay.Target, cardPlay.Card, this);
         await _diceEffct(choiceContext, cardPlay, CurrentBaseValue);

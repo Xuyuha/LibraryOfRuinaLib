@@ -1,7 +1,14 @@
+using Library.Models;
+using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Creatures;
+using MegaCrit.Sts2.Core.Entities.Powers;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+using MegaCrit.Sts2.Core.Hooks;
+using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Nodes.Combat;
+using MegaCrit.Sts2.Core.Nodes.Rooms;
 
 namespace Library.Utils;
 
@@ -24,7 +31,6 @@ public static class LibraryPowerCmd
         T? existingPower = target.GetPower<T>();
         if (existingPower == null)
             return await PowerCmd.Apply<T>(choiceContext, target, amount, applier, cardSource);
-
         await PowerCmd.ModifyAmount(choiceContext, existingPower, amount - existingPower.Amount, applier, cardSource);
         return existingPower;
     }

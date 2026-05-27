@@ -7,6 +7,7 @@ using MegaCrit.Sts2.Core.Commands.Builders;
 using Library.Utils;
 using Library.Entities.Creatures;
 using Library.Resistance;
+using Library.Powers.Mode;
 
 namespace Library.Models;
 public interface ILibraryAbstractModel//库模型接口，定义了库里的钩子
@@ -108,7 +109,7 @@ public interface ILibraryAbstractModel//库模型接口，定义了库里的钩�
     {
         return Task.CompletedTask;
     }
-    public virtual Task AfterSetPowerMode(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource, int mode)
+    public virtual Task AfterSetPowerMode(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource, LibraryPowerMode mode)
     {
         return Task.CompletedTask;
     }
@@ -136,11 +137,7 @@ public interface ILibraryAbstractModel//库模型接口，定义了库里的钩�
     {
         return Task.CompletedTask;
     }
-    public virtual Task BeforePowerSetMode(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource, int mode)
-    {
-        return Task.CompletedTask;
-    }
-    public virtual Task BeforeSetPowerMode(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource, int mode)
+    public virtual Task BeforeSetPowerMode(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource, LibraryPowerMode mode)
     {
         return Task.CompletedTask;
     }

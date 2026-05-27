@@ -161,9 +161,14 @@ public abstract class LibraryDurationPowerModel : LibraryPowerModel, ISecondaryD
     // ── 生命周期钩子 ──
 
     /// <inheritdoc />
-    public override Task BeforeApplied(Creature target, decimal amount, Creature? applier, CardModel? cardSource)
+    public sealed override Task BeforeApplied(Creature target, decimal amount, Creature? applier, CardModel? cardSource)
     {
         CorrectDurationSkipFlag(this, target);
+        BeforeApplied(target, amount, applier, cardSource, null);
+        return Task.CompletedTask;
+    }
+    protected virtual Task BeforeApplied(Creature target, decimal amount, Creature? applier, CardModel? cardSource,object? _ = null)
+    {
         return Task.CompletedTask;
     }
 
@@ -181,8 +186,9 @@ public abstract class LibraryDurationPowerModel : LibraryPowerModel, ISecondaryD
     }
 
     /// <inheritdoc />
-    public override async Task AfterSideTurnEnd(PlayerChoiceContext choiceContext, CombatSide side, IEnumerable<Creature> participants)
+    public sealed override async Task AfterSideTurnEnd(PlayerChoiceContext choiceContext, CombatSide side, IEnumerable<Creature> participants)
     {
+        await AfterSideTurnEnd(choiceContext, side, participants, null);
         if (side != DecaySide || IsPermanent)
             return;
 
@@ -191,11 +197,14 @@ public abstract class LibraryDurationPowerModel : LibraryPowerModel, ISecondaryD
             SkipNextDurationTick = false;
             return;
         }
-
         int nextTurns = TurnsRemaining - 1;
         SetTurnsRemaining(nextTurns);
         if (nextTurns <= 0)
             await OnExpired(choiceContext);
+    }
+    protected virtual Task AfterSideTurnEnd(PlayerChoiceContext choiceContext, CombatSide side, IEnumerable<Creature> participants,object? _ = null)
+    {
+        return Task.CompletedTask;
     }
 
     /// <summary>

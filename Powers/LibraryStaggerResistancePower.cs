@@ -2,7 +2,6 @@
 using Library.Models;
 using MegaCrit.Sts2.Core.Entities.Powers;
 using MegaCrit.Sts2.Core.Helpers;
-using MegaCrit.Sts2.Core.Models.Powers;
 
 namespace Library.Resistance.Powers;
 
