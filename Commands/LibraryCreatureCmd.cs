@@ -263,16 +263,16 @@ public static class LibraryCreatureCmd
 	public static async Task<IEnumerable<LibraryChaoResult>?> ChaoDamage(PlayerChoiceContext choiceContext, IEnumerable<Creature> targets, decimal damageAmount, ValueProp props, Creature? dealer, CardModel? cardSource ,LibraryDamageType type = LibraryDamageType.None)
 	//我暂时没用这个方法，走的是我当时自己用的简易混乱值判定，根据原始伤害对原版attack commmand进行patch，因此也没有检测攻击类型，后续选择一个统一的方法来用。
 	{
+		List<LibraryChaoResult> results = new List<LibraryChaoResult>();
 		targets = targets.Where((Creature c) => c is LibraryCreature lc && lc.HasChaoResistance);
 		if(!targets.Any())
 		{
-			return null;
+			return results;
 		}
 		if (dealer != null && dealer.IsDead)
 		{
 			return targets.Select((Creature t) => new LibraryChaoResult(t, props)).ToList();
 		}
-		List<LibraryChaoResult> results = new List<LibraryChaoResult>();
 		List<Creature> targetList = targets.ToList();
 		if (targetList.Count == 0)
 		{

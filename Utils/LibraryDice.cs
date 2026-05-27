@@ -30,22 +30,28 @@ public class LibraryDice : LibraryDamageVar
         SourceCard = sourceCard;
         FloatValue = floatValue;
     }
-    public override string ToString()=>$"\n[img]{DescriptionIconPath}[/img]{PreviewValue} - {PreviewValue + FloatValue}{DamageResistance}{ChaoResistance}";
+    public override string ToString()=>$"\n[img]{DescriptionIconPath}[/img]{BaseValue} - {BaseValue + FloatValue}{DamageAdditive}{DamageResistance}{ChaoAdditive}{ChaoResistance}";
     public decimal DamageResistanceValue = 1m;
+    public  bool ShouldUseDefaultTip {get;set;} = true;
     public decimal ChaoResistanceValue = 0m;
-    private string DamageResistance => _shouldShowDamage?$"  [red]×{DamageResistanceValue}[/red]":"";
-    private string ChaoResistance => _shouldShowChao?$"  [orange]×{ChaoResistanceValue}[/orange]":"";
+    private int DamageAdditiveValue = 0;
+    private int ChaoAdditiveValue = 0;
+    private string DamageSign {get;set;} = "+";
+    private string ChaoSign {get;set;} =  "+";
+    private string DamageAdditive =>  DamageAdditiveValue != 0 ? $" [red]{DamageSign}{DamageAdditiveValue}[/red]":"";
+    private string ChaoAdditive => _shouldShowChao && ChaoAdditiveValue != 0 ? $" [orange]{ChaoSign}{ChaoAdditiveValue}[/orange]":"";
+    private string DamageResistance => _shouldShowDamage?$" [red]×{DamageResistanceValue}[/red]":"";
+    private string ChaoResistance => _shouldShowChao?$" [orange]×{ChaoResistanceValue}[/orange]":"";
     private bool _shouldShowDamage = false;
     private bool _shouldShowChao = false;
     public decimal FloatValue {get;}
     readonly LibraryDiceType DiceType ;
     readonly LibraryCardModel SourceCard ;
-    public LocString RawDescription => new("cards",DescriptionPath);
     public static LocString DefaultDescription => new("dice","DICE_DEFAULT");
-    public LocString Description => RawDescription.GetFormattedText() == "" ? DefaultDescription : RawDescription;
+    public LocString Description =>  ShouldUseDefaultTip ? DefaultDescription:new("cards",DescriptionPath);
     public string DescriptionIconPath => $"res://images/dice/{DiceType.String()}.png";
     public virtual string DescriptionPath =>SourceCard.Id.Entry+"_"+Name.ToUpperInvariant()+ ".description";
-    public Func<PlayerChoiceContext, CardPlay, int ,Task>? DiceEffct {get;set;}
+    private Func<PlayerChoiceContext, CardPlay, int ,Task>? _diceEffct ;
     public string PackedIconPath => ImageHelper.GetImagePath("dice/big_icon/" + DiceType.String() + ".tres");
     public LocString Title => new("dice",DiceType.String().ToUpper()+"_DICE");
 	public Texture2D PackedIcon=> ResourceLoader.Load<Texture2D>($"res://images/dice/big_icon/{DiceType.String()}.png", null, ResourceLoader.CacheMode.Reuse);
@@ -62,12 +68,24 @@ public class LibraryDice : LibraryDamageVar
     }
     public async Task TriggerDiceEffect(PlayerChoiceContext choiceContext, CardPlay cardPlay)
     {
-        if(DiceEffct == null)return;
+        if(_diceEffct == null)return;
         ICombatState combatState = cardPlay.Card.CombatState;
         if(!LibraryHooks.TryDiceEffect(combatState, choiceContext, cardPlay.Target, cardPlay.Card,this)) return;
         await LibraryHooks.BeforeDiceEffect(combatState, choiceContext, cardPlay.Target, cardPlay.Card, this);
-        await DiceEffct(choiceContext, cardPlay, CurrentBaseValue);
+        await _diceEffct(choiceContext, cardPlay, CurrentBaseValue);
         await LibraryHooks.AfterDiceEffect(combatState, choiceContext, cardPlay.Target, cardPlay.Card, this);
+    }
+    public LibraryDice WithDiceEffect(Func<PlayerChoiceContext, CardPlay, int ,Task>? diceEffct){
+		if (_diceEffct != null)
+		{
+			throw new InvalidOperationException($"Tried to set extra dice effect on {this.Name} twice!");
+		}
+		_diceEffct = diceEffct;
+		return this;
+    }
+    public LibraryDice HasUniqueDescriptionTip(){
+        ShouldUseDefaultTip = false;
+        return this;
     }
     public HoverTip DiceTip=>new(Title,GetDescriptionForPile(SourceCard.Pile?.Type ?? PileType.None, SourceCard.CurrentTarget), PackedIcon);
     private LocString GetDescriptionForPile(PileType pileType, Creature? target = null)
@@ -92,6 +110,7 @@ public class LibraryDice : LibraryDamageVar
 	public override void UpdateCardPreview(CardModel card, CardPreviewMode previewMode, Creature? target, bool runGlobalHooks)
 	{
 		decimal num = base.BaseValue;
+        decimal num1 = base.BaseValue;
 		EnchantmentModel enchantment = card.Enchantment;
 		if (enchantment != null)
 		{
@@ -101,10 +120,15 @@ public class LibraryDice : LibraryDamageVar
 			{
 				base.EnchantedValue = num;
 			}
+            if(enchantment is LibraryEnchantmentModel le){
+                num1 +=le.EnchantChaoDamageAdditive(num1,Props);
+                num1 *=le.EnchantChaoDamageMultiplicative(num1,Props);
+            }
 		}
 		if (runGlobalHooks)
 		{
 			num = LibraryHooks.ModifyDamage(card.Owner.RunState, card.CombatState, target, card.Owner.Creature, base.BaseValue, Props, card, ModifyDamageHookType.All, previewMode, out IEnumerable<AbstractModel> _, DamageType);
+			num1 = LibraryHooks.ModifyChaoDamage(card.Owner.RunState, card.CombatState, target, card.Owner.Creature, base.BaseValue, Props, card, ModifyChaoDamageHookType.All, previewMode, out IEnumerable<AbstractModel> _, DamageType);
 		}
         if(target is LibraryCreature lc)
         {
@@ -123,6 +147,17 @@ public class LibraryDice : LibraryDamageVar
             _shouldShowChao =false;
             _shouldShowDamage =false;
         }
-		base.PreviewValue = num;
+        DamageAdditiveValue = (int)(num - BaseValue);
+        ChaoAdditiveValue = (int)(num1 - BaseValue);
+        if(DamageAdditiveValue > 0)
+            DamageSign = "+";
+        else{
+            DamageSign = "";
+        }
+        if(ChaoAdditiveValue > 0)
+            ChaoSign = "+";
+        else{
+            ChaoSign = "";
+        }
 	}
 }
