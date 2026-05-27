@@ -260,7 +260,7 @@ public static class LibraryCreatureCmd
 		await Cmd.CustomScaledWait(0.1f, 0.2f);
 		return results;
 	}
-	public static async Task<IEnumerable<LibraryChaoResult>?> ChaoDamage(PlayerChoiceContext choiceContext, IEnumerable<Creature> targets, decimal damageAmount, ValueProp props, Creature? dealer, CardModel? cardSource ,LibraryDamageType type = LibraryDamageType.None)
+	public static async Task<IEnumerable<LibraryChaoResult>?> ChaoDamage(PlayerChoiceContext choiceContext, IEnumerable<Creature> targets, decimal damageAmount, ValueProp props, Creature? dealer, CardModel? cardSource ,LibraryDamageType type = LibraryDamageType.None, IEnumerable<DamageResult>? damageResults = null)
 	//我暂时没用这个方法，走的是我当时自己用的简易混乱值判定，根据原始伤害对原版attack commmand进行patch，因此也没有检测攻击类型，后续选择一个统一的方法来用。
 	{
 		List<LibraryChaoResult> results = new List<LibraryChaoResult>();
@@ -280,6 +280,7 @@ public static class LibraryCreatureCmd
 		}
 		ICombatState combatState = targetList[0].CombatState;
 		IRunState runState = IRunState.GetFrom(targetList.Append(dealer).OfType<Creature>());
+		List<DamageResult>? damageResultList = damageResults?.ToList();
 		foreach (Creature Target in targetList)
 		{
 			if(!Target.IsMonster)
@@ -294,6 +295,7 @@ public static class LibraryCreatureCmd
 			Log.Info("LibraryChaoDamage");
 			decimal modifiedAmountbefore = LibraryHooks.ModifyChaoDamage(runState, combatState, Target, dealer,damageAmount, props, cardSource, ModifyChaoDamageHookType.All, CardPreviewMode.None, out modifiers,type);
 			decimal modifiedAmount = LibraryDamageCalculate.CalculateChaoAmount(modifiedAmountbefore,Target as LibraryCreature, props, type);
+			modifiedAmount = ApplyBlockedDamageChaoCap(Target, modifiedAmount, damageResultList);
 			await LibraryHooks.AfterModifyingChaoAmount(runState, combatState, cardSource, modifiers,type);
 			await LibraryHooks.BeforeChaoDamageReceived(choiceContext, runState, combatState, Target, modifiedAmount, props, dealer, cardSource,type);  
 			LibraryChaoResult ChaoResult = (Target as LibraryCreature).LoseChaoValueInternal(modifiedAmount, props);
@@ -351,6 +353,32 @@ public static class LibraryCreatureCmd
 		}
 		await Cmd.CustomScaledWait(0.1f, 0.2f);
 		return results;
+	}
+
+	private static decimal ApplyBlockedDamageChaoCap(Creature target, decimal chaoDamage, IEnumerable<DamageResult>? damageResults)
+	{
+		if (damageResults == null)
+		{
+			return chaoDamage;
+		}
+
+		DamageResult? damageResult = damageResults.FirstOrDefault((DamageResult result) => result.Receiver == target);
+		if (damageResult == null)
+		{
+			return 0m;
+		}
+
+		if (damageResult.WasFullyBlocked || damageResult.UnblockedDamage <= 0)
+		{
+			return 0m;
+		}
+
+		if (damageResult.BlockedDamage > 0)
+		{
+			return Math.Min(damageResult.UnblockedDamage, chaoDamage);
+		}
+
+		return chaoDamage;
 	}
 	public static async Task SetChaoResistance(PlayerChoiceContext choiceContext, LibraryCreature target, Creature? dealer ,LibraryDamageType type ,LibraryResistanceLevel resistanceValue)
 	{

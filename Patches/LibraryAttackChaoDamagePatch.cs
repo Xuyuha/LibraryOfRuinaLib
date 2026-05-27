@@ -121,7 +121,8 @@ internal static class LibraryAttackChaoDamagePatch
             props: props,
             dealer: dealer,
             cardSource: cardSource,
-            type: LibraryDamageType.None);
+            type: LibraryDamageType.None,
+            damageResults: results);
         return results;
     }
 }
