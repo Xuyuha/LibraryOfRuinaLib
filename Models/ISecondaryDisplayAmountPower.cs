@@ -17,8 +17,9 @@ public interface ISecondaryDisplayAmountPower
 
     /// <summary>
     ///     次要徽章中显示的数值。
+    ///     可用LibraryPowerCmd对该属性进行操作
     /// </summary>
-    int SecondaryDisplayAmount { get; }
+    int SecondaryDisplayAmount { get;}
 
     /// <summary>
     ///     次要徽章标签的字体颜色。

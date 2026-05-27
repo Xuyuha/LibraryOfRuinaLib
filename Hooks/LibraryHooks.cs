@@ -7,14 +7,10 @@ using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.ValueProps;
 using Library.Models;
 using MegaCrit.Sts2.Core.Entities.Cards;
-using Library.Hooks;
-using MegaCrit.Sts2.Core.Models.Cards;
 using Library.Entities.Creatures;
-using MegaCrit.Sts2.Core.Commands.Builders;
-using MegaCrit.Sts2.Core.Context;
-using MegaCrit.Sts2.Core.Entities.Multiplayer;
 using Library.Utils;
 using Library.Resistance;
+using Library.Powers.Mode;
 namespace Library.Hooks;
 
 public static class LibraryHooks
@@ -308,7 +304,7 @@ public static class LibraryHooks
             }
         }
     }
-    public static async Task AfterSetPowerMode(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource, int mode)
+    public static async Task AfterSetPowerMode(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource, LibraryPowerMode mode)
     {
         foreach (AbstractModel model in combatState.IterateHookListeners())
         {
@@ -399,13 +395,14 @@ public static class LibraryHooks
             }
         }
     }
-    public static async Task BeforeSetPowerMode(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource, int mode)
+    public static async Task BeforeSetPowerMode(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource, LibraryPowerMode mode)
     {
         foreach (AbstractModel model in combatState.IterateHookListeners())
         {
             if (model is ILibraryAbstractModel libraryModel)    
             {
                 await libraryModel.BeforeSetPowerMode(choiceContext, power, dealer, cardSource, mode);
+                model.InvokeExecutionFinished();
             }
         }
     }
