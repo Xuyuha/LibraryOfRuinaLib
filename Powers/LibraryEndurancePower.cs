@@ -14,6 +14,12 @@ public sealed class LibraryEndurancePower : LibraryDurationPowerModel//忍耐，
 {
     public override PowerType Type => PowerType.Buff;
     public override PowerStackType StackType => PowerStackType.Counter;
+
+    protected override CombatSide GetDecaySide(Creature owner)
+    {
+        return owner.IsPlayer ? owner.Side : OppositeSideOf(owner);
+    }
+
     public override decimal ModifyBlockAdditive(Creature target, decimal block, ValueProp props, CardModel? cardSource, CardPlay? cardPlay)
     {
         if(Owner != target)

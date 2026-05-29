@@ -1,4 +1,5 @@
 using Library.Models;
+using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Powers;
@@ -11,6 +12,12 @@ public sealed class LibraryDisarmPower : LibraryDurationPowerModel//破防，玩
 {
     public override PowerType Type => PowerType.Debuff;
     public override PowerStackType StackType => PowerStackType.Counter;
+
+    protected override CombatSide GetDecaySide(Creature owner)
+    {
+        return owner.IsPlayer ? owner.Side : OppositeSideOf(owner);
+    }
+
     public override decimal ModifyBlockAdditive(Creature target, decimal block, ValueProp props, CardModel? cardSource, CardPlay? cardPlay)
     {
         if(Owner != target)
