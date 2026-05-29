@@ -27,6 +27,7 @@ internal static class LibraryStaggerResistanceBarUi
 
     private static readonly Color BgModulate = new(0.45f, 0.35f, 0.08f, 0.75f);
     private static readonly Color FillColor = new(0.90f, 0.75f, 0.10f, 1.0f);
+    private static readonly Color MiddlegroundColor = new(1.0f, 0.498f, 0.0f, 1.0f);
     private static readonly Color StunnedFillColor = new(0.50f, 0.12f, 0.12f, 1.0f);
 
     private static readonly Color LabelFontColor = new(1.0f, 0.965f, 0.886f, 1.0f);
@@ -45,9 +46,17 @@ internal static class LibraryStaggerResistanceBarUi
         public NinePatchRect? Background;
         public Control? FgContainer;
         public NinePatchRect? Mask;
+        public NinePatchRect? Middleground;
         public NinePatchRect? Fill;
         public Label? ValueLabel;
+        public Tween? MiddlegroundTween;
         public float MaxFgWidth;
+        public int CurrentAmountOnLastRefresh = -1;
+        public int MaxResistanceOnLastRefresh = -1;
+        public bool ResetMiddlegroundOnNextRefresh = true;
+        public LibraryCreature? SubscribedCreature;
+        public Action<int, int>? CurrentChaoChangedHandler;
+        public Action<int, int>? MaxChaoChangedHandler;
     }
 
     private static readonly ConditionalWeakTable<NHealthBar, State> States = new();
@@ -60,6 +69,41 @@ internal static class LibraryStaggerResistanceBarUi
             States.AddOrUpdate(healthBar, state);
         }
         return state;
+    }
+
+    private static void SubscribeToChaoEvents(
+        LibraryCreature creature,
+        NHealthBar healthBar,
+        State state)
+    {
+        if (state.SubscribedCreature == creature)
+            return;
+
+        if (state.SubscribedCreature != null)
+        {
+            if (state.CurrentChaoChangedHandler != null)
+                state.SubscribedCreature.CurrentChaoValueChanged -= state.CurrentChaoChangedHandler;
+            if (state.MaxChaoChangedHandler != null)
+                state.SubscribedCreature.MaxChaoValueChanged -= state.MaxChaoChangedHandler;
+        }
+
+        state.CurrentChaoChangedHandler = (_, _) => RefreshFromChaoEvent(healthBar);
+        state.MaxChaoChangedHandler = (_, _) => RefreshFromChaoEvent(healthBar);
+        creature.CurrentChaoValueChanged += state.CurrentChaoChangedHandler;
+        creature.MaxChaoValueChanged += state.MaxChaoChangedHandler;
+        state.SubscribedCreature = creature;
+    }
+
+    private static void RefreshFromChaoEvent(NHealthBar healthBar)
+    {
+        try
+        {
+            if (GodotObject.IsInstanceValid(healthBar))
+                Refresh(healthBar);
+        }
+        catch (Exception)
+        {
+        }
     }
 
     private static Creature? GetCreature(NHealthBar healthBar)
@@ -89,9 +133,11 @@ internal static class LibraryStaggerResistanceBarUi
 
         if (state.BarContainer == null) return;
 
+        SubscribeToChaoEvents(libCreature!, healthBar, state);
         state.BarContainer.Visible = true;
         SyncLayout(healthBar, state);
         UpdateFill(libCreature!, state);
+        UpdateMiddleground(libCreature!, state);
         UpdateLabel(libCreature!, state);
     }
 
@@ -106,10 +152,12 @@ internal static class LibraryStaggerResistanceBarUi
         NinePatchRect? srcBg = hpBarContainer.GetNodeOrNull<NinePatchRect>("HpBackground");
         NinePatchRect? srcMask = hpBarContainer.GetNodeOrNull<NinePatchRect>(
             "HpForegroundContainer/Mask");
+        NinePatchRect? srcMiddleground = hpBarContainer.GetNodeOrNull<NinePatchRect>(
+            "HpForegroundContainer/Mask/HpMiddleground");
         NinePatchRect? srcFill = hpBarContainer.GetNodeOrNull<NinePatchRect>(
             "HpForegroundContainer/Mask/HpForeground");
 
-        if (srcBg == null || srcMask == null || srcFill == null) return;
+        if (srcBg == null || srcMask == null || srcMiddleground == null || srcFill == null) return;
 
         var barContainer = new Control
         {
@@ -166,6 +214,25 @@ internal static class LibraryStaggerResistanceBarUi
             child.QueueFree();
         fgContainer.AddChild(mask);
 
+        var middleground = (NinePatchRect)srcMiddleground.Duplicate(15);
+        middleground.Name = "StaggerMiddleground";
+        middleground.Modulate = MiddlegroundColor;
+        middleground.SelfModulate = Colors.White;
+        middleground.Visible = false;
+        middleground.MouseFilter = Control.MouseFilterEnum.Ignore;
+        middleground.Material = null;
+        middleground.AnchorLeft = 0f;
+        middleground.AnchorTop = 0f;
+        middleground.AnchorRight = 1f;
+        middleground.AnchorBottom = 1f;
+        middleground.OffsetLeft = 1f;
+        middleground.OffsetTop = -4f;
+        middleground.OffsetRight = -1f;
+        middleground.OffsetBottom = 4f;
+        foreach (Node child in middleground.GetChildren())
+            child.QueueFree();
+        mask.AddChild(middleground);
+
         var fill = (NinePatchRect)srcFill.Duplicate(15);
         fill.Name = "StaggerFill";
         fill.SelfModulate = FillColor;
@@ -218,6 +285,7 @@ internal static class LibraryStaggerResistanceBarUi
         state.Background = background;
         state.FgContainer = fgContainer;
         state.Mask = mask;
+        state.Middleground = middleground;
         state.Fill = fill;
         state.ValueLabel = label;
     }
@@ -235,7 +303,14 @@ internal static class LibraryStaggerResistanceBarUi
         );
         state.BarContainer.Size = new Vector2(barWidth, BarHeight);
 
-        state.MaxFgWidth = barWidth - ForegroundContainerInset;
+        float maxFgWidth = barWidth - ForegroundContainerInset;
+        if (!Mathf.IsEqualApprox(state.MaxFgWidth, maxFgWidth))
+        {
+            state.MaxFgWidth = maxFgWidth;
+            state.ResetMiddlegroundOnNextRefresh = true;
+            state.MiddlegroundTween?.Kill();
+            state.MiddlegroundTween = null;
+        }
     }
 
     private static void UpdateFill(
@@ -261,12 +336,86 @@ internal static class LibraryStaggerResistanceBarUi
 
         if (currentAmount > 0)
         {
-            float fillWidth = (float)currentAmount / maxResistance * maxFgWidth;
-            fillWidth = Math.Max(fillWidth, MinFillWidth);
-            state.Fill.OffsetRight = fillWidth - maxFgWidth;
+            state.Fill.OffsetRight = GetFillOffset(currentAmount, maxResistance, maxFgWidth);
         }
 
         state.Fill.SelfModulate = isStunned ? StunnedFillColor : FillColor;
+    }
+
+    private static void UpdateMiddleground(
+        LibraryCreature creature,
+        State state)
+    {
+        if (state.Middleground == null) return;
+
+        int currentAmount = creature.CurrentChaoValue;
+        int maxResistance = creature.MaxChaoValue;
+        if (maxResistance <= 0) maxResistance = Math.Max(1, currentAmount);
+
+        float maxFgWidth = state.MaxFgWidth;
+        if (maxFgWidth <= 0f || maxResistance <= 0)
+        {
+            state.Middleground.Visible = false;
+            return;
+        }
+
+        float foregroundOffset = GetFillOffset(currentAmount, maxResistance, maxFgWidth);
+        float middlegroundTargetOffset = currentAmount > 0 ? foregroundOffset - 2f : -maxFgWidth;
+
+        bool amountChanged = currentAmount != state.CurrentAmountOnLastRefresh
+            || maxResistance != state.MaxResistanceOnLastRefresh;
+
+        if (state.ResetMiddlegroundOnNextRefresh || state.CurrentAmountOnLastRefresh < 0)
+        {
+            state.MiddlegroundTween?.Kill();
+            state.MiddlegroundTween = null;
+            state.Middleground.OffsetRight = middlegroundTargetOffset;
+            state.Middleground.Visible = currentAmount > 0;
+            state.CurrentAmountOnLastRefresh = currentAmount;
+            state.MaxResistanceOnLastRefresh = maxResistance;
+            state.ResetMiddlegroundOnNextRefresh = false;
+            return;
+        }
+
+        if (!amountChanged)
+            return;
+
+        bool shouldShowAfterDelay = currentAmount > 0 || state.CurrentAmountOnLastRefresh > 0;
+        state.Middleground.Visible = shouldShowAfterDelay;
+        bool isIncreasing = foregroundOffset >= state.Middleground.OffsetRight;
+        state.Middleground.OffsetRight += 1f;
+        state.MiddlegroundTween?.Kill();
+        state.MiddlegroundTween = state.Middleground.CreateTween();
+        state.MiddlegroundTween.TweenProperty(
+                state.Middleground,
+                "offset_right",
+                middlegroundTargetOffset,
+                1.0)
+            .SetDelay(isIncreasing ? 0.0 : 1.0)
+            .SetEase(Tween.EaseType.Out)
+            .SetTrans(Tween.TransitionType.Expo);
+
+        if (currentAmount <= 0)
+        {
+            state.MiddlegroundTween.TweenCallback(Callable.From(() =>
+            {
+                if (state.Middleground != null)
+                    state.Middleground.Visible = false;
+            }));
+        }
+
+        state.CurrentAmountOnLastRefresh = currentAmount;
+        state.MaxResistanceOnLastRefresh = maxResistance;
+    }
+
+    private static float GetFillOffset(int currentAmount, int maxResistance, float maxFgWidth)
+    {
+        if (currentAmount <= 0 || maxResistance <= 0 || maxFgWidth <= 0f)
+            return -maxFgWidth;
+
+        float fillWidth = (float)currentAmount / maxResistance * maxFgWidth;
+        fillWidth = Math.Max(fillWidth, MinFillWidth);
+        return fillWidth - maxFgWidth;
     }
 
     private static void UpdateLabel(
