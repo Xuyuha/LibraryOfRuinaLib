@@ -19,7 +19,7 @@ public sealed class LibraryBurnPower : LibraryBasePowerModel
     protected override async Task Reduce(PlayerChoiceContext choiceContext)
     {
         if (Owner.IsDead) return;
-        await PowerCmd.Apply<LibraryBurnPower>(choiceContext, Owner,  -Amount *  3, null, null);
+        await PowerCmd.Apply<LibraryBurnPower>(choiceContext, Owner,  -(Amount / 3), null, null);
     }
     protected override async Task Effect(PlayerChoiceContext choiceContext)
     {

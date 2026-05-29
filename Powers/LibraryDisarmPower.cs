@@ -7,7 +7,7 @@ using MegaCrit.Sts2.Core.ValueProps;
 
 
 namespace Library.Powers;
-public sealed class LibraryDisarmPower : LibraryDurationPowerModel//破绽，玩家获得护盾减少，怪物受到伤害增加
+public sealed class LibraryDisarmPower : LibraryDurationPowerModel//破防，玩家获得护盾减少，怪物受到伤害增加
 {
     public override PowerType Type => PowerType.Debuff;
     public override PowerStackType StackType => PowerStackType.Counter;

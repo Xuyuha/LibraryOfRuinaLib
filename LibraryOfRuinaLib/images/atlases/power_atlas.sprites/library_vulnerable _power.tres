@@ -1,7 +1,0 @@
-[gd_resource type="AtlasTexture" load_steps=2 format=3 uid="uid://c3ldvpvm0y1f7"]
-
-[ext_resource type="Texture2D" uid="uid://b4vtbx1p4w12i" path="res://images/powers/library_vulnerable _power.png" id="1_nk3wc"]
-
-[resource]
-atlas = ExtResource("1_nk3wc")
-region = Rect2(0, 0, 103, 111)

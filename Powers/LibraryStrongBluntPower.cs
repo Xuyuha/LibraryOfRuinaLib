@@ -14,7 +14,7 @@ public sealed class LibraryStrongBluntPower : LibraryDurationPowerModel//打击�
 		{
 			return 0m;
 		}
-		if (!props.IsPoweredAttack() && type == LibraryDamageType.Blunt)
+		if (!props.IsPoweredAttack() || type != LibraryDamageType.Blunt)
 		{
 			return 0m;
 		}
@@ -26,7 +26,7 @@ public sealed class LibraryStrongBluntPower : LibraryDurationPowerModel//打击�
 		{
 			return 0m;
 		}
-		if (!props.IsPoweredAttack() && type == LibraryDamageType.Blunt)
+		if (!props.IsPoweredAttack() || type != LibraryDamageType.Blunt)
 		{
 			return 0m;
 		}

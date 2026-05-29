@@ -1,0 +1,8 @@
+﻿[gd_resource type="AtlasTexture" load_steps=2 format=3 uid="uid://cy12f5iyshfo3"]
+
+[ext_resource type="Texture2D" uid="uid://brfrnshj841ee" path="res://images/powers/library_break_vulnerable_power.png" id="1_6lhdu"]
+
+[resource]
+atlas = ExtResource("1_6lhdu")
+region = Rect2(0, 0, 103, 111)
+

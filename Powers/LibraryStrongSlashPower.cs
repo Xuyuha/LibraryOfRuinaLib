@@ -14,7 +14,7 @@ public sealed class LibraryStrongSlashPower : LibraryDurationPowerModel//穿刺�
 		{
 			return 0m;
 		}
-		if (!props.IsPoweredAttack() && type == LibraryDamageType.Slash)
+		if (!props.IsPoweredAttack() || type != LibraryDamageType.Slash)
 		{
 			return 0m;
 		}
@@ -26,7 +26,7 @@ public sealed class LibraryStrongSlashPower : LibraryDurationPowerModel//穿刺�
 		{
 			return 0m;
 		}
-		if (!props.IsPoweredAttack() && type == LibraryDamageType.Slash)
+		if (!props.IsPoweredAttack() || type != LibraryDamageType.Slash)
 		{
 			return 0m;
 		}

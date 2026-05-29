@@ -24,6 +24,11 @@
     </Reference>
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="LibraryOfRuinaLib\localization\eng\powers.json" LogicalName="LibraryOfRuinaLib.Localization.eng.powers.json" />
+    <EmbeddedResource Include="LibraryOfRuinaLib\localization\zhs\powers.json" LogicalName="LibraryOfRuinaLib.Localization.zhs.powers.json" />
+  </ItemGroup>
+
   <Target Name="CopyToMods" AfterTargets="Build">
     <Copy SourceFiles="$(OutputPath)$(AssemblyName).dll" DestinationFolder="..\mods\LibraryOfRuinaLib\" />
   </Target>

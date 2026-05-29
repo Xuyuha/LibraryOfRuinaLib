@@ -14,7 +14,7 @@ public sealed class LibraryStrongPiercePower : LibraryDurationPowerModel//穿透
 		{
 			return 0m;
 		}
-		if (!props.IsPoweredAttack() && type == LibraryDamageType.Pierce)
+		if (!props.IsPoweredAttack() || type != LibraryDamageType.Pierce)
 		{
 			return 0m;
 		}
@@ -26,7 +26,7 @@ public sealed class LibraryStrongPiercePower : LibraryDurationPowerModel//穿透
 		{
 			return 0m;
 		}
-		if (!props.IsPoweredAttack() && type == LibraryDamageType.Pierce)
+		if (!props.IsPoweredAttack() || type != LibraryDamageType.Pierce)
 		{
 			return 0m;
 		}
