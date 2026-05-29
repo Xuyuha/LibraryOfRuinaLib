@@ -181,7 +181,7 @@ public abstract class LibraryDurationPowerModel : LibraryPowerModel, ISecondaryD
         CardModel? cardSource)
     {
         if (power == this && amount > 0m && !IsPermanent)
-            SkipNextDurationTick = CombatState.CurrentSide == Owner.Side;
+            SkipNextDurationTick = CombatState.CurrentSide == DecaySide;
         return Task.CompletedTask;
     }
 
@@ -208,10 +208,17 @@ public abstract class LibraryDurationPowerModel : LibraryPowerModel, ISecondaryD
     }
 
     /// <summary>
-    ///     持续回合在哪一方的回合结束时递减。默认为 Owner 所在方。
-    ///     Debuff 类 power 可能需要覆写为 <see cref="CombatSide.Player"/>。
+    ///     持续回合在哪一方的回合结束时递减。
+    ///     <list type="bullet">
+    ///         <item>Buff：默认为 Owner 所在方（自己回合结束时衰减）。</item>
+    ///         <item>Debuff：默认为 Owner 的对方（施加者一方的回合结束时衰减），
+    ///               确保 debuff 能覆盖到施加方的下一个攻击回合。</item>
+    ///     </list>
+    ///     子类仍可覆写以自定义衰减时机。
     /// </summary>
-    protected virtual CombatSide DecaySide => Owner.Side;
+    protected virtual CombatSide DecaySide => Type == PowerType.Debuff
+        ? (Owner.Side == CombatSide.Player ? CombatSide.Enemy : CombatSide.Player)
+        : Owner.Side;
 
     /// <summary>
     ///     当持续回合耗尽时调用。默认行为是移除自身。
@@ -227,7 +234,13 @@ public abstract class LibraryDurationPowerModel : LibraryPowerModel, ISecondaryD
     {
         if (power.IsPermanent)
             return;
-        power.SkipNextDurationTick = target.CombatState?.CurrentSide == target.Side;
+        // 计算 DecaySide：Buff 在 Owner(target) 方回合结束衰减，
+        // Debuff 在对方回合结束衰减（确保覆盖施加方的攻击回合）。
+        // 注意：此处 Owner 可能尚未设置，所以用 target.Side 代替。
+        CombatSide decaySide = power.Type == PowerType.Debuff
+            ? (target.Side == CombatSide.Player ? CombatSide.Enemy : CombatSide.Player)
+            : target.Side;
+        power.SkipNextDurationTick = target.CombatState?.CurrentSide == decaySide;
     }
 
     private static int MergeTurns(int current, int incoming)

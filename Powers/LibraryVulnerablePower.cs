@@ -12,7 +12,7 @@ public sealed class LibraryVulnerablePower : LibraryDurationPowerModel//易损�
     public override PowerStackType StackType => PowerStackType.Counter;
     public override decimal ModifyHpLostAfterOstyLate(Creature target, decimal amount, ValueProp props, Creature? dealer, CardModel? cardSource){
         if(Owner == target)
-            return amount + 1;
+            return amount + Amount;
         return amount;
     }
 }

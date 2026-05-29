@@ -17,7 +17,7 @@ public sealed class LibraryProtectionPower : LibraryDurationPowerModel//保护�
     public override PowerStackType StackType => PowerStackType.Counter;
     public override decimal ModifyHpLostAfterOstyLate(Creature target, decimal amount, ValueProp props, Creature? dealer, CardModel? cardSource){
         if(Owner == target)
-            return amount - 1;
+            return Math.Max(0m, amount - Amount);
         return amount;
     }
 }
