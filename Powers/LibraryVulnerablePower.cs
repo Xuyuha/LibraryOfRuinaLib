@@ -18,7 +18,7 @@ public sealed class LibraryVulnerablePower : LibraryDurationPowerModel//易损�
     }
 
     public override decimal ModifyHpLostAfterOstyLate(Creature target, decimal amount, ValueProp props, Creature? dealer, CardModel? cardSource){
-        if(Owner == target)
+        if(Owner == target && amount > 0m)
             return amount + Amount;
         return amount;
     }

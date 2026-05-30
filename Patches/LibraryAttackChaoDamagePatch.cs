@@ -120,7 +120,8 @@ internal static class LibraryAttackChaoDamagePatch
             targets: targets,
             props: props,
             dealer: dealer,
-            cardSource: cardSource);
+            cardSource: cardSource,
+            damageResults: results);
         return results;
     }
 }
