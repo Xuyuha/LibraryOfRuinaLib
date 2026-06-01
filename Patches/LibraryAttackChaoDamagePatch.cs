@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using HarmonyLib;
 using Library.Entities.Creatures;
+using Library.Resistance;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
@@ -19,9 +20,24 @@ namespace Library.Patches;
 internal static class AttackExecuteContext
 {
     internal static readonly AsyncLocal<bool> IsInAttackExecute = new();
+    internal static readonly AsyncLocal<LibraryDamageType> DamageType = new();
 
-    public static void SetFlag() => IsInAttackExecute.Value = true;
-    public static void ClearFlag() => IsInAttackExecute.Value = false;
+    public static LibraryDamageType CurrentDamageType =>
+        IsInAttackExecute.Value && DamageType.Value != LibraryDamageType.None
+            ? DamageType.Value
+            : LibraryDamageType.None;
+
+    public static void SetFlag()
+    {
+        IsInAttackExecute.Value = true;
+        DamageType.Value = LibraryDamageType.Blunt;
+    }
+
+    public static void ClearFlag()
+    {
+        IsInAttackExecute.Value = false;
+        DamageType.Value = LibraryDamageType.None;
+    }
 }
 
 /// <summary>
@@ -121,7 +137,8 @@ internal static class LibraryAttackChaoDamagePatch
             props: props,
             dealer: dealer,
             cardSource: cardSource,
-            damageResults: results);
+            damageResults: results,
+            type: AttackExecuteContext.CurrentDamageType);
         return results;
     }
 }

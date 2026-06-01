@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using Godot;
 using Library.Entities.Creatures;
 using Library.Hooks;
+using Library.Patches;
 using Library.Resistance;
 using Library.Resistance.Patches;
 using Library.Utils;
@@ -153,16 +154,16 @@ public static class LibraryCreatureCmd
 				Node vfxContainer = receiver.GetVfxContainer();
 				if (damage > 0 || (modifiedAmount == 0m && item.Receiver == unblockedDamageTarget))
 				{
-					NDamageNumVfx nDamageNumVfx = NDamageNumVfx.Create(receiver, item);
-					if (nDamageNumVfx != null)
+					LibraryRuinaDamageNumberVfx? damageVfx = LibraryRuinaDamageNumberVfx.CreatePhysical(receiver, item, type);
+					if (damageVfx != null)
 					{
 						if (vfxContainer != null)
 						{
-							vfxContainer.AddChildSafely(nDamageNumVfx);
+							vfxContainer.AddChildSafely(damageVfx);
 						}
 						else
 						{
-							NRun.Instance.GlobalUi.AddChildSafely(nDamageNumVfx);
+							NRun.Instance.GlobalUi.AddChildSafely(damageVfx);
 						}
 					}
 				}
@@ -330,6 +331,22 @@ public static class LibraryCreatureCmd
 			// 		}
 			// 	}
 			// }
+			if (ChaoResult != null && (ChaoResult.ChaoValueAmount > 0 || modifiedAmount == 0m))
+			{
+				Node vfxContainer = Target.GetVfxContainer();
+				LibraryRuinaDamageNumberVfx? chaoVfx = LibraryRuinaDamageNumberVfx.CreateChaos(Target, ChaoResult, type);
+				if (chaoVfx != null)
+				{
+					if (vfxContainer != null)
+					{
+						vfxContainer.AddChildSafely(chaoVfx);
+					}
+					else
+					{
+						NRun.Instance.GlobalUi.AddChildSafely(chaoVfx);
+					}
+				}
+			}
 			results.Add(ChaoResult);
 		}
 		List<LibraryCreature> StunedCreatures = new List<LibraryCreature>();
