@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using HarmonyLib;
 using Library.Entities.Creatures;
+using Library.Models;
 using Library.Resistance;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Creatures;
@@ -115,6 +116,24 @@ internal static class LibraryAttackChaoDamagePatch
         ref Task<IEnumerable<DamageResult>> __result)
     {
         if (!AttackExecuteContext.IsInAttackExecute.Value)
+            return;
+
+        if (props.HasFlag(ValueProp.Unpowered))
+            return;
+
+        // 只对主攻击伤害生效（带有Move标记），排除Power等附加效果的伤害
+        if (!props.HasFlag(ValueProp.Move))
+            return;
+
+        // Library系统的卡牌已在LibraryAttackCommand中自行处理混乱伤害，不重复触发
+        if (cardSource is LibraryCardModel)
+            return;
+
+        // 只对原版玩家攻击牌（dealer是玩家且有cardSource）和怪物意图伤害（dealer是怪物）生效
+        if (dealer == null)
+            return;
+
+        if (!dealer.IsPlayer && !dealer.IsMonster)
             return;
 
         __result = WrapWithChaoDamage(__result, choiceContext, targets, amount, props, dealer, cardSource);

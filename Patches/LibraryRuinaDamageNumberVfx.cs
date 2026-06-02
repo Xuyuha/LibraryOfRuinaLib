@@ -22,7 +22,7 @@ namespace Library.Patches;
 internal sealed partial class LibraryRuinaDamageNumberVfx : Node2D
 {
     private const float IconSize = 46f;
-    private const float NameWidth = 104f;
+    private const float NameWidth = 96f;
     private const float NumberWidth = 116f;
     private const float TextHeight = 72f;
     private const float NameFontSize = 38f;
