@@ -156,7 +156,8 @@ public abstract class LibraryPowerModel : PowerModel,ILibraryAbstractModel
             _iconAccessor(_boundNPower).Texture = Icon;
         if (_powerFlashAccessor != null)
             _powerFlashAccessor(_boundNPower).Texture = BigIcon;
-    }    public virtual Task BeforeDiceEffect(PlayerChoiceContext choiceContext, Creature? target, CardModel cardSource, LibraryDice dice)
+    }    
+    public virtual Task BeforeDiceEffect(PlayerChoiceContext choiceContext, Creature? target, CardModel cardSource, LibraryDice dice)
     {
         return Task.CompletedTask;
     }

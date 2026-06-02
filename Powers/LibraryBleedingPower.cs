@@ -11,7 +11,7 @@ using Library.Powers.Mode;
 namespace Library.Powers;
 public sealed class LibraryBleedingPower : LibraryBasePowerModel
 {
-    protected override LibraryPowerMode DefaultMode => new LibraryBleedingModeDefault();
+    protected override LibraryPowerMode DefaultMode => new LibraryBleedingModeDefault(this);
     public LibraryBleedingMode CurrentMode => Mode as LibraryBleedingMode;
     public override bool IsDynamic => true;
     public override PowerType Type => PowerType.Debuff;

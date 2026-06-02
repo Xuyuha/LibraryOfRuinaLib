@@ -10,7 +10,7 @@ using Library.Powers.Mode;
 namespace Library.Powers;
 public sealed class LibraryBurnPower : LibraryBasePowerModel
 {
-    protected override LibraryPowerMode DefaultMode => new LibraryBurnModeDefault();
+    protected override LibraryPowerMode DefaultMode => new LibraryBurnModeDefault(this);
     public LibraryBurnMode CurrentMode => Mode as LibraryBurnMode;
     public override bool IsDynamic => true;
     public override PowerType Type => PowerType.Debuff;
