@@ -1,24 +1,15 @@
-using Library.Entities.Creatures;
-using Library.Models;
-using Library.Resistance;
-using Library.Utils;
+using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using MegaCrit.Sts2.Core.Models;
+using Library.Utils;
 using MegaCrit.Sts2.Core.ValueProps;
+using Library.Entities.Creatures;
+using Library.Resistance;
+using Library.Powers.Mode;
 namespace Library.Models;
 
-public class LibraryEnchantmentModel : EnchantmentModel,ILibraryAbstractModel
+public abstract class LibraryCharacterModel : CharacterModel,ILibraryAbstractModel
 {
-    public virtual decimal EnchantChaoDamageAdditive(decimal originalDamage, ValueProp props)
-    {
-        return 0m;
-    }
-    public virtual decimal EnchantChaoDamageMultiplicative(decimal originalDamage, ValueProp props)
-    {
-        return 1m;
-    }
-    
     
     public virtual Task BeforeDiceEffect(PlayerChoiceContext choiceContext, Creature? target, CardModel cardSource, LibraryDice dice)
     {
@@ -117,7 +108,7 @@ public class LibraryEnchantmentModel : EnchantmentModel,ILibraryAbstractModel
     {
         return Task.CompletedTask;
     }
-    public virtual Task AfterSetPowerMode(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource, int mode)
+    public virtual Task AfterSetPowerMode(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource, LibraryPowerMode mode)
     {
         return Task.CompletedTask;
     }
@@ -145,11 +136,7 @@ public class LibraryEnchantmentModel : EnchantmentModel,ILibraryAbstractModel
     {
         return Task.CompletedTask;
     }
-    public virtual Task BeforePowerSetMode(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource, int mode)
-    {
-        return Task.CompletedTask;
-    }
-    public virtual Task BeforeSetPowerMode(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource, int mode)
+    public virtual Task BeforeSetPowerMode(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource, LibraryPowerMode mode)
     {
         return Task.CompletedTask;
     }

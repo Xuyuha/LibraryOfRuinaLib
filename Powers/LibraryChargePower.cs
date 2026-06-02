@@ -5,7 +5,7 @@ using Library.Powers.Mode;
 namespace Library.Powers;
 public sealed class LibraryChargePower : LibraryBasePowerModel
 {
-    protected override LibraryPowerMode DefaultMode => new LibraryChargeModeDefault();
+    protected override LibraryPowerMode DefaultMode => new LibraryChargeModeDefault(this);
     public LibraryChargeMode CurrentMode => Mode as LibraryChargeMode;
     public override bool IsDynamic => true;
     public override PowerType Type => PowerType.Buff;

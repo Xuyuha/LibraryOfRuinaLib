@@ -1,16 +1,8 @@
-namespace Library.Models;using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Combat;
-using HarmonyLib;
-using Godot;
-using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using MegaCrit.Sts2.Core.Helpers;
-using MegaCrit.Sts2.Core.Localization;
-using MegaCrit.Sts2.Core.Logging;
-using MegaCrit.Sts2.Core.Nodes.Combat;
 using Library.Utils;
-using Library.Hooks;
 using MegaCrit.Sts2.Core.ValueProps;
 using Library.Entities.Creatures;
 using Library.Resistance;
@@ -19,12 +11,10 @@ using MegaCrit.Sts2.Core.Commands.Builders;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Rooms;
 using MegaCrit.Sts2.Core.Entities.Players;
-using MegaCrit.Sts2.Core.Entities.Merchant;
-using MegaCrit.Sts2.Core.Map;
 using MegaCrit.Sts2.Core.Rewards;
 using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Entities.CardRewardAlternatives;
-using System.Text.RegularExpressions;
+namespace Library.Models;
 public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
 {
     

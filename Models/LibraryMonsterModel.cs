@@ -4,8 +4,6 @@ using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using Library.Entities.Creatures;
 using Library.Resistance;
-using MegaCrit.Sts2.Core.Models.Cards;
-using Godot;
 using MegaCrit.Sts2.Core.ValueProps;
 using Library.Utils;
 

@@ -22,6 +22,11 @@ using MegaCrit.Sts2.Core.Runs;
 namespace Library.Powers.Mode;
 public abstract class LibraryPowerMode
 {
+	public LibraryMultipleModePowerModel SourcePower ;
+	public LibraryPowerMode(LibraryMultipleModePowerModel sourcePower)
+	{
+		SourcePower = sourcePower;
+	}
     public abstract string Name {get;}
     public virtual Task BeforeDiceEffect(PlayerChoiceContext choiceContext, Creature? target, CardModel cardSource, LibraryDice dice)
     {

@@ -30,7 +30,7 @@ public class LibraryDice : LibraryDamageVar
         SourceCard = sourceCard;
         FloatValue = floatValue;
     }
-    public override string ToString()=>$"\n[img]{DescriptionIconPath}[/img]{BaseValue} - {BaseValue + FloatValue}{DamageAdditive}{DamageResistance}{ChaoAdditive}{ChaoResistance}";
+    public override string ToString()=>$"[img]{DescriptionIconPath}[/img]{BaseValue} - {BaseValue + FloatValue}{DamageAdditive}{DamageResistance}{ChaoAdditive}{ChaoResistance}\n";
     public decimal DamageResistanceValue = 1m;
     public  bool ShouldUseDefaultTip {get;set;} = true;
     public decimal ChaoResistanceValue = 0m;
