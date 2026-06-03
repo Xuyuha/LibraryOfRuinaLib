@@ -82,6 +82,7 @@ public class LibraryDice : LibraryDamageVar
 			throw new InvalidOperationException($"Tried to set extra dice effect on {this.Name} twice!");
 		}
 		_diceEffct = diceEffct;
+        HasUniqueDescriptionTip();
 		return this;
     }
     public LibraryDice HasUniqueDescriptionTip(){
