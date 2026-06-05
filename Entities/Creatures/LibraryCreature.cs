@@ -14,6 +14,7 @@ using MegaCrit.Sts2.Core.MonsterMoves.Intents;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using Library.Resistance.Patches;
 using Library.Hooks;
+using Library.Patches;
 
 namespace Library.Entities.Creatures;
 public class LibraryCreature : Creature//扩展Creature，添加Chao值属性
@@ -102,6 +103,7 @@ public class LibraryCreature : Creature//扩展Creature，添加Chao值属性
             {
                 int currentChaoValue = _currentChaoValue;
                 _currentChaoValue = value;
+                LibraryChaoHealNumberVfx.Show(this, _currentChaoValue - currentChaoValue);
                 this.CurrentChaoValueChanged?.Invoke(currentChaoValue, _currentChaoValue);
             }
         }

@@ -167,8 +167,11 @@ internal static class LibraryStaggerResistanceBarUi
         {
             Name = ContainerName,
             MouseFilter = Control.MouseFilterEnum.Ignore,
+            ZIndex = hpBarContainer.ZIndex,
+            ZAsRelative = hpBarContainer.ZAsRelative,
         };
         healthBarNode.AddChild(barContainer);
+        healthBarNode.MoveChild(barContainer, hpBarContainer.GetIndex());
 
         var background = (NinePatchRect)srcBg.Duplicate(15);
         background.Name = "StaggerBackground";
@@ -301,6 +304,8 @@ internal static class LibraryStaggerResistanceBarUi
         Control hpBarContainer = healthBar.HpBarContainer;
         float barWidth = hpBarContainer.Size.X;
 
+        state.BarContainer.ZIndex = hpBarContainer.ZIndex;
+        state.BarContainer.ZAsRelative = hpBarContainer.ZAsRelative;
         state.BarContainer.Position = new Vector2(
             hpBarContainer.Position.X,
             hpBarContainer.Position.Y - BarHeight - BarGap

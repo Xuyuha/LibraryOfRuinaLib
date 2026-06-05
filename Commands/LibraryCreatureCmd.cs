@@ -419,9 +419,10 @@ public static class LibraryCreatureCmd
 		bool flag = creature.IsDead && amount > 0m;
 		decimal num = creature.CurrentChaoValue;
 		creature.SetCurrentChaoValueInternal(amount);
-		if (amount != num)
+		decimal changedAmount = creature.CurrentChaoValue - num;
+		if (changedAmount != 0m)
 		{
-			await LibraryHooks.AfterCurrentChaoValueChanged(creature.Player?.RunState ?? creature.CombatState.RunState, creature.CombatState, creature, amount - num,LibraryDamageType.None);
+			await LibraryHooks.AfterCurrentChaoValueChanged(creature.Player?.RunState ?? creature.CombatState.RunState, creature.CombatState, creature, changedAmount,LibraryDamageType.None);
 		}
 		if (creature.CurrentChaoValue == 0 && !creature.IsStunned && creature.MaxChaoValue!=0)
 		{
@@ -509,9 +510,9 @@ public static class LibraryCreatureCmd
 		{
 			await Cmd.CustomScaledWait(0.1f, 0.25f);
 		}
-		if (amount > 0m && creature.CombatState != null)
+		if (num > 0m && creature.CombatState != null)
 		{
-			await LibraryHooks.AfterCurrentChaoValueChanged(creature.Player?.RunState ?? creature.CombatState.RunState, creature.CombatState, creature, amount,LibraryDamageType.None);
+			await LibraryHooks.AfterCurrentChaoValueChanged(creature.Player?.RunState ?? creature.CombatState.RunState, creature.CombatState, creature, num,LibraryDamageType.None);
 		}
 	}
 
