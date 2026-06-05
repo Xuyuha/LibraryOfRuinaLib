@@ -51,13 +51,17 @@ internal static class LibraryPhysicalResistanceIconsUi//TODO:你们来做物理�
         return state;
     }
 
-    private static Creature? GetCreature(NHealthBar healthBar)
+    private static Creature? GetCreature(NHealthBar? healthBar)
     {
+        if (healthBar == null) return null;
+
         return CreatureField?.GetValue(healthBar) as Creature;
     }
 
-    public static void Refresh(NHealthBar healthBar)
+    public static void Refresh(NHealthBar? healthBar)
     {
+        if (healthBar == null) return;
+
         Creature? creature = GetCreature(healthBar);
         if (creature == null) return;
 

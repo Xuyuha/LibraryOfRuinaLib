@@ -52,6 +52,7 @@ internal static class LibraryAttackExecuteFlagPatch
     private static MethodBase TargetMethod()
     {
         var type = AccessTools.TypeByName("AttackCommand")
+                   ?? AccessTools.TypeByName("MegaCrit.Sts2.Core.Commands.Builders.AttackCommand")
                    ?? AccessTools.TypeByName("MegaCrit.Sts2.Core.Commands.AttackCommand");
         return AccessTools.Method(type, "Execute");
     }
