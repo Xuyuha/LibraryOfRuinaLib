@@ -30,7 +30,7 @@ public class LibraryDice : LibraryDamageVar
         SourceCard = sourceCard;
         FloatValue = floatValue;
     }
-    public override string ToString()=>$"[img]{DescriptionIconPath}[/img]{BaseValue} - {BaseValue + FloatValue}{DamageAdditive}{DamageResistance}{ChaoAdditive}{ChaoResistance}\n";
+    public override string ToString()=>$"[img]{DescriptionIconPath}[/img]{PreviewValue} - {PreviewValue + FloatValue}{DamageAdditive}{DamageResistance}{ChaoAdditive}{ChaoResistance}\n";
     public decimal DamageResistanceValue = 1m;
     public  bool ShouldUseDefaultTip {get;set;} = true;
     public decimal ChaoResistanceValue = 0m;
@@ -89,7 +89,11 @@ public class LibraryDice : LibraryDamageVar
         ShouldUseDefaultTip = false;
         return this;
     }
-    public HoverTip DiceTip=>new(Title,GetDescriptionForPile(SourceCard.Pile?.Type ?? PileType.None, SourceCard.CurrentTarget), PackedIcon);
+    public HoverTip DiceTip (int titleNumber = 0){
+        var tip = new HoverTip(Title, GetDescriptionForPile(SourceCard.Pile?.Type ?? PileType.None, SourceCard.CurrentTarget), PackedIcon);
+        tip.Id += titleNumber.ToString();
+        return tip;
+    }
     private LocString GetDescriptionForPile(PileType pileType, Creature? target = null)
     {
         LocString description = Description;
@@ -111,55 +115,76 @@ public class LibraryDice : LibraryDamageVar
     }
 	public override void UpdateCardPreview(CardModel card, CardPreviewMode previewMode, Creature? target, bool runGlobalHooks)
 	{
-		decimal num = base.BaseValue;
-        decimal num1 = base.BaseValue;
-		EnchantmentModel enchantment = card.Enchantment;
-		if (enchantment != null)
-		{
-			num += enchantment.EnchantDamageAdditive(num, Props);
-			num *= enchantment.EnchantDamageMultiplicative(num, Props);
-			if (!card.IsEnchantmentPreview)
-			{
-				base.EnchantedValue = num;
-			}
-            if(enchantment is LibraryEnchantmentModel le){
-                num1 +=le.EnchantChaoDamageAdditive(num1,Props);
-                num1 *=le.EnchantChaoDamageMultiplicative(num1,Props);
-            }
-		}
-		if (runGlobalHooks)
-		{
-			num = LibraryHooks.ModifyDamage(card.Owner.RunState, card.CombatState, target, card.Owner.Creature, base.BaseValue, Props, card, ModifyDamageHookType.All, previewMode, out IEnumerable<AbstractModel> _, DamageType);
-			num1 = LibraryHooks.ModifyChaoDamage(card.Owner.RunState, card.CombatState, target, card.Owner.Creature, base.BaseValue, Props, card, ModifyChaoDamageHookType.All, previewMode, out IEnumerable<AbstractModel> _, DamageType);
-		}
-        if(target is LibraryCreature lc)
-        {
-            _shouldShowDamage =true;
-            DamageResistanceValue = lc.GetPhysicalResistanceLevel(DamageType).GetMultiplier();
-            if (lc.HasChaoResistance)
+        if(DiceType != LibraryDiceType.Block){
+            decimal num = base.BaseValue;
+            decimal num1 = base.BaseValue;
+            EnchantmentModel enchantment = card.Enchantment;
+            if (enchantment != null)
             {
-                ChaoResistanceValue = lc.GetChaosResistanceLevel(DamageType).GetMultiplier();
-                _shouldShowChao =true;
+                num += enchantment.EnchantDamageAdditive(num, Props);
+                num *= enchantment.EnchantDamageMultiplicative(num, Props);
+                if (!card.IsEnchantmentPreview)
+                {
+                    base.EnchantedValue = num;
+                }
+                if(enchantment is LibraryEnchantmentModel le){
+                    num1 +=le.EnchantChaoDamageAdditive(num1,Props);
+                    num1 *=le.EnchantChaoDamageMultiplicative(num1,Props);
+                }
+            }
+            if (runGlobalHooks)
+            {
+                num = LibraryHooks.ModifyDamage(card.Owner.RunState, card.CombatState, target, card.Owner.Creature, base.BaseValue, Props, card, ModifyDamageHookType.All, previewMode, out IEnumerable<AbstractModel> _, DamageType);
+                num1 = LibraryHooks.ModifyChaoDamage(card.Owner.RunState, card.CombatState, target, card.Owner.Creature, base.BaseValue, Props, card, ModifyChaoDamageHookType.All, previewMode, out IEnumerable<AbstractModel> _, DamageType);
+            }
+            if(target is LibraryCreature lc)
+            {
+                _shouldShowDamage =true;
+                DamageResistanceValue = lc.GetPhysicalResistanceLevel(DamageType).GetMultiplier();
+                if (lc.HasChaoResistance)
+                {
+                    ChaoResistanceValue = lc.GetChaosResistanceLevel(DamageType).GetMultiplier();
+                    _shouldShowChao =true;
+                }
+                else
+                    _shouldShowChao =false;
             }
             else
+            {
                 _shouldShowChao =false;
+                _shouldShowDamage =false;
+            }
+            DamageAdditiveValue = (int)(num - BaseValue);
+            ChaoAdditiveValue = (int)(num1 - BaseValue);
+            if(DamageAdditiveValue > 0)
+                DamageSign = "+";
+            else{
+                DamageSign = "";
+            }
+            if(ChaoAdditiveValue > 0)
+                ChaoSign = "+";
+            else{
+                ChaoSign = "";
+            }
+            PreviewValue = BaseValue;
         }
-        else
-        {
-            _shouldShowChao =false;
-            _shouldShowDamage =false;
-        }
-        DamageAdditiveValue = (int)(num - BaseValue);
-        ChaoAdditiveValue = (int)(num1 - BaseValue);
-        if(DamageAdditiveValue > 0)
-            DamageSign = "+";
         else{
-            DamageSign = "";
+            decimal num = base.BaseValue;
+            EnchantmentModel enchantment = card.Enchantment;
+            if (enchantment != null)
+            {
+                num += enchantment.EnchantBlockAdditive(num);
+                num *= enchantment.EnchantBlockMultiplicative(num);
+                if (!card.IsEnchantmentPreview)
+                {
+                    base.EnchantedValue = num;
+                }
+            }
+            if (runGlobalHooks)
+            {
+                num = Hook.ModifyBlock(card.CombatState, card.Owner.Creature, base.BaseValue, Props, card, null, out IEnumerable<AbstractModel> _);
+            }
+            base.PreviewValue = num;
         }
-        if(ChaoAdditiveValue > 0)
-            ChaoSign = "+";
-        else{
-            ChaoSign = "";
-        }
-	}
+    }
 }

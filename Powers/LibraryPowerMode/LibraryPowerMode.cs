@@ -750,7 +750,10 @@ public abstract class LibraryPowerMode
 	{
 		return amount;
 	}
-
+	public virtual decimal ModifyGoldGained(Player player, decimal amount)
+	{
+		return amount;
+	}
 
 	public virtual decimal ModifyHandDraw(Player player, decimal count)
 	{
@@ -794,10 +797,17 @@ public abstract class LibraryPowerMode
 		return value;
 	}
 
-	public virtual decimal ModifyPowerAmountGiven(PowerModel power, Creature giver, decimal amount, Creature? target, CardModel? cardSource)
+
+	public virtual decimal ModifyPowerAmountGivenAdditive(PowerModel power, Creature giver, decimal amount, Creature? target, CardModel? cardSource)
 	{
-		return amount;
+		return 0m;
 	}
+
+	public virtual decimal ModifyPowerAmountGivenMultiplicative(PowerModel power, Creature giver, decimal amount, Creature? target, CardModel? cardSource)
+	{
+		return 1m;
+	}
+
 
 	public virtual void ModifyShuffleOrder(Player player, List<CardModel> cards, bool isInitialShuffle)
 	{
@@ -939,12 +949,6 @@ public abstract class LibraryPowerMode
 	{
 		return true;
 	}
-
-	public virtual bool ShouldGainGold(decimal amount, Player player)
-	{
-		return true;
-	}
-
 	public virtual bool ShouldGainStars(decimal amount, Player player)
 	{
 		return true;
@@ -990,4 +994,13 @@ public abstract class LibraryPowerMode
 	{
 		return false;
 	}
+	public virtual Task AfterModifyingGoldGained(Player player, decimal amount)
+	{
+		return Task.CompletedTask;
+	}	
+	public virtual bool TryModifyKeywordsInCombat(CardModel card, ISet<CardKeyword> keywords)
+	{
+		return false;
+	}
 }
+

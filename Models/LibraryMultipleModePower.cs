@@ -923,10 +923,17 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
 		return n;
 	}
 
+
 	public sealed override decimal ModifyEnergyGain(Player player, decimal amount)
 	{
         amount = Mode?.ModifyEnergyGain(player, amount) ?? amount;
         amount = ModifyEnergyGain(player, amount , null);
+		return amount;
+	}
+	public sealed override decimal ModifyGoldGained(Player player, decimal amount)
+	{
+		amount = Mode.ModifyGoldGained(player, amount);
+		amount = ModifyGoldGained(player, amount , null);
 		return amount;
 	}
 
@@ -986,11 +993,20 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
 		return value;
 	}
 
-	public sealed override decimal ModifyPowerAmountGiven(PowerModel power, Creature giver, decimal amount, Creature? target, CardModel? cardSource)
+	public sealed override decimal ModifyPowerAmountGivenAdditive(PowerModel power, Creature giver, decimal amount, Creature? target, CardModel? cardSource)
 	{
-        amount = Mode.ModifyPowerAmountGiven(power, giver, amount, target, cardSource);
-        amount = ModifyPowerAmountGiven(power, giver, amount, target, cardSource , null);
-		return amount;
+		decimal n = 0;
+        n += Mode.ModifyPowerAmountGivenAdditive(power, giver, amount+n, target, cardSource);
+        n += ModifyPowerAmountGivenAdditive(power, giver, amount+n, target, cardSource , null);
+		return n;
+	}
+
+	public sealed override decimal ModifyPowerAmountGivenMultiplicative(PowerModel power, Creature giver, decimal amount, Creature? target, CardModel? cardSource)
+	{
+		decimal n = 1m;
+        n = Mode.ModifyPowerAmountGivenMultiplicative(power, giver, amount*n, target, cardSource);
+        n = ModifyPowerAmountGivenMultiplicative(power, giver, amount*n, target, cardSource , null);
+		return n;
 	}
 
 	public sealed override void ModifyShuffleOrder(Player player, List<CardModel> cards, bool isInitialShuffle)
@@ -1199,13 +1215,6 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
 		return flag;
 	}
 
-	public sealed override bool ShouldGainGold(decimal amount, Player player)
-	{
-        bool flag = Mode.ShouldGainGold(amount, player);
-        flag &= ShouldGainGold(amount, player , null);
-		return flag;
-	}
-
 	public sealed override bool ShouldGainStars(decimal amount, Player player)
 	{
         bool flag = Mode.ShouldGainStars(amount, player);
@@ -1262,6 +1271,17 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
 	{
         bool flag = Mode.ShouldForcePotionReward(player, roomType);
         flag |= ShouldForcePotionReward(player, roomType , null);   
+		return flag;
+	}
+	public sealed override async Task AfterModifyingGoldGained(Player player, decimal amount)
+	{
+		await Mode.AfterModifyingGoldGained(player, amount);
+		await AfterModifyingGoldGained(player, amount , null);
+	}	
+	public sealed override bool TryModifyKeywordsInCombat(CardModel card, ISet<CardKeyword> keywords)
+	{
+        bool flag = Mode.TryModifyKeywordsInCombat(card, keywords);
+        flag |= TryModifyKeywordsInCombat(card, keywords , null);
 		return flag;
 	}
     public virtual Task BeforeDiceEffect(PlayerChoiceContext choiceContext, Creature? target, CardModel cardSource, LibraryDice dice, object? _ = null)
@@ -1987,6 +2007,10 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
 	{
 		return amount;
 	}
+	public virtual decimal ModifyGoldGained(Player player, decimal amount, object? _ = null)
+	{
+		return amount;
+	}
 
 	public virtual decimal ModifyHandDraw(Player player, decimal count, object? _ = null)
 	{
@@ -2027,7 +2051,11 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
 		return value;
 	}
 
-	public virtual decimal ModifyPowerAmountGiven(PowerModel power, Creature giver, decimal amount, Creature? target, CardModel? cardSource, object? _ = null)
+	public virtual decimal ModifyPowerAmountGivenAdditive(PowerModel power, Creature giver, decimal amount, Creature? target, CardModel? cardSource, object? _ = null)
+	{
+		return amount;
+	}
+	public virtual decimal ModifyPowerAmountGivenMultiplicative(PowerModel power, Creature giver, decimal amount, Creature? target, CardModel? cardSource, object? _ = null)
 	{
 		return amount;
 	}
@@ -2220,6 +2248,14 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
 	}
 
 	public virtual bool ShouldForcePotionReward(Player player, RoomType roomType, object? _ =null)
+	{
+		return false;
+	}
+	public virtual Task AfterModifyingGoldGained(Player player, decimal amount, object? _ =null)
+	{
+		return Task.CompletedTask;
+	}	
+	public virtual bool TryModifyKeywordsInCombat(CardModel card, ISet<CardKeyword> keywords, object? _ =null)
 	{
 		return false;
 	}
