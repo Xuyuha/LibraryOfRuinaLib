@@ -36,8 +36,8 @@ public class LibraryDice : LibraryDamageVar
     public decimal ChaoResistanceValue = 0m;
     private int DamageAdditiveValue = 0;
     private int ChaoAdditiveValue = 0;
-    private string DamageSign {get;set;} = "+";
-    private string ChaoSign {get;set;} =  "+";
+    private string DamageSign => DamageAdditiveValue < 0 ? "" : "+";
+    private string ChaoSign =>  ChaoAdditiveValue < 0 ? "" : "+";
     private string DamageAdditive =>  DamageAdditiveValue != 0 ? $" [red]{DamageSign}{DamageAdditiveValue}[/red]":"";
     private string ChaoAdditive => _shouldShowChao && ChaoAdditiveValue != 0 ? $" [orange]{ChaoSign}{ChaoAdditiveValue}[/orange]":"";
     private string DamageResistance => _shouldShowDamage?$" [red]×{DamageResistanceValue}[/red]":"";
@@ -47,6 +47,7 @@ public class LibraryDice : LibraryDamageVar
     public decimal FloatValue {get;}
     readonly LibraryDiceType DiceType ;
     readonly LibraryCardModel SourceCard ;
+    private int IdNumber = 0;
     public static LocString DefaultDescription => new("dice","DICE_DEFAULT");
     public LocString Description =>  ShouldUseDefaultTip ? DefaultDescription:new("cards",DescriptionPath);
     public string DescriptionIconPath => $"res://images/dice/{DiceType.String()}.png";
@@ -89,10 +90,13 @@ public class LibraryDice : LibraryDamageVar
         ShouldUseDefaultTip = false;
         return this;
     }
-    public HoverTip DiceTip (int titleNumber = 0){
+    public HoverTip DiceTip {
+        get
+        {
         var tip = new HoverTip(Title, GetDescriptionForPile(SourceCard.Pile?.Type ?? PileType.None, SourceCard.CurrentTarget), PackedIcon);
-        tip.Id += titleNumber.ToString();
+        tip.Id += '_' +Name + '_' + IdNumber++;
         return tip;
+        }
     }
     private LocString GetDescriptionForPile(PileType pileType, Creature? target = null)
     {
@@ -156,16 +160,6 @@ public class LibraryDice : LibraryDamageVar
             }
             DamageAdditiveValue = (int)(num - BaseValue);
             ChaoAdditiveValue = (int)(num1 - BaseValue);
-            if(DamageAdditiveValue > 0)
-                DamageSign = "+";
-            else{
-                DamageSign = "";
-            }
-            if(ChaoAdditiveValue > 0)
-                ChaoSign = "+";
-            else{
-                ChaoSign = "";
-            }
             PreviewValue = BaseValue;
         }
         else{
