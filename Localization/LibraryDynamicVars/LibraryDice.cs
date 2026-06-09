@@ -44,7 +44,7 @@ public class LibraryDice : LibraryDamageVar
     private string ChaoResistance => _shouldShowChao?$" [orange]×{ChaoResistanceValue}[/orange]":"";
     private bool _shouldShowDamage = false;
     private bool _shouldShowChao = false;
-    public decimal FloatValue {get;}
+    public decimal FloatValue {get;set;}
     readonly LibraryDiceType DiceType ;
     readonly LibraryCardModel SourceCard ;
     private int IdNumber = 0;
