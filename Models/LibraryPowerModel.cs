@@ -28,6 +28,7 @@ namespace Library.Models;
 /// </summary>
 public abstract class LibraryPowerModel : PowerModel,ILibraryAbstractModel
 {
+    public virtual void AddVariablesToDescription(LocString description, int? amountOverride = null){}
     private NPower? _boundNPower;
     private LibraryPowerMode? _mode;
     protected virtual LibraryPowerMode? DefaultMode => null;

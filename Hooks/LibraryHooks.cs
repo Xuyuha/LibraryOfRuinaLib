@@ -11,6 +11,7 @@ using Library.Entities.Creatures;
 using Library.Utils;
 using Library.Resistance;
 using Library.Powers.Mode;
+using System.Text.RegularExpressions;
 namespace Library.Hooks;
 
 public static class LibraryHooks
@@ -524,7 +525,7 @@ public static class LibraryHooks
             {
                 decimal num2 = item.ModifyDamageAdditive(target, num, props, dealer, cardSource);
                 if(item is ILibraryAbstractModel libraryAbstractModel)    
-                    num2 = libraryAbstractModel.ModifyDamageAdditive(target, num, props, dealer, cardSource,type);
+                    num2 += libraryAbstractModel.ModifyDamageAdditive(target, num, props, dealer, cardSource,type);
                 num += num2;
                 if (num2 != 0m)
                 {
@@ -538,7 +539,7 @@ public static class LibraryHooks
             {
                 decimal num3 = item2.ModifyDamageMultiplicative(target, num, props, dealer, cardSource);;
                 if(item2 is ILibraryAbstractModel libraryAbstractModel)    
-                    num3 = libraryAbstractModel.ModifyDamageMultiplicative(target, num, props, dealer, cardSource,type);
+                    num3 *= libraryAbstractModel.ModifyDamageMultiplicative(target, num, props, dealer, cardSource,type);
                 num *= num3;
                 if (num3 != 1m)
                 {
@@ -551,7 +552,7 @@ public static class LibraryHooks
         {
             decimal num5 = item3.ModifyDamageCap(target, props, dealer, cardSource);
             if(item3 is ILibraryAbstractModel libraryAbstractModel)    
-                num5 = libraryAbstractModel.ModifyDamageCap(target, props, dealer, cardSource,type);
+                num5 = Math.Min(num5, libraryAbstractModel.ModifyDamageCap(target, props, dealer, cardSource,type));
             if (num5 < num4)
             {
                 num4 = num5;
