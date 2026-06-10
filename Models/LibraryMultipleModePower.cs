@@ -397,7 +397,7 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
 	public sealed override async Task BeforeCardAutoPlayed(CardModel card, Creature? target, AutoPlayType type)
 	{
         await Mode.BeforeCardAutoPlayed(card, target, type);
-        await BeforeCardAutoPlayed(card, target, type , null     );
+        await BeforeCardAutoPlayed(card, target, type , null);
 	}
 
 	public sealed override async Task BeforeCardPlayed(CardPlay cardPlay)
@@ -845,16 +845,16 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
 	public sealed override decimal ModifyBlockAdditive(Creature target, decimal block, ValueProp props, CardModel? cardSource, CardPlay? cardPlay)
 	{
 		decimal n = 0;
-        n = Mode.ModifyBlockAdditive(target, block+n, props, cardSource, cardPlay);
-        n = ModifyBlockAdditive(target, block+n, props, cardSource, cardPlay , null);
+        n += Mode.ModifyBlockAdditive(target, block+n, props, cardSource, cardPlay);
+        n += ModifyBlockAdditive(target, block+n, props, cardSource, cardPlay , null);
 		return n;
 	}
 
 	public sealed override decimal ModifyBlockMultiplicative(Creature target, decimal block, ValueProp props, CardModel? cardSource, CardPlay? cardPlay)
 	{
 		decimal n = 1m;
-        n = Mode.ModifyBlockMultiplicative(target, block*n, props, cardSource, cardPlay);
-        n = ModifyBlockMultiplicative(target, block*n, props, cardSource, cardPlay , null);
+        n *= Mode.ModifyBlockMultiplicative(target, block*n, props, cardSource, cardPlay);
+        n *= ModifyBlockMultiplicative(target, block*n, props, cardSource, cardPlay , null);
 		return n;
 	}
 
@@ -903,8 +903,8 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
 	public sealed override decimal ModifyDamageAdditive(Creature? target, decimal amount, ValueProp props, Creature? dealer, CardModel? cardSource)
 	{
 		decimal n = 0;
-        n = Mode.ModifyDamageAdditive(target, amount+n, props, dealer, cardSource);
-        n = ModifyDamageAdditive(target, amount+n, props, dealer, cardSource , null);
+        n += Mode.ModifyDamageAdditive(target, amount+n, props, dealer, cardSource);
+        n += ModifyDamageAdditive(target, amount+n, props, dealer, cardSource , null);
 		return n;
 	}
 
@@ -918,8 +918,8 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
 	public sealed override decimal ModifyDamageMultiplicative(Creature? target, decimal amount, ValueProp props, Creature? dealer, CardModel? cardSource)
 	{
 		decimal n = 1m;
-        n = Mode.ModifyDamageMultiplicative(target, amount*n, props, dealer, cardSource);
-        n = ModifyDamageMultiplicative(target, amount*n, props, dealer, cardSource , null);
+        n *= Mode.ModifyDamageMultiplicative(target, amount*n, props, dealer, cardSource);
+        n *= ModifyDamageMultiplicative(target, amount*n, props, dealer, cardSource , null);
 		return n;
 	}
 
