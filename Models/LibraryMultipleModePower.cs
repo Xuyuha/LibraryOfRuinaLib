@@ -1004,8 +1004,8 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
 	public sealed override decimal ModifyPowerAmountGivenMultiplicative(PowerModel power, Creature giver, decimal amount, Creature? target, CardModel? cardSource)
 	{
 		decimal n = 1m;
-        n = Mode.ModifyPowerAmountGivenMultiplicative(power, giver, amount*n, target, cardSource);
-        n = ModifyPowerAmountGivenMultiplicative(power, giver, amount*n, target, cardSource , null);
+        n *= Mode.ModifyPowerAmountGivenMultiplicative(power, giver, amount*n, target, cardSource);
+        n *= ModifyPowerAmountGivenMultiplicative(power, giver, amount*n, target, cardSource , null);
 		return n;
 	}
 
@@ -2053,11 +2053,11 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
 
 	public virtual decimal ModifyPowerAmountGivenAdditive(PowerModel power, Creature giver, decimal amount, Creature? target, CardModel? cardSource, object? _ = null)
 	{
-		return amount;
+		return 0m;
 	}
 	public virtual decimal ModifyPowerAmountGivenMultiplicative(PowerModel power, Creature giver, decimal amount, Creature? target, CardModel? cardSource, object? _ = null)
 	{
-		return amount;
+		return 1m;
 	}
 
 	public virtual void ModifyShuffleOrder(Player player, List<CardModel> cards, bool isInitialShuffle, object? _ = null)
