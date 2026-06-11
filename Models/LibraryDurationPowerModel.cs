@@ -4,6 +4,7 @@ using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Powers;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models;
 
@@ -240,5 +241,9 @@ public abstract class LibraryDurationPowerModel : LibraryPowerModel, ISecondaryD
         if (current <= 0 || incoming <= 0)
             return 0;
         return current + incoming;
+    }
+    public override void AddVariablesToDescription(LocString description, int? amountOverride = null)
+    {
+        description.Add("IsPermanent",IsPermanent);
     }
 }
