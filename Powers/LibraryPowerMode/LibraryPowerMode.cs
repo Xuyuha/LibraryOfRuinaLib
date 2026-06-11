@@ -117,6 +117,14 @@ public abstract class LibraryPowerMode
     {
         return Task.CompletedTask;
     }
+	public virtual Task AfterModifyingEffectiveAmount(CardModel? cardSource)
+    {
+        return Task.CompletedTask;
+    }
+	public virtual Task AfterModifyingChaoDamageAmount(CardModel? cardSource, LibraryDamageType type)
+    {
+        return Task.CompletedTask;
+    }
     public virtual Task AfterPowerEffect(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource)
     {
         return Task.CompletedTask;
@@ -796,8 +804,14 @@ public abstract class LibraryPowerMode
 	{
 		return value;
 	}
-
-
+    public virtual decimal ModifyEffectiveAmountAdditive(Creature? target, decimal num, Creature? dealer, CardModel? cardSource)
+    {
+        return 0m;
+    }
+    public virtual decimal ModifyEffectiveAmountMultiplicative(Creature? target, decimal num, Creature? dealer, CardModel? cardSource)
+    {
+        return 1m;
+    }
 	public virtual decimal ModifyPowerAmountGivenAdditive(PowerModel power, Creature giver, decimal amount, Creature? target, CardModel? cardSource)
 	{
 		return 0m;
@@ -807,7 +821,6 @@ public abstract class LibraryPowerMode
 	{
 		return 1m;
 	}
-
 
 	public virtual void ModifyShuffleOrder(Player player, List<CardModel> cards, bool isInitialShuffle)
 	{

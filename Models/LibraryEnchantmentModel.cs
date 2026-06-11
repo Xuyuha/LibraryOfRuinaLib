@@ -18,8 +18,6 @@ public class LibraryEnchantmentModel : EnchantmentModel,ILibraryAbstractModel
     {
         return 1m;
     }
-    
-    
     public virtual Task BeforeDiceEffect(PlayerChoiceContext choiceContext, Creature? target, CardModel cardSource, LibraryDice dice)
     {
         return Task.CompletedTask;
@@ -109,6 +107,14 @@ public class LibraryEnchantmentModel : EnchantmentModel,ILibraryAbstractModel
     {
         return Task.CompletedTask;
     }
+    public virtual Task AfterModifyingChaoDamageAmount(CardModel? cardSource, LibraryDamageType type)
+    {
+        return Task.CompletedTask;
+    }
+    public virtual Task AfterModifyingEffectiveAmount(CardModel? cardSource)
+    {
+        return Task.CompletedTask;
+    }
     public virtual Task AfterPowerEffect(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource)
     {
         return Task.CompletedTask;
@@ -176,6 +182,14 @@ public class LibraryEnchantmentModel : EnchantmentModel,ILibraryAbstractModel
     public virtual decimal ModifyDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, LibraryDamageType type)
     {
         return 0m;
+    }
+    public virtual decimal ModifyEffectiveAmountAdditive(Creature? target, decimal num, Creature? dealer, CardModel? cardSource)
+    {
+        return 0m;
+    }
+    public virtual decimal ModifyEffectiveAmountMultiplicative(Creature? target, decimal num, Creature? dealer, CardModel? cardSource)
+    {
+        return 1m;
     }
     public virtual decimal ModifyDamageCap(Creature? target, ValueProp props, Creature? dealer, CardModel? cardSource, LibraryDamageType type)
     {

@@ -582,7 +582,16 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
         await Mode.AfterModifyingDamageAmount(cardSource);
         await AfterModifyingDamageAmount(cardSource , null);
 	}
-
+    public sealed override async Task AfterModifyingChaoDamageAmount(CardModel? cardSource, LibraryDamageType type)
+    {
+        await Mode.AfterModifyingChaoDamageAmount(cardSource, type);
+        await AfterModifyingChaoDamageAmount(cardSource, type , null);
+    }
+    public sealed override async Task AfterModifyingEffectiveAmount(CardModel? cardSource)
+    {
+        await Mode.AfterModifyingEffectiveAmount(cardSource);
+        await AfterModifyingEffectiveAmount(cardSource , null);
+    }
 	public sealed override async Task AfterModifyingEnergyGain()
 	{
         await Mode.AfterModifyingEnergyGain();
@@ -1008,6 +1017,20 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
         n *= ModifyPowerAmountGivenMultiplicative(power, giver, amount*n, target, cardSource , null);
 		return n;
 	}
+    public sealed override decimal ModifyEffectiveAmountAdditive(Creature? target, decimal num, Creature? dealer, CardModel? cardSource)
+    {
+		decimal n = 0;
+        n += Mode.ModifyEffectiveAmountAdditive(target, num, dealer, cardSource);
+        n += ModifyEffectiveAmountAdditive(target, num, dealer, cardSource , null);
+		return n;
+    }
+    public sealed override decimal ModifyEffectiveAmountMultiplicative(Creature? target, decimal num, Creature? dealer, CardModel? cardSource)
+    {
+		decimal n = 1m;
+        n *= Mode.ModifyEffectiveAmountMultiplicative(target, num, dealer, cardSource);
+        n *= ModifyEffectiveAmountMultiplicative(target, num, dealer, cardSource , null);
+		return n;
+    }
 
 	public sealed override void ModifyShuffleOrder(Player player, List<CardModel> cards, bool isInitialShuffle)
 	{
@@ -1437,6 +1460,14 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
     {
         return 0m;
     }
+    public virtual decimal ModifyEffectiveAmountAdditive(Creature? target, decimal num, Creature? dealer, CardModel? cardSource, object? _ = null)
+    {
+        return 0m;
+    }
+    public virtual decimal ModifyEffectiveAmountMultiplicative(Creature? target, decimal num, Creature? dealer, CardModel? cardSource, object? _ = null)
+    {
+        return 1m;
+    }
     public virtual decimal ModifyDamageCap(Creature? target, ValueProp props, Creature? dealer, CardModel? cardSource, LibraryDamageType type, object? _ = null)
     {
         return decimal.MaxValue;
@@ -1772,7 +1803,14 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
 	{
 		return Task.CompletedTask;
 	}
-
+    public virtual Task AfterModifyingChaoDamageAmount(CardModel? cardSource, LibraryDamageType type,object? _ =null)
+    {
+        return Task.CompletedTask;
+    }
+    public virtual Task AfterModifyingEffectiveAmount(CardModel? cardSource,object? _ =null)
+    {
+        return Task.CompletedTask;
+    }
 	public virtual Task AfterOrbChanneled(PlayerChoiceContext choiceContext, Player player, OrbModel orb, object? _ = null)
 	{
 		return Task.CompletedTask;

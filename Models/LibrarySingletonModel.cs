@@ -11,44 +11,44 @@ namespace Library.Models;
 public abstract class LibrarySingletonModel : SingletonModel,ILibraryAbstractModel
 {
     
-    public virtual Task BeforeDiceEffect(PlayerChoiceContext choiceContext, Creature? target, CardModel cardSource, LibraryDice dice)
+    public Task BeforeDiceEffect(PlayerChoiceContext choiceContext, Creature? target, CardModel cardSource, LibraryDice dice)
     {
         return Task.CompletedTask;
     }
-    public virtual Task AfterDiceEffect(PlayerChoiceContext choiceContext, Creature? target, CardModel cardSource, LibraryDice dice)
+    public Task AfterDiceEffect(PlayerChoiceContext choiceContext, Creature? target, CardModel cardSource, LibraryDice dice)
     {
         return Task.CompletedTask;
     }
-    public virtual Task BeforeSetChaoResistance(PlayerChoiceContext choiceContext,LibraryCreature target,Creature? dealer, LibraryDamageType type,LibraryResistanceLevel resistanceValue)
+    public Task BeforeSetChaoResistance(PlayerChoiceContext choiceContext,LibraryCreature target,Creature? dealer, LibraryDamageType type,LibraryResistanceLevel resistanceValue)
     {
         return Task.CompletedTask;
     }
-    public virtual Task AfterSetChaoResistance(PlayerChoiceContext choiceContext,LibraryCreature target,Creature? dealer, LibraryDamageType type)
+    public Task AfterSetChaoResistance(PlayerChoiceContext choiceContext,LibraryCreature target,Creature? dealer, LibraryDamageType type)
     {
         return Task.CompletedTask;
     }
-    public virtual bool TrySetChaoResistance(PlayerChoiceContext choiceContext,LibraryCreature target,Creature? dealer, LibraryDamageType type,LibraryResistanceLevel resistanceValue)
+    public bool TrySetChaoResistance(PlayerChoiceContext choiceContext,LibraryCreature target,Creature? dealer, LibraryDamageType type,LibraryResistanceLevel resistanceValue)
     {
         return true;
     }
-    public virtual bool TrySetPhysicalResistance(PlayerChoiceContext choiceContext,LibraryCreature target,Creature? dealer,LibraryDamageType type,LibraryResistanceLevel resistanceValue)
+    public bool TrySetPhysicalResistance(PlayerChoiceContext choiceContext,LibraryCreature target,Creature? dealer,LibraryDamageType type,LibraryResistanceLevel resistanceValue)
     {
         return true;
     }
-    public virtual Task BeforeSetPhysicalResistance(PlayerChoiceContext choiceContext,LibraryCreature target,Creature? dealer,LibraryDamageType type,LibraryResistanceLevel resistanceValue)
+    public Task BeforeSetPhysicalResistance(PlayerChoiceContext choiceContext,LibraryCreature target,Creature? dealer,LibraryDamageType type,LibraryResistanceLevel resistanceValue)
     {
         return Task.CompletedTask;
     }
-    public virtual Task AfterSetPhysicalResistance(PlayerChoiceContext choiceContext,LibraryCreature target,Creature? dealer,LibraryDamageType type)
+    public Task AfterSetPhysicalResistance(PlayerChoiceContext choiceContext,LibraryCreature target,Creature? dealer,LibraryDamageType type)
     {
         return Task.CompletedTask;
     }
 
-    public virtual bool TryDiceEffect(PlayerChoiceContext choiceContext,Creature? target, CardModel cardSource, LibraryDice dice)
+    public bool TryDiceEffect(PlayerChoiceContext choiceContext,Creature? target, CardModel cardSource, LibraryDice dice)
     {
         return true;
     }
-    public virtual Task AfterAttack(PlayerChoiceContext choiceContext, LibraryAttackCommand command)
+    public Task AfterAttack(PlayerChoiceContext choiceContext, LibraryAttackCommand command)
     {
         return Task.CompletedTask;
     }
@@ -76,11 +76,11 @@ public abstract class LibrarySingletonModel : SingletonModel,ILibraryAbstractMod
     {
         return Task.CompletedTask;
     }
-    public virtual Task AfterDamageGiven(PlayerChoiceContext choiceContext, Creature? dealer, DamageResult results, ValueProp props, Creature target, CardModel? cardSource, LibraryDamageType type)
+    public Task AfterDamageGiven(PlayerChoiceContext choiceContext, Creature? dealer, DamageResult results, ValueProp props, Creature target, CardModel? cardSource, LibraryDamageType type)
     {
         return Task.CompletedTask;
     }
-    public virtual Task AfterDamageReceived(PlayerChoiceContext choiceContext, Creature target, DamageResult result, ValueProp props, Creature? dealer, CardModel? cardSource, LibraryDamageType type)
+    public Task AfterDamageReceived(PlayerChoiceContext choiceContext, Creature target, DamageResult result, ValueProp props, Creature? dealer, CardModel? cardSource, LibraryDamageType type)
     {
         return Task.CompletedTask;
     }
@@ -97,6 +97,14 @@ public abstract class LibrarySingletonModel : SingletonModel,ILibraryAbstractMod
         return Task.CompletedTask;
     }
     public virtual Task AfterModifyingHpLostBeforeOsty(LibraryDamageType type)
+    {
+        return Task.CompletedTask;
+    }
+    public virtual Task AfterModifyingChaoDamageAmount(CardModel? cardSource, LibraryDamageType type)
+    {
+        return Task.CompletedTask;
+    }
+    public virtual Task AfterModifyingEffectiveAmount(CardModel? cardSource)
     {
         return Task.CompletedTask;
     }
@@ -163,6 +171,14 @@ public abstract class LibrarySingletonModel : SingletonModel,ILibraryAbstractMod
     public virtual decimal ModifyDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, LibraryDamageType type)
     {
         return 0m;
+    }
+    public virtual decimal ModifyEffectiveAmountAdditive(Creature? target, decimal num, Creature? dealer, CardModel? cardSource)
+    {
+        return 0m;
+    }
+    public virtual decimal ModifyEffectiveAmountMultiplicative(Creature? target, decimal num, Creature? dealer, CardModel? cardSource)
+    {
+        return 1m;
     }
     public virtual decimal ModifyDamageCap(Creature? target, ValueProp props, Creature? dealer, CardModel? cardSource, LibraryDamageType type)
     {

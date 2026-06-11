@@ -12,6 +12,7 @@ using Library.Utils;
 using Library.Resistance;
 using Library.Powers.Mode;
 using System.Text.RegularExpressions;
+using System.Runtime;
 namespace Library.Hooks;
 
 public static class LibraryHooks
@@ -288,7 +289,7 @@ public static class LibraryHooks
             {
                 if(modifier is ILibraryAbstractModel libraryAbstractModel)
                 {
-                    await libraryAbstractModel.AfterModifyingDamageAmount(cardSource,type);
+                    await libraryAbstractModel.AfterModifyingChaoDamageAmount(cardSource,type);
                     modifier.InvokeExecutionFinished();
                 }
             }
@@ -430,6 +431,49 @@ public static class LibraryHooks
                 num = libraryAbstractModel.ModifyAttackHitCount(attackCommand, num);
         }
         return num;
+    }
+    public static decimal ModifyEffectiveAmount( ICombatState combatState, Creature target, Creature? dealer, decimal amount, CardModel? cardSource, out IEnumerable<AbstractModel> modifiers)
+    {
+        decimal num = amount;
+        List<AbstractModel> list = new();
+        foreach (AbstractModel item in combatState.IterateHookListeners())
+        {
+            if(item is ILibraryAbstractModel lm){
+                decimal num2 = lm.ModifyEffectiveAmountAdditive(target, num, dealer,cardSource);
+                num += num2;
+                if (num2 != 0m)
+                {
+                    list.Add(item);
+                }
+            }
+        }
+        foreach (AbstractModel item in combatState.IterateHookListeners())
+        {
+            if(item is ILibraryAbstractModel lm){
+                decimal num3 = lm.ModifyEffectiveAmountMultiplicative(target, num, dealer,cardSource);
+                num *= num3;
+                if (num3 != 1m)
+                {
+                    list.Add(item);
+                }
+            }
+        }
+        modifiers = list;
+        return num;
+    }
+    public static async Task AfterModifyingEffectiveAmount(ICombatState combatState, CardModel? cardSource, IEnumerable<AbstractModel> modifiers)
+    {
+        foreach (AbstractModel modifier in combatState.IterateHookListeners())
+        {   
+            if (modifiers.Contains(modifier))
+            {
+                if(modifier is ILibraryAbstractModel libraryAbstractModel)
+                {
+                    await libraryAbstractModel.AfterModifyingEffectiveAmount(cardSource);
+                }
+                modifier.InvokeExecutionFinished();
+            }
+        }
     }
     public static decimal ModifyDamage(IRunState runState, ICombatState combatState, Creature target, Creature? dealer, decimal damage, ValueProp props, CardModel? cardSource, ModifyDamageHookType modifyDamageHookType, CardPreviewMode previewMode, out IEnumerable<AbstractModel> modifiers,LibraryDamageType type)
     {
