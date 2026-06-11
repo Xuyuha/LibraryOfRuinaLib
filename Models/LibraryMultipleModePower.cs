@@ -587,10 +587,10 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
         await Mode.AfterModifyingChaoDamageAmount(cardSource, type);
         await AfterModifyingChaoDamageAmount(cardSource, type , null);
     }
-    public sealed override async Task AfterModifyingEffectiveAmount(CardModel? cardSource)
+    public sealed override async Task AfterModifyingEffectiveAmount(CardModel? cardSource, LibraryBasePowerModel power)
     {
-        await Mode.AfterModifyingEffectiveAmount(cardSource);
-        await AfterModifyingEffectiveAmount(cardSource , null);
+        await Mode.AfterModifyingEffectiveAmount(cardSource, power);
+        await AfterModifyingEffectiveAmount(cardSource, power , null);
     }
 	public sealed override async Task AfterModifyingEnergyGain()
 	{
@@ -1017,18 +1017,18 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
         n *= ModifyPowerAmountGivenMultiplicative(power, giver, amount*n, target, cardSource , null);
 		return n;
 	}
-    public sealed override decimal ModifyEffectiveAmountAdditive(Creature? target, decimal num, Creature? dealer, CardModel? cardSource)
+    public sealed override decimal ModifyEffectiveAmountAdditive(LibraryBasePowerModel power, decimal num, Creature? dealer, CardModel? cardSource)
     {
 		decimal n = 0;
-        n += Mode.ModifyEffectiveAmountAdditive(target, num, dealer, cardSource);
-        n += ModifyEffectiveAmountAdditive(target, num, dealer, cardSource , null);
+        n += Mode.ModifyEffectiveAmountAdditive(power, num, dealer, cardSource);
+        n += ModifyEffectiveAmountAdditive(power, num, dealer, cardSource , null);
 		return n;
     }
-    public sealed override decimal ModifyEffectiveAmountMultiplicative(Creature? target, decimal num, Creature? dealer, CardModel? cardSource)
+    public sealed override decimal ModifyEffectiveAmountMultiplicative(LibraryBasePowerModel power, decimal num, Creature? dealer, CardModel? cardSource)
     {
 		decimal n = 1m;
-        n *= Mode.ModifyEffectiveAmountMultiplicative(target, num, dealer, cardSource);
-        n *= ModifyEffectiveAmountMultiplicative(target, num, dealer, cardSource , null);
+        n *= Mode.ModifyEffectiveAmountMultiplicative(power, num, dealer, cardSource);
+        n *= ModifyEffectiveAmountMultiplicative(power, num, dealer, cardSource , null);
 		return n;
     }
 
@@ -1460,11 +1460,11 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
     {
         return 0m;
     }
-    public virtual decimal ModifyEffectiveAmountAdditive(Creature? target, decimal num, Creature? dealer, CardModel? cardSource, object? _ = null)
+    public virtual decimal ModifyEffectiveAmountAdditive(LibraryBasePowerModel power, decimal num, Creature? dealer, CardModel? cardSource, object? _ = null)
     {
         return 0m;
     }
-    public virtual decimal ModifyEffectiveAmountMultiplicative(Creature? target, decimal num, Creature? dealer, CardModel? cardSource, object? _ = null)
+    public virtual decimal ModifyEffectiveAmountMultiplicative(LibraryBasePowerModel power, decimal num, Creature? dealer, CardModel? cardSource, object? _ = null)
     {
         return 1m;
     }
@@ -1807,7 +1807,7 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
     {
         return Task.CompletedTask;
     }
-    public virtual Task AfterModifyingEffectiveAmount(CardModel? cardSource,object? _ =null)
+    public virtual Task AfterModifyingEffectiveAmount(CardModel? cardSource, LibraryBasePowerModel power, object? _ =null)
     {
         return Task.CompletedTask;
     }

@@ -22,8 +22,8 @@ public abstract class LibraryBasePowerModel: LibraryMultipleModePowerModel//ç±»ä
         if(combatState == null)return;
         if (!LibraryHooks.TryPowerEffect(combatState, choiceContext, this, dealer, cardSource)) return;
         Log.Info(Id+"Effect");
-        decimal effectiveAmount = LibraryHooks.ModifyEffectiveAmount(combatState,Owner,  dealer , Amount, cardSource, out IEnumerable<AbstractModel> modifiers);
-        await LibraryHooks.AfterModifyingEffectiveAmount(combatState, cardSource, modifiers);
+        decimal effectiveAmount = LibraryHooks.ModifyEffectiveAmount(combatState,this,  dealer , Amount, cardSource, out IEnumerable<AbstractModel> modifiers);
+        await LibraryHooks.AfterModifyingEffectiveAmount(combatState, this , cardSource, modifiers);
         await LibraryHooks.BeforePowerEffect(combatState, choiceContext, this, dealer, cardSource);
         await Effect(choiceContext, effectiveAmount);
         await LibraryHooks.AfterPowerEffect(combatState, choiceContext, this, dealer, cardSource);

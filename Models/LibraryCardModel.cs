@@ -127,7 +127,7 @@ public abstract class LibraryCardModel : CardModel//加入了使用前/中/后�
     {
         return Task.CompletedTask;
     }
-    public virtual Task AfterModifyingEffectiveAmount(CardModel? cardSource)
+    public virtual Task AfterModifyingEffectiveAmount(CardModel? cardSource, LibraryBasePowerModel power)
     {
         return Task.CompletedTask;
     }
@@ -199,11 +199,11 @@ public abstract class LibraryCardModel : CardModel//加入了使用前/中/后�
     {
         return 0m;
     }
-    public virtual decimal ModifyEffectiveAmountAdditive(Creature? target, decimal num, Creature? dealer, CardModel? cardSource)
+    public virtual decimal ModifyEffectiveAmountAdditive(LibraryBasePowerModel power, decimal num, Creature? dealer, CardModel? cardSource)
     {
         return 0m;
     }
-    public virtual decimal ModifyEffectiveAmountMultiplicative(Creature? target, decimal num, Creature? dealer, CardModel? cardSource)
+    public virtual decimal ModifyEffectiveAmountMultiplicative(LibraryBasePowerModel power, decimal num, Creature? dealer, CardModel? cardSource)
     {
         return 1m;
     }
