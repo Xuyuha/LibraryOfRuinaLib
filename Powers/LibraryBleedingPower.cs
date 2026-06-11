@@ -22,11 +22,11 @@ public sealed class LibraryBleedingPower : LibraryBasePowerModel
         if (Owner.IsDead) return;
         await PowerCmd.Apply<LibraryBleedingPower>(choiceContext, Owner,  -(Amount / 3), null, null);
     }
-    protected override async Task Effect(PlayerChoiceContext choiceContext)
+    protected override async Task Effect(PlayerChoiceContext choiceContext, decimal effectiveAmount)
     {
         if (Owner.IsDead) return;
         Flash();
-        await CreatureCmd.Damage(choiceContext, Owner, base.Amount, ValueProp.Unpowered, Owner, null);
+        await CreatureCmd.Damage(choiceContext, Owner, effectiveAmount, ValueProp.Unpowered, Owner, null);
     }
     public override async Task AfterSideTurnEnd(PlayerChoiceContext choiceContext, CombatSide side, IEnumerable<Creature> participants,object?_ = null)
     {
