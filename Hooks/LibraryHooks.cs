@@ -432,14 +432,14 @@ public static class LibraryHooks
         }
         return num;
     }
-    public static decimal ModifyEffectiveAmount( ICombatState combatState, Creature target, Creature? dealer, decimal amount, CardModel? cardSource, out IEnumerable<AbstractModel> modifiers)
+    public static decimal ModifyEffectiveAmount( ICombatState combatState, LibraryBasePowerModel power, Creature? dealer, decimal amount, CardModel? cardSource, out IEnumerable<AbstractModel> modifiers)
     {
         decimal num = amount;
         List<AbstractModel> list = new();
         foreach (AbstractModel item in combatState.IterateHookListeners())
         {
             if(item is ILibraryAbstractModel lm){
-                decimal num2 = lm.ModifyEffectiveAmountAdditive(target, num, dealer,cardSource);
+                decimal num2 = lm.ModifyEffectiveAmountAdditive(power, num, dealer,cardSource);
                 num += num2;
                 if (num2 != 0m)
                 {
@@ -450,7 +450,7 @@ public static class LibraryHooks
         foreach (AbstractModel item in combatState.IterateHookListeners())
         {
             if(item is ILibraryAbstractModel lm){
-                decimal num3 = lm.ModifyEffectiveAmountMultiplicative(target, num, dealer,cardSource);
+                decimal num3 = lm.ModifyEffectiveAmountMultiplicative(power, num, dealer,cardSource);
                 num *= num3;
                 if (num3 != 1m)
                 {
@@ -461,7 +461,7 @@ public static class LibraryHooks
         modifiers = list;
         return num;
     }
-    public static async Task AfterModifyingEffectiveAmount(ICombatState combatState, CardModel? cardSource, IEnumerable<AbstractModel> modifiers)
+    public static async Task AfterModifyingEffectiveAmount(ICombatState combatState, LibraryBasePowerModel power, CardModel? cardSource, IEnumerable<AbstractModel> modifiers)
     {
         foreach (AbstractModel modifier in combatState.IterateHookListeners())
         {   
@@ -469,7 +469,7 @@ public static class LibraryHooks
             {
                 if(modifier is ILibraryAbstractModel libraryAbstractModel)
                 {
-                    await libraryAbstractModel.AfterModifyingEffectiveAmount(cardSource);
+                    await libraryAbstractModel.AfterModifyingEffectiveAmount(cardSource,power);
                 }
                 modifier.InvokeExecutionFinished();
             }

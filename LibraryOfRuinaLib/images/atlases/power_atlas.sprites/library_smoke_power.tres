@@ -1,0 +1,7 @@
+[gd_resource type="AtlasTexture" load_steps=2 format=3 uid="uid://ydaeecywrb2n"]
+
+[ext_resource type="Texture2D" uid="uid://bk7r87yrcig54" path="res://images/powers/library_smoke_power.png" id="1_qj140"]
+
+[resource]
+atlas = ExtResource("1_qj140")
+region = Rect2(0, 0, 128, 128)

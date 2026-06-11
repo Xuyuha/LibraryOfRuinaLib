@@ -14,10 +14,31 @@ using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Rewards;
 using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Entities.CardRewardAlternatives;
+using Library.Hooks;
 namespace Library.Models;
 public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
 {
-    
+	protected LibraryPowerMode? _mode;
+    protected abstract LibraryPowerMode DefaultMode{get;}
+    public LibraryPowerMode Mode
+	{
+		get => _mode ?? DefaultMode;
+		set
+		{
+			_mode = value;
+            RefreshIcon();
+		}
+	}
+    public override string Suffix => Mode.Name;
+    public async Task SetPowerMode(PlayerChoiceContext choiceContext, LibraryPowerMode mode, Creature? dealer, CardModel? cardSource)
+    {
+        ICombatState? combatState = Owner?.CombatState;
+        if(combatState == null)
+            return;
+        await LibraryHooks.BeforeSetPowerMode(combatState, choiceContext, this, dealer, cardSource, mode);
+        Mode = mode;
+        await LibraryHooks.AfterSetPowerMode(combatState, choiceContext, this, dealer, cardSource, mode);
+    }
     public sealed override async Task BeforeDiceEffect(PlayerChoiceContext choiceContext, Creature? target, CardModel cardSource, LibraryDice dice)
     {
         await Mode.BeforeDiceEffect(choiceContext, target, cardSource, dice);

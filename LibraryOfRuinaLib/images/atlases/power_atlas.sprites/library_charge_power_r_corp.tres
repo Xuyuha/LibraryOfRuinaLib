@@ -1,0 +1,7 @@
+[gd_resource type="AtlasTexture" load_steps=2 format=3 uid="uid://c1apv8dhtko16"]
+
+[ext_resource type="Texture2D" uid="uid://dpl380p4y0i11" path="res://images/powers/library_charge_power_r_corp.png" id="1_kgja1"]
+
+[resource]
+atlas = ExtResource("1_kgja1")
+region = Rect2(0, 0, 128, 128)
