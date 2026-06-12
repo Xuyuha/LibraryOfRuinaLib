@@ -5,6 +5,7 @@ using MegaCrit.Sts2.Core.Models.Relics;
 
 public abstract class LibraryChargeMode : LibraryPowerMode
 {
+    public virtual int MaxAmount => 10;
     public LibraryChargeMode(LibraryMultipleModePowerModel sourcePower) : base(sourcePower)
     {
     }

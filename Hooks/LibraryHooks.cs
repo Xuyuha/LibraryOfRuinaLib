@@ -469,7 +469,7 @@ public static class LibraryHooks
             {
                 if(modifier is ILibraryAbstractModel libraryAbstractModel)
                 {
-                    await libraryAbstractModel.AfterModifyingEffectiveAmount(cardSource, power);
+                    await libraryAbstractModel.AfterModifyingEffectiveAmount(cardSource,power);
                 }
                 modifier.InvokeExecutionFinished();
             }

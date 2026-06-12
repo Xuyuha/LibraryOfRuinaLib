@@ -30,11 +30,9 @@ public abstract class LibraryPowerModel : PowerModel,ILibraryAbstractModel
 {
     public virtual void AddVariablesToDescription(LocString description, int? amountOverride = null){}
     private NPower? _boundNPower;
-    private LibraryPowerMode? _mode;
-    protected virtual LibraryPowerMode? DefaultMode => null;
-    protected virtual string Name => Mode.Name;
-    private string UpName => Name.ToUpperInvariant();
-    private string LowName => Name.ToLowerInvariant();
+    protected string _suffix = "";
+    private string UpSuffix => Suffix.ToUpperInvariant();
+    private string LowSuffix => Suffix.ToLowerInvariant();
     private static AccessTools.FieldRef<NPower, TextureRect>? _iconAccessor;
     private static AccessTools.FieldRef<NPower, CpuParticles2D>? _powerFlashAccessor;
 
@@ -52,19 +50,19 @@ public abstract class LibraryPowerModel : PowerModel,ILibraryAbstractModel
 
     /// <inheritdoc />
     public override LocString Title =>
-        IsDynamic ? new LocString("powers", $"{base.Id.Entry}_{UpName}.title") :
+        IsDynamic ? new LocString("powers", $"{base.Id.Entry}_{UpSuffix}.title") :
         LegacyPowerId != null ? new LocString("powers", $"{LegacyPowerId}.title") :
         base.Title;
 
     /// <inheritdoc />
     public override LocString Description =>
-        IsDynamic ? new LocString("powers", $"{base.Id.Entry}_{UpName}.description") :
+        IsDynamic ? new LocString("powers", $"{base.Id.Entry}_{UpSuffix}.description") :
         LegacyPowerId != null ? new LocString("powers", $"{LegacyPowerId}.description") :
         base.Description;
 
     /// <inheritdoc />
     protected override string SmartDescriptionLocKey =>
-        IsDynamic ? $"{base.Id.Entry}_{UpName}.smartDescription" :
+        IsDynamic ? $"{base.Id.Entry}_{UpSuffix}.smartDescription" :
         LegacyPowerId != null ? $"{LegacyPowerId}.smartDescription" :
         $"{base.Id.Entry}.smartDescription";
 
@@ -72,7 +70,7 @@ public abstract class LibraryPowerModel : PowerModel,ILibraryAbstractModel
     ///     远程（多人游戏）描述的本地化键。
     /// </summary>
     protected override string RemoteDescriptionLocKey =>
-        IsDynamic ? $"{base.Id.Entry}_{UpName}.remoteDescription" :
+        IsDynamic ? $"{base.Id.Entry}_{UpSuffix}.remoteDescription" :
         LegacyPowerId != null ? $"{LegacyPowerId}.remoteDescription" :
         $"{base.Id.Entry}.remoteDescription";
 
@@ -82,7 +80,7 @@ public abstract class LibraryPowerModel : PowerModel,ILibraryAbstractModel
         get
         {
             if (IsDynamic)
-                return ImageHelper.GetImagePath($"atlases/power_atlas.sprites/{base.Id.Entry.ToLowerInvariant()}_{LowName}.tres");
+                return ImageHelper.GetImagePath($"atlases/power_atlas.sprites/{base.Id.Entry.ToLowerInvariant()}_{LowSuffix}.tres");
             return base.PackedIconPath;
         }
     }
@@ -93,7 +91,7 @@ public abstract class LibraryPowerModel : PowerModel,ILibraryAbstractModel
         get
         {
             if (IsDynamic)
-                return ImageHelper.GetImagePath($"powers/{base.Id.Entry.ToLowerInvariant()}_{LowName}.png");
+                return ImageHelper.GetImagePath($"powers/{base.Id.Entry.ToLowerInvariant()}_{LowSuffix}.png");
             return base.PackedIconPath;
         }
     }
@@ -107,15 +105,13 @@ public abstract class LibraryPowerModel : PowerModel,ILibraryAbstractModel
     /// <summary>
     ///     当前动态模式索引。设置时会触发绑定 NPower 节点的图标刷新。
     /// </summary>
-    public LibraryPowerMode Mode
+     public virtual string Suffix
     {
-        get{
-            return _mode ?? DefaultMode;
-        }
-        private set
+        get => _suffix;
+        set
         {
-            if(value == null)return;
-            _mode = value;
+            if (value == null) return;
+            _suffix = value;
             RefreshIcon();
         }
     }
@@ -137,17 +133,8 @@ public abstract class LibraryPowerModel : PowerModel,ILibraryAbstractModel
     /// <summary>
     ///     设置动态模式，并向所有 <see cref="ILibraryAbstractModel"/> 监听器派发 before/after 钩子。
     /// </summary>
-    public async Task SetPowerMode(PlayerChoiceContext choiceContext, LibraryPowerMode mode, Creature? dealer, CardModel? cardSource)
-    {
-        ICombatState? combatState = Owner?.CombatState ;
-        if(combatState == null)
-            return;
-        await LibraryHooks.BeforeSetPowerMode(combatState, choiceContext, this, dealer, cardSource, mode);
-        Mode = mode;
-        await LibraryHooks.AfterSetPowerMode(combatState, choiceContext, this, dealer, cardSource, mode);
-    }
 
-    private void RefreshIcon()
+    protected void RefreshIcon()
     {
         if (_boundNPower == null || !GodotObject.IsInstanceValid(_boundNPower))
             return;
