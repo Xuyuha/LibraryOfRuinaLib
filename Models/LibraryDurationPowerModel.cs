@@ -246,7 +246,13 @@ public abstract class LibraryDurationPowerModel : LibraryPowerModel, ISecondaryD
     }
     public override void AddVariablesToDescription(LocString description, int? amountOverride = null)
     {
-        description.Add("IsPermanent",IsPermanent);
+        if (IsMutable)
+        {
+            description.Add("IsPermanent", IsPermanent);
+            return;
+        }
+
+        description.Add("IsPermanent", IsPermanentByDesign);
     }
 
     private static T? FindStackablePower<T>(Creature target, int incomingTurns)
