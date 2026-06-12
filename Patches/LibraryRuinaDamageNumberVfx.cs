@@ -1,5 +1,6 @@
 #nullable enable
 
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Text.RegularExpressions;
 using Godot;
@@ -31,11 +32,21 @@ internal sealed partial class LibraryRuinaDamageNumberVfx : Node2D
     private static readonly Vector2 PositionOffset = new(0f, -118f);
     private static readonly Vector2 PhysicalSideOffset = new(-150f, 0f);
     private static readonly Vector2 ChaosSideOffset = new(150f, 0f);
+    private static readonly Vector2[] SequentialSpawnOffsets =
+    [
+        Vector2.Zero,
+        new(-44f, -14f),
+        new(44f, -12f),
+        new(-28f, 24f),
+        new(30f, 22f),
+        new(0f, -34f)
+    ];
 
     private static readonly Font? DamageFont =
         ResourceLoader.Load<Font>("res://themes/kreon_regular_glyph_space_two.tres", null, ResourceLoader.CacheMode.Reuse);
     private static readonly Regex LocColorTagRegex = new(@"\[/?(?:color(?:=[^\]]+)?|gray|blue|green|orange|red|gold)\]", RegexOptions.Compiled);
     private static readonly Regex ResistanceMultiplierRegex = new(@"\s*[\uFF08(]\s*[\u00D7xX]\s*[\d.]+\s*[\uFF09)]", RegexOptions.Compiled);
+    private static readonly ConditionalWeakTable<Creature, SpawnLayoutState> SpawnLayoutStates = new();
 
     private Tween? _tween;
     private string _text = "0";
@@ -44,6 +55,14 @@ internal sealed partial class LibraryRuinaDamageNumberVfx : Node2D
     private Color _fontColor = Colors.White;
     private Color _outlineColor = new("241F1B");
     private bool _isChaos;
+
+    private sealed class SpawnLayoutState
+    {
+        public ulong LastPhysicalTick;
+        public int PhysicalIndex;
+        public ulong LastChaosTick;
+        public int ChaosIndex;
+    }
 
     public static LibraryRuinaDamageNumberVfx? CreatePhysical(Creature target, DamageResult result, LibraryDamageType type)
     {
@@ -103,6 +122,7 @@ internal sealed partial class LibraryRuinaDamageNumberVfx : Node2D
             globalPosition = creatureNode.VfxSpawnPosition
                 + PositionOffset
                 + sideOffset
+                + GetSequentialSpawnOffset(target, isChaos)
                 + new Vector2(Rng.Chaotic.NextFloat(-8f, 8f), Rng.Chaotic.NextFloat(-5f, 5f));
         }
 
@@ -120,6 +140,36 @@ internal sealed partial class LibraryRuinaDamageNumberVfx : Node2D
         };
 
         return vfx;
+    }
+
+    private static Vector2 GetSequentialSpawnOffset(Creature target, bool isChaos)
+    {
+        SpawnLayoutState state = SpawnLayoutStates.GetOrCreateValue(target);
+        ulong now = Time.GetTicksMsec();
+
+        ulong lastTick = isChaos ? state.LastChaosTick : state.LastPhysicalTick;
+        int index = isChaos ? state.ChaosIndex : state.PhysicalIndex;
+        if (now - lastTick <= 1000)
+        {
+            index = (index + 1) % SequentialSpawnOffsets.Length;
+        }
+        else
+        {
+            index = 0;
+        }
+
+        if (isChaos)
+        {
+            state.LastChaosTick = now;
+            state.ChaosIndex = index;
+        }
+        else
+        {
+            state.LastPhysicalTick = now;
+            state.PhysicalIndex = index;
+        }
+
+        return SequentialSpawnOffsets[index];
     }
 
     public override void _Ready()

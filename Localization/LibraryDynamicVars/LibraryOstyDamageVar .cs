@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Library.Hooks;
+using Library.Patches;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
@@ -42,6 +43,12 @@ public class LibraryOstyDamageVar : OstyDamageVar
 			ICombatState combatState = card.CombatState ?? card.Owner.Creature.CombatState;
 			num = LibraryHooks.ModifyDamage(card.Owner.RunState, combatState, target, card.Owner.Osty, base.BaseValue, Props, card, ModifyDamageHookType.All, previewMode, out IEnumerable<AbstractModel> _, DamageType);
 		}
-		base.PreviewValue = num;
+		base.PreviewValue = LibraryDamagePreviewFeedback.ApplyPhysicalResistancePreview(
+			card,
+			previewMode,
+			target,
+			num,
+			Props,
+			DamageType);
 	}
 }

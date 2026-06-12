@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Library.Hooks;
+using Library.Patches;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
@@ -51,6 +52,13 @@ public class LibraryCalculatedDamageVar : CalculatedDamageVar
 			}
 			base.PreviewValue = num;
 		}
+		base.PreviewValue = LibraryDamagePreviewFeedback.ApplyPhysicalResistancePreview(
+			card,
+			previewMode,
+			target,
+			base.PreviewValue,
+			Props,
+			DamageType);
 		base.PreviewValue = Math.Max(base.PreviewValue, 0m);
 	}
 }

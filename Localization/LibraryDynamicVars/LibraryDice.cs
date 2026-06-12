@@ -2,7 +2,9 @@ using Godot;
 using Library.Entities.Creatures;
 using Library.Hooks;
 using Library.Models;
+using Library.Patches;
 using Library.Resistance;
+using Library.Resistance.Patches;
 using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands.Builders;
@@ -29,8 +31,9 @@ public class LibraryDice : LibraryDamageVar
         DiceType = diceType;
         SourceCard = sourceCard;
         FloatValue = floatValue;
+        _previewFloatValue = floatValue;
     }
-    public override string ToString()=>$"[img]{DescriptionIconPath}[/img]{PreviewValue} - {PreviewValue + FloatValue}{DamageAdditive}{DamageResistance}{ChaoAdditive}{ChaoResistance}\n";
+    public override string ToString()=>$"[img]{DescriptionIconPath}[/img]{PreviewValue} - {PreviewValue + _previewFloatValue}{DamageAdditive}{DamageResistance}{ChaoAdditive}{ChaoResistance}\n";
     public decimal DamageResistanceValue = 1m;
     public  bool ShouldUseDefaultTip {get;set;} = true;
     public decimal ChaoResistanceValue = 0m;
@@ -42,6 +45,7 @@ public class LibraryDice : LibraryDamageVar
     private string ChaoAdditive => _shouldShowChao && ChaoAdditiveValue != 0 ? $" [orange]{ChaoSign}{ChaoAdditiveValue}[/orange]":"";
     private string DamageResistance => _shouldShowDamage?$" [red]×{DamageResistanceValue}[/red]":"";
     private string ChaoResistance => _shouldShowChao?$" [orange]×{ChaoResistanceValue}[/orange]":"";
+    private decimal _previewFloatValue;
     private bool _shouldShowDamage = false;
     private bool _shouldShowChao = false;
     public decimal FloatValue {get;set;}
@@ -122,11 +126,14 @@ public class LibraryDice : LibraryDamageVar
         if(DiceType != LibraryDiceType.Block){
             decimal num = base.BaseValue;
             decimal num1 = base.BaseValue;
+            decimal maxNum = base.BaseValue + FloatValue;
             EnchantmentModel enchantment = card.Enchantment;
             if (enchantment != null)
             {
                 num += enchantment.EnchantDamageAdditive(num, Props);
                 num *= enchantment.EnchantDamageMultiplicative(num, Props);
+                maxNum += enchantment.EnchantDamageAdditive(maxNum, Props);
+                maxNum *= enchantment.EnchantDamageMultiplicative(maxNum, Props);
                 if (!card.IsEnchantmentPreview)
                 {
                     base.EnchantedValue = num;
@@ -139,8 +146,23 @@ public class LibraryDice : LibraryDamageVar
             if (runGlobalHooks)
             {
                 num = LibraryHooks.ModifyDamage(card.Owner.RunState, card.CombatState, target, card.Owner.Creature, base.BaseValue, Props, card, ModifyDamageHookType.All, previewMode, out IEnumerable<AbstractModel> _, DamageType);
+                maxNum = LibraryHooks.ModifyDamage(card.Owner.RunState, card.CombatState, target, card.Owner.Creature, base.BaseValue + FloatValue, Props, card, ModifyDamageHookType.All, previewMode, out IEnumerable<AbstractModel> _, DamageType);
                 num1 = LibraryHooks.ModifyChaoDamage(card.Owner.RunState, card.CombatState, target, card.Owner.Creature, base.BaseValue, Props, card, ModifyChaoDamageHookType.All, previewMode, out IEnumerable<AbstractModel> _, DamageType);
             }
+            decimal previewMin = LibraryDamagePreviewFeedback.ApplyPhysicalResistancePreview(
+                card,
+                previewMode,
+                target,
+                num,
+                Props,
+                DamageType);
+            decimal previewMax = LibraryDamagePreviewFeedback.ApplyPhysicalResistancePreview(
+                card,
+                previewMode,
+                target,
+                maxNum,
+                Props,
+                DamageType);
             if(target is LibraryCreature lc)
             {
                 _shouldShowDamage =true;
@@ -149,6 +171,7 @@ public class LibraryDice : LibraryDamageVar
                 {
                     ChaoResistanceValue = lc.GetChaosResistanceLevel(DamageType).GetMultiplier();
                     _shouldShowChao =true;
+                    LibraryChaosResistanceIconsUi.Pulse(lc, DamageType);
                 }
                 else
                     _shouldShowChao =false;
@@ -160,9 +183,11 @@ public class LibraryDice : LibraryDamageVar
             }
             DamageAdditiveValue = (int)(num - BaseValue);
             ChaoAdditiveValue = (int)(num1 - BaseValue);
-            PreviewValue = BaseValue;
+            PreviewValue = previewMin;
+            _previewFloatValue = previewMax - previewMin;
         }
         else{
+            _previewFloatValue = FloatValue;
             decimal num = base.BaseValue;
             EnchantmentModel enchantment = card.Enchantment;
             if (enchantment != null)

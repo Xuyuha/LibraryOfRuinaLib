@@ -23,6 +23,7 @@ internal static class LibraryChaosResistanceIconsUi
     private const float IconSpacing = 1f;
     private const float RightOffset = 1f;
     private const float TopOffset = -52f;
+    private const ulong PulseCooldownMs = 120;
 
     private static readonly LibraryDamageType[] DisplayOrder =
         [LibraryDamageType.Slash, LibraryDamageType.Pierce, LibraryDamageType.Blunt];
@@ -34,7 +35,10 @@ internal static class LibraryChaosResistanceIconsUi
     {
         public Control? Container;
         public TextureRect?[] Icons = new TextureRect?[3];
+        public ColorRect?[] Highlights = new ColorRect?[3];
         public Control?[] Hitboxes = new Control?[3];
+        public Tween?[] PulseTweens = new Tween?[3];
+        public ulong[] LastPulseTicks = new ulong[3];
         public LibraryResistanceLevel[] LastLevels =
             [LibraryResistanceLevel.Normal, LibraryResistanceLevel.Normal, LibraryResistanceLevel.Normal];
         public bool WasVisible;
@@ -91,6 +95,103 @@ internal static class LibraryChaosResistanceIconsUi
         UpdateIcons(libCreature!, state);
     }
 
+    public static void Pulse(LibraryCreature creature, LibraryDamageType damageType)
+    {
+        NHealthBar? healthBar = creature.HealthBar;
+        if (healthBar == null) return;
+
+        Refresh(healthBar);
+
+        State state = GetOrCreateState(healthBar);
+        int index = Array.IndexOf(DisplayOrder, damageType);
+        if (index < 0) return;
+
+        TextureRect? icon = state.Icons[index];
+        if (icon == null || !GodotObject.IsInstanceValid(icon)) return;
+
+        ulong now = Time.GetTicksMsec();
+        if (state.LastPulseTicks[index] != 0 && now - state.LastPulseTicks[index] < PulseCooldownMs) return;
+        state.LastPulseTicks[index] = now;
+
+        Tween? runningTween = state.PulseTweens[index];
+        if (runningTween != null && GodotObject.IsInstanceValid(runningTween))
+            runningTween.Kill();
+
+        ColorRect? highlight = state.Highlights[index];
+        icon.PivotOffset = icon.Size / 2f;
+        icon.Position = Vector2.Zero;
+        icon.Scale = Vector2.One * 1.04f;
+        icon.Modulate = new Color(1f, 0.98f, 0.72f, 1f);
+        if (highlight != null && GodotObject.IsInstanceValid(highlight))
+        {
+            highlight.PivotOffset = highlight.Size / 2f;
+            highlight.Scale = Vector2.One * 1.08f;
+            highlight.Color = new Color(1f, 0.72f, 0.02f, 0.32f);
+            highlight.Visible = true;
+        }
+
+        Tween tween = icon.CreateTween();
+        AddFlashStep(tween, icon, highlight, 1.16f, 0.42f);
+        AddFlashStep(tween, icon, highlight, 1.09f, 0.24f);
+        tween.TweenCallback(Callable.From(() =>
+        {
+            if (GodotObject.IsInstanceValid(icon))
+            {
+                icon.Scale = Vector2.One;
+                icon.Modulate = Colors.White;
+            }
+
+            if (highlight != null && GodotObject.IsInstanceValid(highlight))
+            {
+                highlight.Scale = Vector2.One * 0.85f;
+                highlight.Color = new Color(1f, 0.78f, 0.08f, 0f);
+                highlight.Visible = false;
+            }
+        }));
+        state.PulseTweens[index] = tween;
+    }
+
+    private static void AddFlashStep(Tween tween, TextureRect icon, ColorRect? highlight, float peakScale, float peakAlpha)
+    {
+        float highlightScale = peakScale + 0.08f;
+
+        tween.TweenProperty(icon, "scale", Vector2.One * peakScale, 0.08)
+            .SetEase(Tween.EaseType.Out)
+            .SetTrans(Tween.TransitionType.Cubic);
+        tween.Parallel().TweenProperty(icon, "modulate", new Color(1f, 0.98f, 0.72f, 1f), 0.08)
+            .SetEase(Tween.EaseType.Out)
+            .SetTrans(Tween.TransitionType.Cubic);
+
+        if (highlight != null && GodotObject.IsInstanceValid(highlight))
+        {
+            tween.Parallel().TweenProperty(highlight, "scale", Vector2.One * highlightScale, 0.08)
+                .SetEase(Tween.EaseType.Out)
+                .SetTrans(Tween.TransitionType.Cubic);
+            tween.Parallel().TweenProperty(highlight, "color", new Color(1f, 0.70f, 0.02f, peakAlpha), 0.08)
+                .SetEase(Tween.EaseType.Out)
+                .SetTrans(Tween.TransitionType.Cubic);
+        }
+
+        tween.TweenInterval(0.03);
+
+        tween.TweenProperty(icon, "scale", Vector2.One, 0.12)
+            .SetEase(Tween.EaseType.Out)
+            .SetTrans(Tween.TransitionType.Back);
+        tween.Parallel().TweenProperty(icon, "modulate", Colors.White, 0.12)
+            .SetEase(Tween.EaseType.Out)
+            .SetTrans(Tween.TransitionType.Sine);
+
+        if (highlight != null && GodotObject.IsInstanceValid(highlight))
+        {
+            tween.Parallel().TweenProperty(highlight, "scale", Vector2.One * 0.92f, 0.12)
+                .SetEase(Tween.EaseType.Out)
+                .SetTrans(Tween.TransitionType.Back);
+            tween.Parallel().TweenProperty(highlight, "color", new Color(1f, 0.78f, 0.08f, 0.06f), 0.12)
+                .SetEase(Tween.EaseType.Out)
+                .SetTrans(Tween.TransitionType.Sine);
+        }
+    }
+
     private static void CreateIconNodes(NHealthBar healthBar, State state)
     {
         Control hpBarContainer = healthBar.HpBarContainer;
@@ -105,6 +206,7 @@ internal static class LibraryChaosResistanceIconsUi
             MouseFilter = Control.MouseFilterEnum.Ignore,
         };
         healthBarNode.AddChild(container);
+        healthBarNode.MoveChild(container, 0);
 
         for (int i = 0; i < 3; i++)
         {
@@ -119,6 +221,17 @@ internal static class LibraryChaosResistanceIconsUi
                 Position = new Vector2(0f, i * (IconSize + IconSpacing)),
             };
             container.AddChild(hitbox);
+
+            var highlight = new ColorRect
+            {
+                Name = $"ChaosResistPulse_{damageType}",
+                MouseFilter = Control.MouseFilterEnum.Ignore,
+                Size = new Vector2(IconSize + 10f, IconSize + 10f),
+                Position = new Vector2(-5f, -5f),
+                Color = new Color(1f, 0.78f, 0.08f, 0f),
+                Visible = false,
+            };
+            hitbox.AddChild(highlight);
 
             var icon = new TextureRect
             {
@@ -138,6 +251,7 @@ internal static class LibraryChaosResistanceIconsUi
                 OnIconUnhovered(hitbox)));
 
             state.Icons[i] = icon;
+            state.Highlights[i] = highlight;
             state.Hitboxes[i] = hitbox;
         }
 
@@ -150,6 +264,12 @@ internal static class LibraryChaosResistanceIconsUi
 
         Control hpBarContainer = healthBar.HpBarContainer;
         float barWidth = hpBarContainer.Size.X;
+
+        state.Container.ZIndex = 0;
+        state.Container.ZAsRelative = true;
+        Node? healthBarNode = hpBarContainer.GetParent();
+        if (healthBarNode != null && state.Container.GetIndex() != 0)
+            healthBarNode.MoveChild(state.Container, 0);
 
         float staggerBarY = hpBarContainer.Position.Y - 14f - 2f;
 

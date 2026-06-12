@@ -1,6 +1,7 @@
 
 using System.Collections.Generic;
 using Library.Hooks;
+using Library.Patches;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Hooks;
@@ -41,6 +42,12 @@ public class LibraryDamageVar : DamageVar
 		{
 			num = LibraryHooks.ModifyDamage(card.Owner.RunState, card.CombatState, target, card.Owner.Creature, base.BaseValue, Props, card, ModifyDamageHookType.All, previewMode, out IEnumerable<AbstractModel> _, DamageType);
 		}
-		base.PreviewValue = num;
+		base.PreviewValue = LibraryDamagePreviewFeedback.ApplyPhysicalResistancePreview(
+			card,
+			previewMode,
+			target,
+			num,
+			Props,
+			DamageType);
 	}
 }
