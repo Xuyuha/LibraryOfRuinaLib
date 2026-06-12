@@ -106,6 +106,50 @@ internal static class LibraryAttackExecuteFlagPatch
     new[] { typeof(PlayerChoiceContext), typeof(IEnumerable<Creature>), typeof(decimal), typeof(ValueProp), typeof(Creature), typeof(CardModel) })]
 internal static class LibraryAttackChaoDamagePatch
 {
+    [HarmonyPrefix]
+    private static bool Prefix(
+        PlayerChoiceContext choiceContext,
+        IEnumerable<Creature> targets,
+        decimal amount,
+        ValueProp props,
+        Creature? dealer,
+        CardModel? cardSource,
+        ref Task<IEnumerable<DamageResult>> __result)
+    {
+        if (!AttackExecuteContext.IsInAttackExecute.Value)
+            return true;
+
+        if (props.HasFlag(ValueProp.Unpowered))
+            return true;
+
+        if (!props.HasFlag(ValueProp.Move))
+            return true;
+
+        if (cardSource is LibraryCardModel)
+            return true;
+
+        if (dealer == null)
+            return true;
+
+        if (!dealer.IsPlayer && !dealer.IsMonster)
+            return true;
+
+        var targetList = targets as IReadOnlyList<Creature> ?? new List<Creature>(targets);
+        if (!targetList.Any(static target => target is LibraryCreature { IsPlayer: false }))
+            return true;
+
+        __result = LibraryCreatureCmd.Damage(
+            choiceContext: choiceContext,
+            targets: targetList,
+            damageAmount: amount,
+            props: props,
+            dealer: dealer,
+            cardSource: cardSource,
+            type: AttackExecuteContext.CurrentDamageType);
+
+        return false;
+    }
+
     [HarmonyPostfix]
     private static void Postfix(
         PlayerChoiceContext choiceContext,
