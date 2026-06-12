@@ -40,6 +40,8 @@ public abstract class LibraryDurationPowerModel : LibraryPowerModel, ISecondaryD
 
     public override PowerStackType StackType => PowerStackType.Counter;
 
+    public override PowerInstanceType InstanceType => PowerInstanceType.Instanced;
+
     protected override IEnumerable<DynamicVar> CanonicalVars => [new TurnsVar()];
 
     protected override object InitInternalData() => new Data();
@@ -91,7 +93,7 @@ public abstract class LibraryDurationPowerModel : LibraryPowerModel, ISecondaryD
         bool silent = false)
         where T : LibraryDurationPowerModel
     {
-        T? existing = target.GetPower<T>();
+        T? existing = FindStackablePower<T>(target, turns);
         if (existing == null)
         {
             if (amount == 0m)
@@ -240,5 +242,12 @@ public abstract class LibraryDurationPowerModel : LibraryPowerModel, ISecondaryD
         if (current <= 0 || incoming <= 0)
             return 0;
         return current + incoming;
+    }
+
+    private static T? FindStackablePower<T>(Creature target, int incomingTurns)
+        where T : LibraryDurationPowerModel
+    {
+        bool incomingIsPermanent = ModelDb.Power<T>().IsPermanentByDesign || incomingTurns <= 0;
+        return target.GetPowerInstances<T>().FirstOrDefault(power => power.IsPermanent == incomingIsPermanent);
     }
 }
