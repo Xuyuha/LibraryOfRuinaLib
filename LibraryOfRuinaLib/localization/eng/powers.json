@@ -72,5 +72,11 @@
   "DAMAGE_TYPE_RESISTANCE.normal": "Normal (×1)",
   "DAMAGE_TYPE_RESISTANCE.vulnerable": "[orange]Vulnerable (×1.5)[/orange]",
   "DAMAGE_TYPE_RESISTANCE.fatal": "[red]Fatal (×2)[/red]",
-  "DAMAGE_TYPE_RESISTANCE.tooltip_format": "{0}: {1}"
+  "DAMAGE_TYPE_RESISTANCE.tooltip_format": "{0}: {1}",
+  "LIBRARY_QUICKNESS_POWER.title": "Quickness",
+  "LIBRARY_QUICKNESS_POWER.description": "At the end of each turn, deal damage equal to this power's stacks to all enemies, then reduce this power by 1.",
+  "LIBRARY_QUICKNESS_POWER.smartDescription": "At the end of each turn, deal [red]{Amount}[/red] damage to all enemies, then reduce this power by 1.",
+  "LIBRARY_BINDING_POWER.title": "Binding",
+  "LIBRARY_BINDING_POWER.description": "During its duration, whenever this creature takes unblocked attack damage less than this power's stacks, raise that damage to this power's stacks.",
+  "LIBRARY_BINDING_POWER.smartDescription": "{IsPermanent:Permanent|For the next [blue]{Turns}[/blue] turns}, whenever [gold]{OwnerName}[/gold] takes less than [blue]{Amount}[/blue] unblocked attack damage, raise that damage to [blue]{Amount}[/blue]."
 }

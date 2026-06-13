@@ -107,13 +107,14 @@ public static class LibraryCreatureCmd
 			}
 			IEnumerable<AbstractModel> modifiers;
 			Log.Info("LibraryDamage");
-			decimal modifiedAmountbefore = LibraryHooks.ModifyDamage(runState, combatState, originalTarget, dealer, damageAmount, props, cardSource, ModifyDamageHookType.All, CardPreviewMode.None, out modifiers,type);
-			decimal modifiedAmount = LibraryDamageCalculate.CalculateDamage(modifiedAmountbefore, originalTarget as LibraryCreature, props, type);
+			decimal modifiedAmount = LibraryHooks.ModifyDamage(runState, combatState, originalTarget, dealer, damageAmount, props, cardSource, ModifyDamageHookType.All, CardPreviewMode.None, out modifiers,type);
 			await LibraryHooks.AfterModifyingDamageAmount(runState, combatState, cardSource, modifiers,type);
 			await LibraryHooks.BeforeDamageReceived(choiceContext, runState, combatState, originalTarget, modifiedAmount, props, dealer, cardSource,type);  
 			Creature creature = originalTarget.PetOwner?.Creature ?? originalTarget;
 			decimal blockedDamage = creature.DamageBlockInternal(modifiedAmount, props);
-			decimal unblockedDamage = LibraryHooks.ModifyHpLostBeforeOsty(runState, combatState, originalTarget, Math.Max(modifiedAmount - blockedDamage, 0m), props, dealer, cardSource, out modifiers,type);
+			decimal unblockedDamageBeforeResistance = Math.Max(modifiedAmount - blockedDamage, 0m);
+			decimal unblockedDamageAfterResistance = LibraryDamageCalculate.CalculateHpLoss(unblockedDamageBeforeResistance, originalTarget as LibraryCreature, props, type);
+			decimal unblockedDamage = LibraryHooks.ModifyHpLostBeforeOsty(runState, combatState, originalTarget, unblockedDamageAfterResistance, props, dealer, cardSource, out modifiers,type);
 			await LibraryHooks.AfterModifyingHpLostBeforeOsty(runState, combatState, modifiers,type);
 			Creature unblockedDamageTarget = ((combatState == null) ? originalTarget : LibraryHooks.ModifyUnblockedDamageTarget(combatState, originalTarget, unblockedDamage, props, dealer,type));
 			unblockedDamage = LibraryHooks.ModifyHpLostAfterOsty(runState, combatState, unblockedDamageTarget, unblockedDamage, props, dealer, cardSource, out modifiers,type);

@@ -65,7 +65,7 @@ internal static class LibraryDamagePreviewFeedback
         if (target is LibraryCreature libraryTarget)
         {
             PulseResistanceIcons(libraryTarget, damageType);
-            return LibraryDamageCalculate.CalculateDamage(amount, libraryTarget, props, damageType);
+            return CalculatePhysicalResistancePreview(amount, libraryTarget, props, damageType);
         }
 
         if (previewMode != CardPreviewMode.MultiCreatureTargeting || card.CombatState == null)
@@ -83,7 +83,7 @@ internal static class LibraryDamagePreviewFeedback
             }
 
             PulseResistanceIcons(libraryEnemy, damageType);
-            decimal previewValue = LibraryDamageCalculate.CalculateDamage(amount, libraryEnemy, props, damageType);
+            decimal previewValue = CalculatePhysicalResistancePreview(amount, libraryEnemy, props, damageType);
             if (!firstValue.HasValue)
             {
                 firstValue = previewValue;
@@ -102,6 +102,21 @@ internal static class LibraryDamagePreviewFeedback
         return damageType != LibraryDamageType.None
             && props.HasFlag(ValueProp.Move)
             && !props.HasFlag(ValueProp.Unpowered);
+    }
+
+    private static decimal CalculatePhysicalResistancePreview(
+        decimal amount,
+        LibraryCreature target,
+        ValueProp props,
+        LibraryDamageType damageType)
+    {
+        if (props.HasFlag(ValueProp.Unblockable))
+        {
+            return LibraryDamageCalculate.CalculateHpLoss(amount, target, props, damageType);
+        }
+
+        decimal blockedDamage = Math.Min(target.Block, Math.Max(amount, 0m));
+        return blockedDamage + LibraryDamageCalculate.CalculateUnblockedDamage(amount, blockedDamage, target, props, damageType);
     }
 
     private static void PulseResistanceIcons(LibraryCreature creature, LibraryDamageType damageType)
