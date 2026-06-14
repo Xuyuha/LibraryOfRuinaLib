@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 using Godot;
 using Library.Entities.Creatures;
@@ -28,6 +29,13 @@ using MegaCrit.Sts2.Core.Runs.History;
 using MegaCrit.Sts2.Core.ValueProps;
 public static class LibraryCreatureCmd
 {
+	private sealed class DamageResultChaoCapData
+	{
+		public required decimal UnblockedDamageBeforeResistance { get; init; }
+	}
+
+	private static readonly ConditionalWeakTable<DamageResult, DamageResultChaoCapData> DamageResultChaoCapDataTable = new();
+
 	public static async Task GainBlock(Creature creature, CardPlay? cardPlay, LibraryDice dice, bool fast = false)
 	{
 		dice.Roll(cardPlay.Card.Owner);
@@ -120,6 +128,7 @@ public static class LibraryCreatureCmd
 			unblockedDamage = LibraryHooks.ModifyHpLostAfterOsty(runState, combatState, unblockedDamageTarget, unblockedDamage, props, dealer, cardSource, out modifiers,type);
 			await LibraryHooks.AfterModifyingHpLostAfterOsty(runState, combatState, modifiers,type);
 			DamageResult unblockedDamageResult = unblockedDamageTarget.LoseHpInternal(unblockedDamage, props);
+			SetChaoCapDamage(unblockedDamageResult, unblockedDamageBeforeResistance);
 			List<DamageResult> damageResults = new List<DamageResult>(1) { unblockedDamageResult };
 			bool wasBlockBroken = originalTarget.Block <= 0 && blockedDamage > 0m;
 			bool wasFullyBlocked = !props.HasFlag(ValueProp.Unblockable) && (blockedDamage > 0m || originalTarget.Block > 0) && (int)unblockedDamage == 0;
@@ -134,6 +143,7 @@ public static class LibraryCreatureCmd
 				decimal originalTargetDamage = LibraryHooks.ModifyHpLostAfterOsty(runState, combatState, originalTarget, unblockedDamageResult.OverkillDamage, props, dealer, cardSource, out modifiers,type);
 				await LibraryHooks.AfterModifyingHpLostAfterOsty(runState, combatState, modifiers,type);
 				DamageResult damageResult = ((!(originalTargetDamage > 0m)) ? new DamageResult(originalTarget, props) : originalTarget.LoseHpInternal(originalTargetDamage, props));
+				SetChaoCapDamage(damageResult, originalTargetDamage);
 				damageResult.BlockedDamage = (int)blockedDamage;
 				damageResult.WasBlockBroken = wasBlockBroken;
 				damageResult.WasFullyBlocked = wasFullyBlocked;
@@ -386,18 +396,38 @@ public static class LibraryCreatureCmd
 			return 0m;
 		}
 
-		if (damageResult.WasFullyBlocked || damageResult.UnblockedDamage <= 0)
+		decimal chaoCapDamage = GetChaoCapDamage(damageResult);
+		if (chaoCapDamage <= 0)
 		{
 			return 0m;
 		}
 
 		if (damageResult.BlockedDamage > 0)
 		{
-			return Math.Min(damageResult.UnblockedDamage, chaoDamage);
+			return Math.Min(chaoCapDamage, chaoDamage);
 		}
 
 		return chaoDamage;
 	}
+
+	private static void SetChaoCapDamage(DamageResult damageResult, decimal unblockedDamageBeforeResistance)
+	{
+		DamageResultChaoCapDataTable.Remove(damageResult);
+		DamageResultChaoCapDataTable.Add(
+			damageResult,
+			new DamageResultChaoCapData
+			{
+				UnblockedDamageBeforeResistance = unblockedDamageBeforeResistance
+			});
+	}
+
+	private static decimal GetChaoCapDamage(DamageResult damageResult)
+	{
+		return DamageResultChaoCapDataTable.TryGetValue(damageResult, out DamageResultChaoCapData? data)
+			? data.UnblockedDamageBeforeResistance
+			: damageResult.UnblockedDamage;
+	}
+
 	public static async Task SetChaoResistance(PlayerChoiceContext choiceContext, LibraryCreature target, Creature? dealer ,LibraryDamageType type ,LibraryResistanceLevel resistanceValue)
 	{
 		if(!target.HasChaoResistance)return;
