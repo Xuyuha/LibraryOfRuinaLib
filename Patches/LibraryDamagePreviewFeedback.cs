@@ -143,7 +143,7 @@ internal static class LibraryVanillaDamageVarPreviewPulsePatch
             previewMode,
             target,
             __instance.Props,
-            LibraryDamageType.Blunt);
+            LibraryDamageType.None);
     }
 }
 
@@ -164,7 +164,7 @@ internal static class LibraryVanillaCalculatedDamageVarPreviewPulsePatch
             previewMode,
             target,
             __instance.Props,
-            LibraryDamageType.Blunt);
+            LibraryDamageType.None);
     }
 }
 
@@ -185,6 +185,6 @@ internal static class LibraryVanillaOstyDamageVarPreviewPulsePatch
             previewMode,
             target,
             __instance.Props,
-            LibraryDamageType.Blunt);
+            LibraryDamageType.None);
     }
 }

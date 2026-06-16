@@ -29,17 +29,19 @@ internal static class LibraryDamageNumberPatch
             result,
             AttackExecuteContext.CurrentDamageType);
 
-        if (vfx != null)
+        if (vfx == null)
         {
-            Node? vfxContainer = target.GetVfxContainer();
-            if (vfxContainer != null)
-            {
-                vfxContainer.AddChildSafely(vfx);
-            }
-            else
-            {
-                NRun.Instance.GlobalUi.AddChildSafely(vfx);
-            }
+            return true;
+        }
+
+        Node? vfxContainer = target.GetVfxContainer();
+        if (vfxContainer != null)
+        {
+            vfxContainer.AddChildSafely(vfx);
+        }
+        else
+        {
+            NRun.Instance.GlobalUi.AddChildSafely(vfx);
         }
 
         __result = null;
