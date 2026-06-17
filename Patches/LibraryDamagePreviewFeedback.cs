@@ -143,7 +143,7 @@ internal static class LibraryVanillaDamageVarPreviewPulsePatch
             previewMode,
             target,
             __instance.Props,
-            LibraryDamageType.None);
+            LibraryDamageType.Blunt);
     }
 }
 

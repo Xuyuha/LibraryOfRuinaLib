@@ -31,7 +31,7 @@ internal static class AttackExecuteContext
     public static void SetFlag()
     {
         IsInAttackExecute.Value = true;
-        DamageType.Value = LibraryDamageType.None;
+        DamageType.Value = LibraryDamageType.Blunt;
     }
 
     public static void ClearFlag()
