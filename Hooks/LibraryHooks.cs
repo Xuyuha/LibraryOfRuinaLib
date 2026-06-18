@@ -13,6 +13,7 @@ using Library.Resistance;
 using Library.Powers.Mode;
 using System.Text.RegularExpressions;
 using System.Runtime;
+using System.Threading.Tasks;
 namespace Library.Hooks;
 
 public static class LibraryHooks
@@ -214,12 +215,12 @@ public static class LibraryHooks
         }
     }
     //TODO Dice类完成后实现
-    public static async Task AfterDiceEffect(ICombatState combatState, PlayerChoiceContext choiceContext, Creature? target, CardModel cardSource,LibraryDice dice){
+    public static async Task AfterDiceEffect(ICombatState combatState, PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, CardModel cardSource,LibraryDice dice){
         foreach (AbstractModel model in combatState.IterateHookListeners())
         {
             if (model is ILibraryAbstractModel libraryModel)
             {
-                await libraryModel.AfterDiceEffect(choiceContext,target, cardSource,dice);
+                await libraryModel.AfterDiceEffect(choiceContext,targets, cardSource,dice);
                 model.InvokeExecutionFinished();
             }
         }
@@ -365,12 +366,23 @@ public static class LibraryHooks
             model.InvokeExecutionFinished();
         }
     }
-    public static async Task BeforeDiceEffect(ICombatState combatState, PlayerChoiceContext choiceContext, Creature? target, CardModel cardSource, LibraryDice dice){
+    public static async Task BeforeDiceEffect(ICombatState combatState, PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, CardModel cardSource, LibraryDice dice){
         foreach (AbstractModel model in combatState.IterateHookListeners())
         {
             if (model is ILibraryAbstractModel libraryModel)    
             {
-                await libraryModel.BeforeDiceEffect(choiceContext,target, cardSource,dice);
+                await libraryModel.BeforeDiceEffect(choiceContext,targets, cardSource,dice);
+                model.InvokeExecutionFinished();
+            }
+        }
+    }
+    public static async Task AfterDiceRoll(ICombatState combatState,PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, LibraryDice dice)
+    {
+        foreach (AbstractModel model in combatState.IterateHookListeners())
+        {
+            if (model is ILibraryAbstractModel libraryModel)    
+            {
+                await libraryModel.AfterDiceRoll(choiceContext,targets,dice);
                 model.InvokeExecutionFinished();
             }
         }
@@ -819,13 +831,26 @@ public static class LibraryHooks
         }
         return creature;
     }
-    public static bool TryDiceEffect(ICombatState combatState,PlayerChoiceContext choiceContext,Creature? target, CardModel cardSource,LibraryDice dice)
+    public static bool ShouldReroll(ICombatState combatState,IEnumerable<Creature>? targets,LibraryDice dice,out ILibraryAbstractModel? trigger)
+    {
+        foreach (ILibraryAbstractModel item in combatState.IterateHookListeners())
+        {
+            if (item.ShouldReroll(targets,dice))
+            {
+                trigger = item;
+                return true;
+            }
+        }
+        trigger = null;
+        return false;
+    }
+    public static bool TryDiceEffect(ICombatState combatState,PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, CardModel cardSource,LibraryDice dice)
     {
         foreach (AbstractModel model in combatState.IterateHookListeners())
         {
             if (model is ILibraryAbstractModel libraryModel)
             {
-                if (!libraryModel.TryDiceEffect(choiceContext, target, cardSource,dice))
+                if (!libraryModel.TryDiceEffect(choiceContext, targets, cardSource,dice))
                 {
                     return false;
                 }

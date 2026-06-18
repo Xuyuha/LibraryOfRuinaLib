@@ -7,13 +7,22 @@ using MegaCrit.Sts2.Core.ValueProps;
 using Library.Entities.Creatures;
 using Library.Resistance;
 using Library.Utils;
+using Library.Powers.Mode;
 
 namespace Library.Models;
-public abstract class LibraryCardModel : CardModel//加入了使用前/中/后的方法，调用时更灵活，不过一般卡牌类不继承这个类影响也不大
+public abstract class LibraryCardModel : CardModel,ILibraryAbstractModel//加入了使用前/中/后的方法，调用时更灵活，不过一般卡牌类不继承这个类影响也不大
 {
     public LibraryCardModel(int canonicalEnergyCost, CardType type, CardRarity rarity, TargetType targetType, bool shouldShowInCardLibrary = true) : base(canonicalEnergyCost, type, rarity, targetType, shouldShowInCardLibrary)
     {
         
+    }
+    public virtual bool ShouldReroll(IEnumerable<Creature>? target, LibraryDice dice)
+    {
+        return false;
+    }
+    public virtual Task AfterDiceRoll(PlayerChoiceContext choiceContext, IEnumerable<Creature>? target, LibraryDice dice)
+    {
+        return Task.CompletedTask;
     }
     public virtual Task BeforeUseEffect(PlayerChoiceContext choiceContext, CardPlay cardPlay)
     {
@@ -34,11 +43,11 @@ public abstract class LibraryCardModel : CardModel//加入了使用前/中/后�
         await AfterUseEffect(choiceContext, cardPlay);
     }
     
-    public virtual Task BeforeDiceEffect(PlayerChoiceContext choiceContext, Creature? target, CardModel cardSource, LibraryDice dice)
+    public virtual Task BeforeDiceEffect(PlayerChoiceContext choiceContext, IEnumerable<Creature>? target, CardModel cardSource, LibraryDice dice)
     {
         return Task.CompletedTask;
     }
-    public virtual Task AfterDiceEffect(PlayerChoiceContext choiceContext, Creature? target, CardModel cardSource, LibraryDice dice)
+    public virtual Task AfterDiceEffect(PlayerChoiceContext choiceContext, IEnumerable<Creature>? target, CardModel cardSource, LibraryDice dice)
     {
         return Task.CompletedTask;
     }
@@ -67,7 +76,7 @@ public abstract class LibraryCardModel : CardModel//加入了使用前/中/后�
         return Task.CompletedTask;
     }
 
-    public virtual bool TryDiceEffect(PlayerChoiceContext choiceContext,Creature? target, CardModel cardSource, LibraryDice dice)
+    public virtual bool TryDiceEffect(PlayerChoiceContext choiceContext, IEnumerable<Creature>? target, CardModel cardSource, LibraryDice dice)
     {
         return true;
     }
@@ -167,11 +176,7 @@ public abstract class LibraryCardModel : CardModel//加入了使用前/中/后�
     {
         return Task.CompletedTask;
     }
-    public virtual Task BeforePowerSetMode(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource, int mode)
-    {
-        return Task.CompletedTask;
-    }
-    public virtual Task BeforeSetPowerMode(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource, int mode)
+    public virtual Task BeforeSetPowerMode(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource, LibraryPowerMode mode)
     {
         return Task.CompletedTask;
     }
@@ -242,6 +247,15 @@ public abstract class LibraryCardModel : CardModel//加入了使用前/中/后�
     public virtual bool TryPowerReduce(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource)
     {
         return true;
+    }
+    public virtual Task AfterRerolling(PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, LibraryDice dice)
+    {
+        return Task.CompletedTask;
+    }
+
+    public Task AfterSetPowerMode(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource, LibraryPowerMode mode)
+    {
+        throw new NotImplementedException();
     }
 }
 

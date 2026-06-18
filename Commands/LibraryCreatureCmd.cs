@@ -29,13 +29,6 @@ using MegaCrit.Sts2.Core.Runs.History;
 using MegaCrit.Sts2.Core.ValueProps;
 public static class LibraryCreatureCmd
 {
-	private sealed class DamageResultChaoCapData
-	{
-		public required decimal UnblockedDamageBeforeResistance { get; init; }
-	}
-
-	private static readonly ConditionalWeakTable<DamageResult, DamageResultChaoCapData> DamageResultChaoCapDataTable = new();
-
 	public static async Task GainBlock(Creature creature, CardPlay? cardPlay, LibraryDice dice, bool fast = false)
 	{
 		dice.Roll(cardPlay.Card.Owner);
@@ -128,7 +121,6 @@ public static class LibraryCreatureCmd
 			unblockedDamage = LibraryHooks.ModifyHpLostAfterOsty(runState, combatState, unblockedDamageTarget, unblockedDamage, props, dealer, cardSource, out modifiers,type);
 			await LibraryHooks.AfterModifyingHpLostAfterOsty(runState, combatState, modifiers,type);
 			DamageResult unblockedDamageResult = unblockedDamageTarget.LoseHpInternal(unblockedDamage, props);
-			SetChaoCapDamage(unblockedDamageResult, unblockedDamageBeforeResistance);
 			List<DamageResult> damageResults = new List<DamageResult>(1) { unblockedDamageResult };
 			bool wasBlockBroken = originalTarget.Block <= 0 && blockedDamage > 0m;
 			bool wasFullyBlocked = !props.HasFlag(ValueProp.Unblockable) && (blockedDamage > 0m || originalTarget.Block > 0) && (int)unblockedDamage == 0;
@@ -143,7 +135,6 @@ public static class LibraryCreatureCmd
 				decimal originalTargetDamage = LibraryHooks.ModifyHpLostAfterOsty(runState, combatState, originalTarget, unblockedDamageResult.OverkillDamage, props, dealer, cardSource, out modifiers,type);
 				await LibraryHooks.AfterModifyingHpLostAfterOsty(runState, combatState, modifiers,type);
 				DamageResult damageResult = ((!(originalTargetDamage > 0m)) ? new DamageResult(originalTarget, props) : originalTarget.LoseHpInternal(originalTargetDamage, props));
-				SetChaoCapDamage(damageResult, originalTargetDamage);
 				damageResult.BlockedDamage = (int)blockedDamage;
 				damageResult.WasBlockBroken = wasBlockBroken;
 				damageResult.WasFullyBlocked = wasFullyBlocked;
@@ -272,10 +263,14 @@ public static class LibraryCreatureCmd
 		await Cmd.CustomScaledWait(0.1f, 0.2f);
 		return results;
 	}
+	public static async Task<IEnumerable<LibraryChaoResult>?> ChaoDamage(PlayerChoiceContext choiceContext, Creature target, decimal damageAmount, ValueProp props, Creature? dealer, CardModel? cardSource ,LibraryDamageType type = LibraryDamageType.None, IEnumerable<DamageResult>? damageResults = null)
+	{
+		return await ChaoDamage(choiceContext, new List<Creature> { target }, damageAmount, props, cardSource.Owner.Creature as Creature, cardSource,type);
+	}
 	public static async Task<IEnumerable<LibraryChaoResult>?> ChaoDamage(PlayerChoiceContext choiceContext, IEnumerable<Creature> targets, decimal damageAmount, ValueProp props, Creature? dealer, CardModel? cardSource ,LibraryDamageType type = LibraryDamageType.None, IEnumerable<DamageResult>? damageResults = null)
 	//我暂时没用这个方法，走的是我当时自己用的简易混乱值判定，根据原始伤害对原版attack commmand进行patch，因此也没有检测攻击类型，后续选择一个统一的方法来用。
 	{
-		List<LibraryChaoResult> results = new List<LibraryChaoResult>();
+		List<LibraryChaoResult> results = [];
 		targets = targets.Where((Creature c) => c is LibraryCreature lc && lc.HasChaoResistance);
 		if(!targets.Any())
 		{
@@ -283,16 +278,15 @@ public static class LibraryCreatureCmd
 		}
 		if (dealer != null && dealer.IsDead)
 		{
-			return targets.Select((Creature t) => new LibraryChaoResult(t, props)).ToList();
+			return targets.Select((Creature t) => new LibraryChaoResult(t, props));	
 		}
-		List<Creature> targetList = targets.ToList();
+		List<Creature> targetList = [.. targets];
 		if (targetList.Count == 0)
 		{
 			return results;
 		}
 		ICombatState combatState = targetList[0].CombatState;
 		IRunState runState = IRunState.GetFrom(targetList.Append(dealer).OfType<Creature>());
-		List<DamageResult>? damageResultList = damageResults?.ToList();
 		foreach (Creature Target in targetList)
 		{
 			if(!Target.IsMonster)
@@ -307,11 +301,10 @@ public static class LibraryCreatureCmd
 			Log.Info("LibraryChaoDamage");
 			decimal modifiedAmountbefore = LibraryHooks.ModifyChaoDamage(runState, combatState, Target, dealer,damageAmount, props, cardSource, ModifyChaoDamageHookType.All, CardPreviewMode.None, out modifiers,type);
 			decimal modifiedAmount = LibraryDamageCalculate.CalculateChaoAmount(modifiedAmountbefore,Target as LibraryCreature, props, type);
-			modifiedAmount = ApplyBlockedDamageChaoCap(Target, modifiedAmount, damageResultList);
 			await LibraryHooks.AfterModifyingChaoAmount(runState, combatState, cardSource, modifiers,type);
 			await LibraryHooks.BeforeChaoDamageReceived(choiceContext, runState, combatState, Target, modifiedAmount, props, dealer, cardSource,type);  
 			LibraryChaoResult ChaoResult = (Target as LibraryCreature).LoseChaoValueInternal(modifiedAmount, props);
-			List<Task> hitTriggers = new List<Task>();
+			List<Task> hitTriggers = [];
 			// 混乱伤害反馈
 			// foreach (DamageResult item in damageResults) 
 			// {
@@ -382,52 +375,6 @@ public static class LibraryCreatureCmd
 		await Cmd.CustomScaledWait(0.1f, 0.2f);
 		return results;
 	}
-
-	private static decimal ApplyBlockedDamageChaoCap(Creature target, decimal chaoDamage, IEnumerable<DamageResult>? damageResults)
-	{
-		if (damageResults == null)
-		{
-			return chaoDamage;
-		}
-
-		DamageResult? damageResult = damageResults.FirstOrDefault((DamageResult result) => result.Receiver == target);
-		if (damageResult == null)
-		{
-			return 0m;
-		}
-
-		decimal chaoCapDamage = GetChaoCapDamage(damageResult);
-		if (chaoCapDamage <= 0)
-		{
-			return 0m;
-		}
-
-		if (damageResult.BlockedDamage > 0)
-		{
-			return Math.Min(chaoCapDamage, chaoDamage);
-		}
-
-		return chaoDamage;
-	}
-
-	private static void SetChaoCapDamage(DamageResult damageResult, decimal unblockedDamageBeforeResistance)
-	{
-		DamageResultChaoCapDataTable.Remove(damageResult);
-		DamageResultChaoCapDataTable.Add(
-			damageResult,
-			new DamageResultChaoCapData
-			{
-				UnblockedDamageBeforeResistance = unblockedDamageBeforeResistance
-			});
-	}
-
-	private static decimal GetChaoCapDamage(DamageResult damageResult)
-	{
-		return DamageResultChaoCapDataTable.TryGetValue(damageResult, out DamageResultChaoCapData? data)
-			? data.UnblockedDamageBeforeResistance
-			: damageResult.UnblockedDamage;
-	}
-
 	public static async Task SetChaoResistance(PlayerChoiceContext choiceContext, LibraryCreature target, Creature? dealer ,LibraryDamageType type ,LibraryResistanceLevel resistanceValue)
 	{
 		if(!target.HasChaoResistance)return;

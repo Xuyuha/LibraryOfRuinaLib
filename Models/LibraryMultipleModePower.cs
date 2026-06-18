@@ -39,15 +39,21 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
         Mode = mode;
         await LibraryHooks.AfterSetPowerMode(combatState, choiceContext, this, dealer, cardSource, mode);
     }
-    public sealed override async Task BeforeDiceEffect(PlayerChoiceContext choiceContext, Creature? target, CardModel cardSource, LibraryDice dice)
+    public sealed override bool ShouldReroll(IEnumerable<Creature>? targets, LibraryDice dice)
+	{
+		bool flag = Mode.ShouldReroll(targets,dice);
+		flag |= ShouldReroll(targets,dice,null);
+		return flag;
+	}
+    public sealed override async Task BeforeDiceEffect(PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, CardModel cardSource, LibraryDice dice)
     {
-        await Mode.BeforeDiceEffect(choiceContext, target, cardSource, dice);
-        await BeforeDiceEffect(choiceContext, target, cardSource, dice , null);
+        await Mode.BeforeDiceEffect(choiceContext, targets, cardSource, dice);
+        await BeforeDiceEffect(choiceContext, targets, cardSource, dice , null);
     }
-    public sealed override async Task AfterDiceEffect(PlayerChoiceContext choiceContext, Creature? target, CardModel cardSource, LibraryDice dice)
+    public sealed override async Task AfterDiceEffect(PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, CardModel cardSource, LibraryDice dice)
     {
-        await Mode.AfterDiceEffect(choiceContext, target, cardSource, dice);
-        await AfterDiceEffect(choiceContext, target, cardSource, dice , null);
+        await Mode.AfterDiceEffect(choiceContext, targets, cardSource, dice);
+        await AfterDiceEffect(choiceContext, targets, cardSource, dice , null);	
     }
     public sealed override async Task BeforeSetChaoResistance(PlayerChoiceContext choiceContext,LibraryCreature target,Creature? dealer, LibraryDamageType type,LibraryResistanceLevel resistanceValue)
     {
@@ -81,10 +87,10 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
         await Mode.AfterSetPhysicalResistance(choiceContext, target, dealer, type);
         await AfterSetPhysicalResistance(choiceContext, target, dealer, type , null);
     }
-    public sealed override bool TryDiceEffect(PlayerChoiceContext choiceContext,Creature? target, CardModel cardSource, LibraryDice dice)
+    public sealed override bool TryDiceEffect(PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, CardModel cardSource, LibraryDice dice)
     {
-        bool flag = Mode.TryDiceEffect(choiceContext, target, cardSource, dice);
-        flag &= TryDiceEffect(choiceContext, target, cardSource, dice , null);
+        bool flag = Mode.TryDiceEffect(choiceContext, targets, cardSource, dice);
+        flag &= TryDiceEffect(choiceContext, targets, cardSource, dice , null);
         return flag;
     }
     public sealed override async Task AfterAttack(PlayerChoiceContext choiceContext, LibraryAttackCommand command)
@@ -1328,11 +1334,27 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
         flag |= TryModifyKeywordsInCombat(card, keywords , null);
 		return flag;
 	}
-    public virtual Task BeforeDiceEffect(PlayerChoiceContext choiceContext, Creature? target, CardModel cardSource, LibraryDice dice, object? _ = null)
+    public sealed override async Task AfterDiceRoll(PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, LibraryDice dice)
+    {
+		await Mode.AfterDiceRoll(choiceContext, targets , dice);
+		await AfterDiceRoll(choiceContext, targets , dice);
+    }
+    public sealed override async Task AfterRerolling(PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, LibraryDice dice)
+    {
+		await Mode.AfterRerolling(choiceContext, targets , dice);
+		await AfterRerolling(choiceContext, targets , dice);
+    }
+    public sealed override bool ShouldReroll(PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, LibraryDice dice)
+    {
+        bool flag = Mode.ShouldReroll(choiceContext, targets, dice);
+        flag |= ShouldReroll(choiceContext, targets, dice);
+		return flag;
+    }
+    public virtual Task BeforeDiceEffect(PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, CardModel cardSource, LibraryDice dice, object? _ = null)
     {
         return Task.CompletedTask;
     }
-    public virtual Task AfterDiceEffect(PlayerChoiceContext choiceContext, Creature? target, CardModel cardSource, LibraryDice dice, object? _ = null)
+    public virtual Task AfterDiceEffect(PlayerChoiceContext choiceContext, IEnumerable<Creature>? target, CardModel cardSource, LibraryDice dice, object? _ = null)
     {
         return Task.CompletedTask;
     }
@@ -1361,7 +1383,7 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
         return Task.CompletedTask;
     }
 
-    public virtual bool TryDiceEffect(PlayerChoiceContext choiceContext,Creature? target, CardModel cardSource, LibraryDice dice, object? _ = null)
+    public virtual bool TryDiceEffect(PlayerChoiceContext choiceContext,IEnumerable<Creature>? target, CardModel cardSource, LibraryDice dice, object? _ = null)
     {
         return true;
     }
@@ -2318,4 +2340,16 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
 	{
 		return false;
 	}
+    public virtual Task AfterDiceRoll(PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, LibraryDice dice, object? _ =null)
+    {
+        return Task.CompletedTask;
+    }
+    public virtual Task AfterRerolling(PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, LibraryDice dice, object? _ =null)
+    {
+        return Task.CompletedTask;
+    }
+    public virtual bool ShouldReroll( IEnumerable<Creature>? targets, LibraryDice dice, object? _ =null)
+    {
+        return false;
+    }
 }

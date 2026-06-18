@@ -31,6 +31,7 @@ public abstract class LibraryPowerModel : PowerModel,ILibraryAbstractModel
     public virtual void AddVariablesToDescription(LocString description, int? amountOverride = null){}
     private NPower? _boundNPower;
     protected string _suffix = "";
+    protected virtual string DefaultSuffix => "";
     private string UpSuffix => Suffix.ToUpperInvariant();
     private string LowSuffix => Suffix.ToLowerInvariant();
     private static AccessTools.FieldRef<NPower, TextureRect>? _iconAccessor;
@@ -105,9 +106,9 @@ public abstract class LibraryPowerModel : PowerModel,ILibraryAbstractModel
     /// <summary>
     ///     当前动态模式索引。设置时会触发绑定 NPower 节点的图标刷新。
     /// </summary>
-     public virtual string Suffix
+    public virtual string Suffix
     {
-        get => _suffix;
+        get => _suffix == "" ? DefaultSuffix : _suffix;
         set
         {
             if (value == null) return;
@@ -145,11 +146,15 @@ public abstract class LibraryPowerModel : PowerModel,ILibraryAbstractModel
         if (_powerFlashAccessor != null)
             _powerFlashAccessor(_boundNPower).Texture = BigIcon;
     }    
-    public virtual Task BeforeDiceEffect(PlayerChoiceContext choiceContext, Creature? target, CardModel cardSource, LibraryDice dice)
+    public virtual bool ShouldReroll(IEnumerable<Creature>? target, LibraryDice dice)
+    {
+        return false;
+    }
+    public virtual Task BeforeDiceEffect(PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, CardModel cardSource, LibraryDice dice)
     {
         return Task.CompletedTask;
     }
-    public virtual Task AfterDiceEffect(PlayerChoiceContext choiceContext, Creature? target, CardModel cardSource, LibraryDice dice)
+    public virtual Task AfterDiceEffect(PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, CardModel cardSource, LibraryDice dice)
     {
         return Task.CompletedTask;
     }
@@ -177,8 +182,7 @@ public abstract class LibraryPowerModel : PowerModel,ILibraryAbstractModel
     {
         return Task.CompletedTask;
     }
-
-    public virtual bool TryDiceEffect(PlayerChoiceContext choiceContext,Creature? target, CardModel cardSource, LibraryDice dice)
+    public virtual bool TryDiceEffect(PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, CardModel cardSource, LibraryDice dice)
     {
         return true;
     }
@@ -349,5 +353,17 @@ public abstract class LibraryPowerModel : PowerModel,ILibraryAbstractModel
     public virtual bool TryPowerReduce(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource)
     {
         return true;
+    }
+    public virtual Task AfterDiceRoll(PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, LibraryDice dice)
+    {
+        return Task.CompletedTask;
+    }
+    public virtual Task AfterRerolling(PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, LibraryDice dice)
+    {
+        return Task.CompletedTask;
+    }
+    public virtual bool ShouldReroll(PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, LibraryDice dice)
+    {
+        return false;
     }
 }

@@ -24,14 +24,14 @@ internal static class LibraryDamagePreviewFeedback
         ValueProp props,
         LibraryDamageType damageType)
     {
-        if (!ShouldApplyResistance(props, damageType))
+        if (!ResistancePreview.ShouldApplyResistance(props, damageType))
         {
             return;
         }
 
         if (target is LibraryCreature libraryTarget)
         {
-            PulseResistanceIcons(libraryTarget, damageType);
+            ResistancePreview.PulseResistanceIcons(libraryTarget, damageType);
             return;
         }
 
@@ -44,85 +44,9 @@ internal static class LibraryDamagePreviewFeedback
         {
             if (enemy is LibraryCreature libraryEnemy)
             {
-                PulseResistanceIcons(libraryEnemy, damageType);
+                ResistancePreview.PulseResistanceIcons(libraryEnemy, damageType);
             }
         }
-    }
-
-    public static decimal ApplyPhysicalResistancePreview(
-        CardModel card,
-        CardPreviewMode previewMode,
-        Creature? target,
-        decimal amount,
-        ValueProp props,
-        LibraryDamageType damageType)
-    {
-        if (!ShouldApplyResistance(props, damageType))
-        {
-            return amount;
-        }
-
-        if (target is LibraryCreature libraryTarget)
-        {
-            PulseResistanceIcons(libraryTarget, damageType);
-            return CalculatePhysicalResistancePreview(amount, libraryTarget, props, damageType);
-        }
-
-        if (previewMode != CardPreviewMode.MultiCreatureTargeting || card.CombatState == null)
-        {
-            return amount;
-        }
-
-        decimal? firstValue = null;
-        bool allSame = true;
-        foreach (Creature enemy in card.CombatState.HittableEnemies)
-        {
-            if (enemy is not LibraryCreature libraryEnemy)
-            {
-                continue;
-            }
-
-            PulseResistanceIcons(libraryEnemy, damageType);
-            decimal previewValue = CalculatePhysicalResistancePreview(amount, libraryEnemy, props, damageType);
-            if (!firstValue.HasValue)
-            {
-                firstValue = previewValue;
-            }
-            else if ((int)previewValue != (int)firstValue.Value)
-            {
-                allSame = false;
-            }
-        }
-
-        return allSame && firstValue.HasValue ? firstValue.Value : amount;
-    }
-
-    private static bool ShouldApplyResistance(ValueProp props, LibraryDamageType damageType)
-    {
-        return damageType != LibraryDamageType.None
-            && props.HasFlag(ValueProp.Move)
-            && !props.HasFlag(ValueProp.Unpowered);
-    }
-
-    private static decimal CalculatePhysicalResistancePreview(
-        decimal amount,
-        LibraryCreature target,
-        ValueProp props,
-        LibraryDamageType damageType)
-    {
-        if (props.HasFlag(ValueProp.Unblockable))
-        {
-            return LibraryDamageCalculate.CalculateHpLoss(amount, target, props, damageType);
-        }
-
-        decimal blockedDamage = Math.Min(target.Block, Math.Max(amount, 0m));
-        return blockedDamage + LibraryDamageCalculate.CalculateUnblockedDamage(amount, blockedDamage, target, props, damageType);
-    }
-
-    private static void PulseResistanceIcons(LibraryCreature creature, LibraryDamageType damageType)
-    {
-        LibraryPhysicalResistanceIconsUi.Pulse(creature, damageType);
-        LibraryChaosResistanceIconsUi.Pulse(creature, damageType);
     }
 }
 
@@ -164,7 +88,7 @@ internal static class LibraryVanillaCalculatedDamageVarPreviewPulsePatch
             previewMode,
             target,
             __instance.Props,
-            LibraryDamageType.None);
+            LibraryDamageType.Blunt);
     }
 }
 
@@ -185,6 +109,6 @@ internal static class LibraryVanillaOstyDamageVarPreviewPulsePatch
             previewMode,
             target,
             __instance.Props,
-            LibraryDamageType.None);
+            LibraryDamageType.Blunt);
     }
 }

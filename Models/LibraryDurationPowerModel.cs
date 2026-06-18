@@ -22,7 +22,7 @@ public abstract class LibraryDurationPowerModel : LibraryPowerModel, ISecondaryD
 
     private sealed class TurnsVar : DynamicVar
     {
-        public TurnsVar() : base("Turns", 0m) { }
+        public TurnsVar() : base("Turns", 0m) {}
 
         protected override decimal GetBaseValueForIConvertible()
         {

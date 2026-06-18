@@ -17,6 +17,7 @@ using MegaCrit.Sts2.Core.Models.Monsters;
 using Library.Entities.Creatures;
 using Library.Hooks;
 using MegaCrit.Sts2.Core.Entities.Cards;
+using Library.Models;
 
 public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究，AttackCommand几乎没有与任何其他类交互，可以放心重置
 //todo：骰子相关的方法
@@ -420,8 +421,10 @@ public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究�
 			throw new InvalidOperationException("No targets set.");
 		}
 		await LibraryHooks.BeforeAttack(combatState, this);
-		decimal attackCount = LibraryHooks.ModifyAttackHitCount(combatState, this, _hitCount);
-		for (int i = 0; (decimal)i < attackCount; i++)
+		if(Dice != null)
+			Dice.HasUseTimes = 0;
+		decimal attackCount = LibraryHooks.ModifyAttackHitCount(combatState, this, (Dice?.EnableCustomUseTimes ?? false) ? Dice.UseTimes : _hitCount);
+		for (int i = 0; i < attackCount; i++)
 		{
 			if (Attacker.IsDead)
 			{
@@ -536,11 +539,31 @@ public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究�
 			{
 				await _beforeDamage();
 			}
-			Dice?.Roll(Attacker.Player);
+			if(Dice != null)
+				Dice.HasUseTimes++;
+			IEnumerable<LibraryCreature> targets = _singleTarget != null ? [_singleTarget] : validTargets;
+			int RollCount = 1;
+			for(int j = 1 ; j < RollCount ; j++)
+			{
+				Dice?.Roll(Attacker.Player);
+				await LibraryHooks.AfterDiceRoll(combatState, choiceContext ?? new BlockingPlayerChoiceContext(),_singleTarget != null ? [_singleTarget] : validTargets, Dice);
+				if(Dice != null && LibraryHooks.ShouldReroll(combatState,targets,Dice,out ILibraryAbstractModel? trigger))
+				{
+					j++;
+					if(trigger != null)
+						await trigger.AfterRerolling(choiceContext ?? new BlockingPlayerChoiceContext(),targets,Dice);
+				}
+			}
 			decimal damage = Dice != null ? Dice.CurrentBaseValue:((_calculatedDamageVar == null) ?_damagePerHit : _calculatedDamageVar.Calculate(singleTarget));
-			IEnumerable<DamageResult> damageResults = await LibraryCreatureCmd.Damage(damageAmount: damage, choiceContext: choiceContext ?? new BlockingPlayerChoiceContext(), targets: (singleTarget != null) ? new List<LibraryCreature>(1) { singleTarget } : ((IEnumerable<LibraryCreature>)validTargets), props: DamageProps, dealer: Attacker ,cardSource: ModelSource as CardModel,type : _damageType);
+			IEnumerable <int> Blocks = (_singleTarget != null ? [_singleTarget] :validTargets).Select(c => c.Block);
+			IEnumerable<DamageResult> damageResults = await LibraryCreatureCmd.Damage(damageAmount: damage, choiceContext: choiceContext ?? new BlockingPlayerChoiceContext(), targets: (singleTarget != null) ? [singleTarget]  : ((IEnumerable<LibraryCreature>)validTargets), props: DamageProps, dealer: Attacker ,cardSource: ModelSource as CardModel,type : _damageType);
 			AddDamageResultsInternal(damageResults);
-			IEnumerable<LibraryChaoResult>? chaoResults = await LibraryCreatureCmd.ChaoDamage(damageAmount: damage, choiceContext: choiceContext ?? new BlockingPlayerChoiceContext(), targets: (singleTarget != null) ? new List<LibraryCreature>(1) { singleTarget } : ((IEnumerable<LibraryCreature>)validTargets), props: DamageProps, dealer: Attacker, cardSource: ModelSource as CardModel,type : _damageType, damageResults: damageResults);
+			IEnumerable<LibraryChaoResult>? chaoResults = [];
+			for (int j = 0 ; j < Blocks.Count() ; j++){
+                IEnumerable<LibraryChaoResult>? results = await LibraryCreatureCmd.ChaoDamage(damageAmount: damage - Blocks.ElementAt(j), choiceContext: choiceContext ?? new BlockingPlayerChoiceContext(), target: singleTarget ?? validTargets.ElementAt(j), props: DamageProps, dealer: Attacker, cardSource: ModelSource as CardModel, type: _damageType, damageResults: damageResults);
+				if(results != null)
+					chaoResults = chaoResults.Concat(results);
+			}
 			if (chaoResults != null)
 			{
 				AddChaoResultsInternal(chaoResults);

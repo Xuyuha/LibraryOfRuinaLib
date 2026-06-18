@@ -6,6 +6,7 @@ using Library.Entities.Creatures;
 using Library.Resistance;
 using MegaCrit.Sts2.Core.ValueProps;
 using Library.Utils;
+using Library.Powers.Mode;
 
 namespace Library.Models;
 public abstract class LibraryMonsterModel : MonsterModel,ILibraryAbstractModel
@@ -43,13 +44,20 @@ public abstract class LibraryMonsterModel : MonsterModel,ILibraryAbstractModel
     {
         return Task.CompletedTask;
     }
+    public virtual bool ShouldReroll(IEnumerable<Creature>? target, LibraryDice dice)
+    {
+        return false;
+    }
     
-    
-    public virtual Task BeforeDiceEffect(PlayerChoiceContext choiceContext, Creature? target, CardModel cardSource, LibraryDice dice)
+    public virtual Task AfterDiceRoll(PlayerChoiceContext choiceContext, IEnumerable<Creature>? target, LibraryDice dice)
+    {
+        return Task.CompletedTask;
+    }    
+    public virtual Task BeforeDiceEffect(PlayerChoiceContext choiceContext, IEnumerable<Creature>? target, CardModel cardSource, LibraryDice dice)
     {
         return Task.CompletedTask;
     }
-    public virtual Task AfterDiceEffect(PlayerChoiceContext choiceContext, Creature? target, CardModel cardSource, LibraryDice dice)
+    public virtual Task AfterDiceEffect(PlayerChoiceContext choiceContext, IEnumerable<Creature>? target, CardModel cardSource, LibraryDice dice)
     {
         return Task.CompletedTask;
     }
@@ -77,8 +85,7 @@ public abstract class LibraryMonsterModel : MonsterModel,ILibraryAbstractModel
     {
         return Task.CompletedTask;
     }
-
-    public virtual bool TryDiceEffect(PlayerChoiceContext choiceContext,Creature? target, CardModel cardSource, LibraryDice dice)
+    public virtual bool TryDiceEffect(PlayerChoiceContext choiceContext,IEnumerable<Creature>? target, CardModel cardSource, LibraryDice dice)
     {
         return true;
     }
@@ -150,7 +157,7 @@ public abstract class LibraryMonsterModel : MonsterModel,ILibraryAbstractModel
     {
         return Task.CompletedTask;
     }
-    public virtual Task AfterSetPowerMode(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource, int mode)
+    public virtual Task AfterSetPowerMode(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource, LibraryPowerMode mode)
     {
         return Task.CompletedTask;
     }
@@ -178,11 +185,7 @@ public abstract class LibraryMonsterModel : MonsterModel,ILibraryAbstractModel
     {
         return Task.CompletedTask;
     }
-    public virtual Task BeforePowerSetMode(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource, int mode)
-    {
-        return Task.CompletedTask;
-    }
-    public virtual Task BeforeSetPowerMode(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource, int mode)
+    public virtual Task BeforeSetPowerMode(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource, LibraryPowerMode mode)
     {
         return Task.CompletedTask;
     }
@@ -253,5 +256,9 @@ public abstract class LibraryMonsterModel : MonsterModel,ILibraryAbstractModel
     public virtual bool TryPowerReduce(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource)
     {
         return true;
+    }
+    public virtual Task AfterRerolling(PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, LibraryDice dice)
+    {
+        return Task.CompletedTask;
     }
 }

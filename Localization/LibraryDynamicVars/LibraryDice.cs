@@ -2,12 +2,8 @@ using Godot;
 using Library.Entities.Creatures;
 using Library.Hooks;
 using Library.Models;
-using Library.Patches;
 using Library.Resistance;
-using Library.Resistance.Patches;
-using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.Combat;
-using MegaCrit.Sts2.Core.Commands.Builders;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Players;
@@ -17,25 +13,23 @@ using MegaCrit.Sts2.Core.Hooks;
 using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Models;
-using MegaCrit.Sts2.Core.Models.Events;
 using MegaCrit.Sts2.Core.ValueProps;
 
 namespace Library.Utils;
-public class LibraryDice : LibraryDamageVar
+public class LibraryDice : DynamicVar
 {
+    public const ValueProp Props = ValueProp.Move;
     public LibraryDice( decimal minValue,decimal floatValue, LibraryDiceType diceType, LibraryCardModel sourceCard, string name):
-    base(name ,minValue,ValueProp.Move,(LibraryDamageType)diceType)
+    base(name , minValue)
     {
         DiceType = diceType;
         SourceCard = sourceCard;
         FloatValue = floatValue;
-        _previewFloatValue = floatValue;
     }
-    public override string ToString()=>$"[img]{DescriptionIconPath}[/img]{PreviewValue} - {PreviewValue + _previewFloatValue}{DamageAdditive}{DamageResistance}{ChaoAdditive}{ChaoResistance}\n";
-    public decimal DamageResistanceValue = 1m;
+    public override string ToString()=>$"[img]{DescriptionIconPath}[/img]{PreviewValue} - {PreviewValue + FloatValue}{DamageAdditive}{DamageResistance}{ChaoAdditive}{ChaoResistance}\n";
     public  bool ShouldUseDefaultTip {get;set;} = true;
+    public decimal DamageResistanceValue = 1m;
     public decimal ChaoResistanceValue = 0m;
     private int DamageAdditiveValue = 0;
     private int ChaoAdditiveValue = 0;
@@ -45,7 +39,6 @@ public class LibraryDice : LibraryDamageVar
     private string ChaoAdditive => _shouldShowChao && ChaoAdditiveValue != 0 ? $" [orange]{ChaoSign}{ChaoAdditiveValue}[/orange]":"";
     private string DamageResistance => _shouldShowDamage?$" [red]×{DamageResistanceValue}[/red]":"";
     private string ChaoResistance => _shouldShowChao?$" [orange]×{ChaoResistanceValue}[/orange]":"";
-    private decimal _previewFloatValue;
     private bool _shouldShowDamage = false;
     private bool _shouldShowChao = false;
     public decimal FloatValue {get;set;}
@@ -61,9 +54,19 @@ public class LibraryDice : LibraryDamageVar
     public LocString Title => new("dice",DiceType.String().ToUpper()+"_DICE");
 	public Texture2D PackedIcon=> ResourceLoader.Load<Texture2D>($"res://images/dice/big_icon/{DiceType.String()}.png", null, ResourceLoader.CacheMode.Reuse);
     public LibraryDamageType DamageType => (LibraryDamageType)DiceType;
+    public int UseTimes = 1;
+    public bool EnableCustomUseTimes = false;
+    public int HasUseTimes = 0;
     public int CurrentBaseValue {
         get;
         private set;
+    }
+    public LibraryAttackCommand? Command = null;
+    public LibraryDice WithUseTimes (int useTimes)
+    {
+        UseTimes = useTimes;
+        EnableCustomUseTimes = true;
+        return this;
     }
     public void Roll(Player player){
         int minValue = (int)BaseValue;
@@ -76,10 +79,10 @@ public class LibraryDice : LibraryDamageVar
         if(_diceEffct == null)return;
         ICombatState? combatState = cardPlay?.Card?.CombatState;
         if(combatState == null)return;
-        if(!LibraryHooks.TryDiceEffect(combatState, choiceContext, cardPlay.Target, cardPlay.Card,this)) return;
-        await LibraryHooks.BeforeDiceEffect(combatState, choiceContext, cardPlay.Target, cardPlay.Card, this);
+        if(!LibraryHooks.TryDiceEffect(combatState, choiceContext, [cardPlay.Target], cardPlay.Card,this)) return;
+        await LibraryHooks.BeforeDiceEffect(combatState, choiceContext, [cardPlay.Target], cardPlay.Card, this);
         await _diceEffct(choiceContext, cardPlay, CurrentBaseValue);
-        await LibraryHooks.AfterDiceEffect(combatState, choiceContext, cardPlay.Target, cardPlay.Card, this);
+        await LibraryHooks.AfterDiceEffect(combatState, choiceContext, [cardPlay.Target], cardPlay.Card, this);
     }
     public LibraryDice WithDiceEffect(Func<PlayerChoiceContext, CardPlay, int ,Task>? diceEffct){
 		if (_diceEffct != null)
@@ -126,14 +129,11 @@ public class LibraryDice : LibraryDamageVar
         if(DiceType != LibraryDiceType.Block){
             decimal num = base.BaseValue;
             decimal num1 = base.BaseValue;
-            decimal maxNum = base.BaseValue + FloatValue;
             EnchantmentModel enchantment = card.Enchantment;
             if (enchantment != null)
             {
                 num += enchantment.EnchantDamageAdditive(num, Props);
                 num *= enchantment.EnchantDamageMultiplicative(num, Props);
-                maxNum += enchantment.EnchantDamageAdditive(maxNum, Props);
-                maxNum *= enchantment.EnchantDamageMultiplicative(maxNum, Props);
                 if (!card.IsEnchantmentPreview)
                 {
                     base.EnchantedValue = num;
@@ -146,23 +146,8 @@ public class LibraryDice : LibraryDamageVar
             if (runGlobalHooks)
             {
                 num = LibraryHooks.ModifyDamage(card.Owner.RunState, card.CombatState, target, card.Owner.Creature, base.BaseValue, Props, card, ModifyDamageHookType.All, previewMode, out IEnumerable<AbstractModel> _, DamageType);
-                maxNum = LibraryHooks.ModifyDamage(card.Owner.RunState, card.CombatState, target, card.Owner.Creature, base.BaseValue + FloatValue, Props, card, ModifyDamageHookType.All, previewMode, out IEnumerable<AbstractModel> _, DamageType);
                 num1 = LibraryHooks.ModifyChaoDamage(card.Owner.RunState, card.CombatState, target, card.Owner.Creature, base.BaseValue, Props, card, ModifyChaoDamageHookType.All, previewMode, out IEnumerable<AbstractModel> _, DamageType);
             }
-            decimal previewMin = LibraryDamagePreviewFeedback.ApplyPhysicalResistancePreview(
-                card,
-                previewMode,
-                target,
-                num,
-                Props,
-                DamageType);
-            decimal previewMax = LibraryDamagePreviewFeedback.ApplyPhysicalResistancePreview(
-                card,
-                previewMode,
-                target,
-                maxNum,
-                Props,
-                DamageType);
             if(target is LibraryCreature lc)
             {
                 _shouldShowDamage =true;
@@ -171,7 +156,6 @@ public class LibraryDice : LibraryDamageVar
                 {
                     ChaoResistanceValue = lc.GetChaosResistanceLevel(DamageType).GetMultiplier();
                     _shouldShowChao =true;
-                    LibraryChaosResistanceIconsUi.Pulse(lc, DamageType);
                 }
                 else
                     _shouldShowChao =false;
@@ -183,11 +167,9 @@ public class LibraryDice : LibraryDamageVar
             }
             DamageAdditiveValue = (int)(num - BaseValue);
             ChaoAdditiveValue = (int)(num1 - BaseValue);
-            PreviewValue = previewMin;
-            _previewFloatValue = previewMax - previewMin;
         }
         else{
-            _previewFloatValue = FloatValue;
+            PreviewValue = BaseValue;
             decimal num = base.BaseValue;
             EnchantmentModel enchantment = card.Enchantment;
             if (enchantment != null)
@@ -205,5 +187,12 @@ public class LibraryDice : LibraryDamageVar
             }
             base.PreviewValue = num;
         }
+        ResistancePreview.ApplyPhysicalResistancePreview(
+			card,
+			previewMode,
+			target,
+			0,
+			Props,
+			DamageType);
     }
 }

@@ -11,11 +11,19 @@ namespace Library.Models;
 public abstract class LibraryActModel : ActModel,ILibraryAbstractModel
 {
     
-    public virtual Task BeforeDiceEffect(PlayerChoiceContext choiceContext, Creature? target, CardModel cardSource, LibraryDice dice)
+    public virtual bool ShouldReroll(IEnumerable<Creature>? target, LibraryDice dice)
+    {
+        return false;
+    }
+    public virtual Task AfterDiceRoll(PlayerChoiceContext choiceContext, IEnumerable<Creature>? target, LibraryDice dice)
     {
         return Task.CompletedTask;
     }
-    public virtual Task AfterDiceEffect(PlayerChoiceContext choiceContext, Creature? target, CardModel cardSource, LibraryDice dice)
+    public virtual Task BeforeDiceEffect(PlayerChoiceContext choiceContext, IEnumerable<Creature>? target, CardModel cardSource, LibraryDice dice)
+    {
+        return Task.CompletedTask;
+    }
+    public virtual Task AfterDiceEffect(PlayerChoiceContext choiceContext, IEnumerable<Creature>? target, CardModel cardSource, LibraryDice dice)
     {
         return Task.CompletedTask;
     }
@@ -44,7 +52,7 @@ public abstract class LibraryActModel : ActModel,ILibraryAbstractModel
         return Task.CompletedTask;
     }
 
-    public virtual bool TryDiceEffect(PlayerChoiceContext choiceContext,Creature? target, CardModel cardSource, LibraryDice dice)
+    public virtual bool TryDiceEffect(PlayerChoiceContext choiceContext, IEnumerable<Creature>? target, CardModel cardSource, LibraryDice dice)
     {
         return true;
     }
@@ -172,11 +180,11 @@ public abstract class LibraryActModel : ActModel,ILibraryAbstractModel
     {
         return 0m;
     }
-    public virtual decimal ModifyEffectiveAmountAdditive(Creature? target,LibraryBasePowerModel power, decimal num, Creature? dealer, CardModel? cardSource)
+    public virtual decimal ModifyEffectiveAmountAdditive(LibraryBasePowerModel power, decimal num, Creature? dealer, CardModel? cardSource)
     {
         return 0m;
     }
-    public virtual decimal ModifyEffectiveAmountMultiplicative(Creature? target,LibraryBasePowerModel power, decimal num, Creature? dealer, CardModel? cardSource)
+    public virtual decimal ModifyEffectiveAmountMultiplicative(LibraryBasePowerModel power, decimal num, Creature? dealer, CardModel? cardSource)
     {
         return 1m;
     }
@@ -215,5 +223,9 @@ public abstract class LibraryActModel : ActModel,ILibraryAbstractModel
     public virtual bool TryPowerReduce(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource)
     {
         return true;
+    }   
+    public virtual Task AfterRerolling(PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, LibraryDice dice)
+    {
+        return Task.CompletedTask;
     }
 }

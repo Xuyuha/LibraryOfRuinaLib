@@ -52,7 +52,7 @@ public class LibraryCalculatedDamageVar : CalculatedDamageVar
 			}
 			base.PreviewValue = num;
 		}
-		base.PreviewValue = LibraryDamagePreviewFeedback.ApplyPhysicalResistancePreview(
+		base.PreviewValue = ResistancePreview.ApplyPhysicalResistancePreview(
 			card,
 			previewMode,
 			target,
