@@ -1,0 +1,7 @@
+{
+  "DICE_DEFAULT": "このダイスには効果がない",
+  "BLOCK_DICE": "防御ダイス",
+  "BLUNT_DICE": "打撃ダイス",
+  "SLASH_DICE": "斬撃ダイス",
+  "PIERCE_DICE": "貫通ダイス"
+}

@@ -107,7 +107,10 @@ internal static class LibraryResistanceLocalization
             "zhs" => "zhs",
             "zh_cn" => "zhs",
             "eng" => "eng",
+            "jpn" => "jpn",
+            "ja" => "jpn",
             "kor" => "kor",
+            "ko" => "kor",
             _ => DefaultLanguage
         };
     }
