@@ -966,12 +966,14 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
         amount = ModifyEnergyGain(player, amount , null);
 		return amount;
 	}
+#if STS2_BETA
 	public sealed override decimal ModifyGoldGained(Player player, decimal amount)
 	{
 		amount = Mode.ModifyGoldGained(player, amount);
 		amount = ModifyGoldGained(player, amount , null);
 		return amount;
 	}
+#endif
 
 	public sealed override decimal ModifyHandDraw(Player player, decimal count)
 	{
@@ -1029,6 +1031,7 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
 		return value;
 	}
 
+#if STS2_BETA
 	public sealed override decimal ModifyPowerAmountGivenAdditive(PowerModel power, Creature giver, decimal amount, Creature? target, CardModel? cardSource)
 	{
 		decimal n = 0;
@@ -1044,6 +1047,7 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
         n *= ModifyPowerAmountGivenMultiplicative(power, giver, amount*n, target, cardSource , null);
 		return n;
 	}
+#endif
     public sealed override decimal ModifyEffectiveAmountAdditive(LibraryBasePowerModel power, decimal num, Creature? dealer, CardModel? cardSource)
     {
 		decimal n = 0;
@@ -1323,6 +1327,7 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
         flag |= ShouldForcePotionReward(player, roomType , null);   
 		return flag;
 	}
+#if STS2_BETA
 	public sealed override async Task AfterModifyingGoldGained(Player player, decimal amount)
 	{
 		await Mode.AfterModifyingGoldGained(player, amount);
@@ -1334,6 +1339,7 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
         flag |= TryModifyKeywordsInCombat(card, keywords , null);
 		return flag;
 	}
+#endif
     public sealed override async Task AfterDiceRoll(PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, LibraryDice dice)
     {
 		await Mode.AfterDiceRoll(choiceContext, targets , dice);
