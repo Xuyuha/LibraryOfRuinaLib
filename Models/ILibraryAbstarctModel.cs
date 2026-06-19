@@ -12,18 +12,20 @@ using Library.Powers.Mode;
 namespace Library.Models;
 public interface ILibraryAbstractModel//库模型接口，定义了库里的钩子
 {
-    public Task BeforeDiceEffect(PlayerChoiceContext choiceContext, IEnumerable<Creature>? target, CardModel cardSource, LibraryDice dice);
-    public Task AfterDiceEffect(PlayerChoiceContext choiceContext, IEnumerable<Creature>? target, CardModel cardSource, LibraryDice dice);
-    public Task AfterDiceRoll(PlayerChoiceContext choiceContext, IEnumerable<Creature>? target, LibraryDice dice);
-    public Task AfterRerolling(PlayerChoiceContext choiceContext, IEnumerable<Creature>? target, LibraryDice dice);
-    public bool ShouldReroll(IEnumerable<Creature>? target, LibraryDice dice);
+    public Task BeforeDiceEffect(PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, CardModel cardSource, LibraryDice dice);
+    public Task AfterDiceEffect(PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, CardModel cardSource, LibraryDice dice);
+    public Task AfterDiceRoll(PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, LibraryDice dice);
+    public Task AfterRerolling(PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, LibraryDice dice);
+    public bool ShouldReroll(IEnumerable<Creature>? targets, LibraryDice dice);
+    public bool ShouldReuse(IEnumerable<Creature>? targets, LibraryDice dice);
+    public Task AfterReusing(PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, LibraryDice dice);
     public Task BeforeSetChaoResistance(PlayerChoiceContext choiceContext,LibraryCreature target,Creature? dealer, LibraryDamageType type,LibraryResistanceLevel resistanceValue);
     public Task AfterSetChaoResistance(PlayerChoiceContext choiceContext,LibraryCreature target,Creature? dealer, LibraryDamageType type);
     public bool TrySetChaoResistance(PlayerChoiceContext choiceContext,LibraryCreature target,Creature? dealer, LibraryDamageType type,LibraryResistanceLevel resistanceValue);
     public bool TrySetPhysicalResistance(PlayerChoiceContext choiceContext,LibraryCreature target,Creature? dealer,LibraryDamageType type,LibraryResistanceLevel resistanceValue);
     public Task BeforeSetPhysicalResistance(PlayerChoiceContext choiceContext,LibraryCreature target,Creature? dealer,LibraryDamageType type,LibraryResistanceLevel resistanceValue);
     public Task AfterSetPhysicalResistance(PlayerChoiceContext choiceContext,LibraryCreature target,Creature? dealer,LibraryDamageType type);
-    public bool TryDiceEffect(PlayerChoiceContext choiceContext,IEnumerable<Creature>? target, CardModel cardSource, LibraryDice dice);
+    public bool TryDiceEffect(PlayerChoiceContext choiceContext,IEnumerable<Creature>? targets, CardModel cardSource, LibraryDice dice);
     public Task AfterAttack(PlayerChoiceContext choiceContext, LibraryAttackCommand command);   
     public Task AfterBlockBroken(Creature target, LibraryDamageType type);
     public Task AfterChaoDamageGiven(PlayerChoiceContext choiceContext, Creature dealer, LibraryChaoResult results, ValueProp props, Creature target, CardModel cardSource, LibraryDamageType type);

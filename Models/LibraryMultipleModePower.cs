@@ -39,6 +39,17 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
         Mode = mode;
         await LibraryHooks.AfterSetPowerMode(combatState, choiceContext, this, dealer, cardSource, mode);
     }
+    public sealed override bool ShouldReuse(IEnumerable<Creature>? targets, LibraryDice dice)
+    {
+		bool flag = Mode.ShouldReuse(targets,dice);
+		flag |= ShouldReuse(targets,dice,null);
+		return flag;
+    }
+    public sealed override async Task AfterReusing(PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, LibraryDice dice)
+    {
+        await Mode.AfterReusing(choiceContext, targets, dice);
+        await AfterReusing(choiceContext, targets, dice , null);
+    }
     public sealed override bool ShouldReroll(IEnumerable<Creature>? targets, LibraryDice dice)
 	{
 		bool flag = Mode.ShouldReroll(targets,dice);
@@ -2357,5 +2368,13 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
     public virtual bool ShouldReroll( IEnumerable<Creature>? targets, LibraryDice dice, object? _ =null)
     {
         return false;
+    }
+    public virtual bool ShouldReuse(IEnumerable<Creature>? targets, LibraryDice dice,object? _ = null)
+    {
+        return false;
+    }
+    public virtual Task AfterReusing(PlayerChoiceContext choiceContext, IEnumerable<Creature>? target, LibraryDice dice,object? _ = null)
+    {
+        return Task.CompletedTask;
     }
 }

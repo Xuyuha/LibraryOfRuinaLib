@@ -14,6 +14,15 @@ public abstract class LibraryRelicPoolModel : RelicPoolModel,ILibraryAbstractMod
     {
         return false;
     }
+    public virtual bool ShouldReuse(IEnumerable<Creature>? targets, LibraryDice dice)
+    {
+        return false;
+    }
+
+    public virtual Task AfterReusing(PlayerChoiceContext choiceContext, IEnumerable<Creature>? target, LibraryDice dice)
+    {
+        return Task.CompletedTask;
+    }
     public virtual Task AfterDiceRoll(PlayerChoiceContext choiceContext, IEnumerable<Creature>? target, LibraryDice dice)
     {
         return Task.CompletedTask;

@@ -11,6 +11,15 @@ namespace Library.Models;
 
 public class LibraryEnchantmentModel : EnchantmentModel,ILibraryAbstractModel
 {
+    public virtual bool ShouldReuse(IEnumerable<Creature>? targets, LibraryDice dice)
+    {
+        return false;
+    }
+
+    public virtual Task AfterReusing(PlayerChoiceContext choiceContext, IEnumerable<Creature>? target, LibraryDice dice)
+    {
+        return Task.CompletedTask;
+    }
     public virtual decimal EnchantChaoDamageAdditive(decimal originalDamage, ValueProp props)
     {
         return 0m;

@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using Godot;
 using Library.Entities.Creatures;
 using Library.Hooks;
+using Library.Models;
 using Library.Patches;
 using Library.Resistance;
 using Library.Resistance.Patches;
@@ -31,10 +32,34 @@ public static class LibraryCreatureCmd
 {
 	public static async Task GainBlock(Creature creature, CardPlay? cardPlay, LibraryDice dice, bool fast = false)
 	{
-		dice.Roll(cardPlay.Card.Owner);
-		int amount = dice.CurrentBaseValue;
-		await CreatureCmd.GainBlock(creature, amount, ValueProp.Move, cardPlay, fast);
-		await dice.TriggerDiceEffect(new BlockingPlayerChoiceContext(), cardPlay);
+		int blockTimes = dice.EnableCustomUseTimes? dice.UseTimes : 1;
+		ICombatState combatState = cardPlay.Card.CombatState!;
+		dice.HasUseTimes = 0;
+		for(int i = 0 ; i < blockTimes ; i++)
+		{
+			int RollCount = 1;
+			for(int j = 1 ; j < RollCount ; j++)
+			{
+				dice.Roll(cardPlay.Card.Owner);
+				await LibraryHooks.AfterDiceRoll(combatState, new BlockingPlayerChoiceContext(), [creature] , dice);
+				if(LibraryHooks.ShouldReroll(combatState,[creature],dice,out ILibraryAbstractModel? trigger))
+				{
+					j++;
+					if(trigger != null)
+						await trigger.AfterRerolling(new BlockingPlayerChoiceContext(),[creature],dice);
+				}
+			}
+			int amount = dice.CurrentBaseValue;
+			await CreatureCmd.GainBlock(creature, amount, ValueProp.Move, cardPlay, fast);
+			await dice.TriggerDiceEffect(new BlockingPlayerChoiceContext(), cardPlay);
+			if (LibraryHooks.ShouldReuse(combatState,[creature],dice,out ILibraryAbstractModel? trigger1))
+			{
+				blockTimes++;
+				if(trigger1 != null)
+					await trigger1.AfterReusing(new BlockingPlayerChoiceContext(), [creature] ,dice);
+			}
+			dice.HasUseTimes++;
+		}
 	}
 	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, Creature target, DamageVar damageVar, CardModel cardSource ,LibraryDamageType type = LibraryDamageType.None)
 	{

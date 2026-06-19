@@ -844,6 +844,19 @@ public static class LibraryHooks
         trigger = null;
         return false;
     }
+    public static bool ShouldReuse(ICombatState combatState,IEnumerable<Creature>? targets,LibraryDice dice,out ILibraryAbstractModel? trigger)
+    {
+        foreach (ILibraryAbstractModel item in combatState.IterateHookListeners())
+        {
+            if (item.ShouldReuse(targets,dice))
+            {
+                trigger = item;
+                return true;
+            }
+        }
+        trigger = null;
+        return false;
+    }
     public static bool TryDiceEffect(ICombatState combatState,PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, CardModel cardSource,LibraryDice dice)
     {
         foreach (AbstractModel model in combatState.IterateHookListeners())

@@ -16,6 +16,15 @@ public abstract class LibraryCardModel : CardModel,ILibraryAbstractModel//加入
     {
         
     }
+    public virtual bool ShouldReuse(IEnumerable<Creature>? targets, LibraryDice dice)
+    {
+        return false;
+    }
+
+    public virtual Task AfterReusing(PlayerChoiceContext choiceContext, IEnumerable<Creature>? target, LibraryDice dice)
+    {
+        return Task.CompletedTask;
+    }
     public virtual bool ShouldReroll(IEnumerable<Creature>? target, LibraryDice dice)
     {
         return false;
