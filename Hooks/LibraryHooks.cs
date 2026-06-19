@@ -329,6 +329,11 @@ public static class LibraryHooks
 
     public static async Task BeforeStun(ICombatState? combatState, Creature creature)
     {
+        if (combatState == null)
+        {
+            return;
+        }
+
         foreach (AbstractModel model in combatState.IterateHookListeners())
         {
             if(model is ILibraryAbstractModel libraryModel)    
@@ -340,6 +345,11 @@ public static class LibraryHooks
     }
     public static async Task AfterStun( ICombatState? combatState, Creature creature)
     {
+        if (combatState == null)
+        {
+            return;
+        }
+
         foreach (AbstractModel model in combatState.IterateHookListeners())
         {
             if (model is ILibraryAbstractModel libraryModel)    

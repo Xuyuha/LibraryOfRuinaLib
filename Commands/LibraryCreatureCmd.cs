@@ -382,7 +382,11 @@ public static class LibraryCreatureCmd
 		List<LibraryCreature> StunedCreatures = new List<LibraryCreature>();
 		foreach (LibraryChaoResult Result in results)
 		{
-			LibraryCreature Target = Result.Receiver as LibraryCreature;
+			if (Result.Receiver is not LibraryCreature Target || Target.CombatState == null)
+			{
+				continue;
+			}
+
 			if (combatState != null)
 			{
 				await LibraryHooks.AfterCurrentChaoValueChanged(runState, combatState, Target, -Result.ChaoValueAmount,type);
