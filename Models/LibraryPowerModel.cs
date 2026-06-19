@@ -154,6 +154,10 @@ public abstract class LibraryPowerModel : PowerModel,ILibraryAbstractModel
     {
         return false;
     }
+    public virtual Task BeforeDiceRoll(PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, LibraryDice dice)
+    {
+        return Task.CompletedTask;
+    }
 
     public virtual Task AfterReusing(PlayerChoiceContext choiceContext, IEnumerable<Creature>? target, LibraryDice dice)
     {

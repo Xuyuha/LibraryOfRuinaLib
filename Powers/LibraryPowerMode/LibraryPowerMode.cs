@@ -28,6 +28,10 @@ public abstract class LibraryPowerMode
 		SourcePower = sourcePower;
 	}
     public abstract string Name {get;}
+    public virtual Task BeforeDiceRoll(PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, LibraryDice dice)
+    {
+        return Task.CompletedTask;
+    }
     public virtual bool ShouldReroll(IEnumerable<Creature>? target, LibraryDice dice)
     {
         return false;

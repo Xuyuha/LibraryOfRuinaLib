@@ -10,6 +10,10 @@ namespace Library.Models;
 
 public abstract class LibraryEncounterModel : EncounterModel,ILibraryAbstractModel
 {
+    public virtual Task BeforeDiceRoll(PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, LibraryDice dice)
+    {
+        return Task.CompletedTask;
+    }
     public virtual bool ShouldReuse(IEnumerable<Creature>? targets, LibraryDice dice)
     {
         return false;

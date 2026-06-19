@@ -11,11 +11,14 @@ namespace Library.Models;
 public abstract class LibraryActModel : ActModel,ILibraryAbstractModel
 {
     
+    public virtual Task BeforeDiceRoll(PlayerChoiceContext choiceContext, IEnumerable<Creature>? target, LibraryDice dice)
+    {
+        return Task.CompletedTask;
+    }
     public virtual bool ShouldReuse(IEnumerable<Creature>? targets, LibraryDice dice)
     {
         return false;
     }
-
     public virtual Task AfterReusing(PlayerChoiceContext choiceContext, IEnumerable<Creature>? target, LibraryDice dice)
     {
         return Task.CompletedTask;

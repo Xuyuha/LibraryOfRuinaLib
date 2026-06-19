@@ -50,6 +50,11 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
         await Mode.AfterReusing(choiceContext, targets, dice);
         await AfterReusing(choiceContext, targets, dice , null);
     }
+    public sealed override async Task BeforeDiceRoll(PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, LibraryDice dice)
+    {
+		await Mode.BeforeDiceRoll(choiceContext, targets, dice);
+        await BeforeDiceRoll(choiceContext, targets, dice , null);
+    }
     public sealed override bool ShouldReroll(IEnumerable<Creature>? targets, LibraryDice dice)
 	{
 		bool flag = Mode.ShouldReroll(targets,dice);
@@ -2374,6 +2379,10 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
         return false;
     }
     public virtual Task AfterReusing(PlayerChoiceContext choiceContext, IEnumerable<Creature>? target, LibraryDice dice,object? _ = null)
+    {
+        return Task.CompletedTask;
+    }
+    public virtual Task BeforeDiceRoll(PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, LibraryDice dice,object? _ = null)
     {
         return Task.CompletedTask;
     }

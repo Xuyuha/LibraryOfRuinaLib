@@ -8,7 +8,7 @@ using Library.Resistance;
 using Library.Powers.Mode;
 namespace Library.Models;
 
-public abstract class LibraryAchievementModel : AchievementModel,ILibraryAbstractModel
+public abstract class LibraryAchievementModel : AchievementModel, ILibraryAbstractModel
 {
     
     public virtual bool ShouldReroll(IEnumerable<Creature>? target, LibraryDice dice)
@@ -234,6 +234,11 @@ public abstract class LibraryAchievementModel : AchievementModel,ILibraryAbstrac
     }
 
     public virtual Task AfterReusing(PlayerChoiceContext choiceContext, IEnumerable<Creature>? target, LibraryDice dice)
+    {
+        return Task.CompletedTask;
+    }
+
+    public virtual Task BeforeDiceRoll(PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, LibraryDice dice)
     {
         return Task.CompletedTask;
     }

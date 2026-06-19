@@ -214,7 +214,16 @@ public static class LibraryHooks
             model.InvokeExecutionFinished();
         }
     }
-    //TODO Dice类完成后实现
+    public static async Task BeforeDiceEffect(ICombatState combatState, PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, CardModel cardSource,LibraryDice dice){
+        foreach (AbstractModel model in combatState.IterateHookListeners())
+        {
+            if (model is ILibraryAbstractModel libraryModel)
+            {
+                await libraryModel.BeforeDiceEffect(choiceContext,targets, cardSource,dice);
+                model.InvokeExecutionFinished();
+            }
+        }
+    }
     public static async Task AfterDiceEffect(ICombatState combatState, PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, CardModel cardSource,LibraryDice dice){
         foreach (AbstractModel model in combatState.IterateHookListeners())
         {
@@ -366,12 +375,13 @@ public static class LibraryHooks
             model.InvokeExecutionFinished();
         }
     }
-    public static async Task BeforeDiceEffect(ICombatState combatState, PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, CardModel cardSource, LibraryDice dice){
+    public static async Task BeforeDiceRoll(ICombatState combatState,PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, LibraryDice dice)
+    {
         foreach (AbstractModel model in combatState.IterateHookListeners())
         {
             if (model is ILibraryAbstractModel libraryModel)    
             {
-                await libraryModel.BeforeDiceEffect(choiceContext,targets, cardSource,dice);
+                await libraryModel.BeforeDiceRoll(choiceContext,targets,dice);
                 model.InvokeExecutionFinished();
             }
         }

@@ -10,6 +10,10 @@ namespace Library.Models;
 
 public abstract class LibraryRelicPoolModel : RelicPoolModel,ILibraryAbstractModel
 {
+    public virtual Task BeforeDiceRoll(PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, LibraryDice dice)
+    {
+        return Task.CompletedTask;
+    }
     public virtual bool ShouldReroll(IEnumerable<Creature>? target, LibraryDice dice)
     {
         return false;
