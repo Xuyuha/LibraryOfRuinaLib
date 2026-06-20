@@ -19,7 +19,9 @@ public sealed class LibraryBurnPower : LibraryBasePowerModel
     protected override async Task Reduce(PlayerChoiceContext choiceContext)
     {
         if (Owner.IsDead) return;
-        await PowerCmd.ModifyAmount(choiceContext, this, -(Amount / 3), null, null);
+        await PowerCmd.ModifyAmount(choiceContext, this, -CalculateStackDecayByThird(Amount), null, null);
+        if (Amount <= 0m)
+            await PowerCmd.Remove(this);
     }
     protected override async Task Effect(PlayerChoiceContext choiceContext, decimal effectiveAmount)
     {

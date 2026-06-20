@@ -10,6 +10,12 @@ namespace Library.Models;
 
 public abstract class LibraryBasePowerModel: LibraryMultipleModePowerModel//类似于烧伤，流血的基础模板
 {
+    protected static decimal CalculateStackDecayByThird(decimal amount)
+    {
+        if (amount <= 0m) return 0m;
+        return Math.Max(1m, Math.Floor(amount / 3m));
+    }
+
     protected virtual Task Effect(PlayerChoiceContext ChoiceContext, decimal effectiveAmount){//子类实现触发逻辑
         return Task.CompletedTask;
     }

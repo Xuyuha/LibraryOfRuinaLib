@@ -20,7 +20,7 @@ public sealed class LibraryBleedingPower : LibraryBasePowerModel
     protected override async Task Reduce(PlayerChoiceContext choiceContext)
     {
         if (Owner.IsDead) return;
-        await PowerCmd.ModifyAmount(choiceContext, this, -(Amount / 3), null, null);
+        await PowerCmd.ModifyAmount(choiceContext, this, -CalculateStackDecayByThird(Amount), null, null);
     }
     protected override async Task Effect(PlayerChoiceContext choiceContext, decimal effectiveAmount)
     {
