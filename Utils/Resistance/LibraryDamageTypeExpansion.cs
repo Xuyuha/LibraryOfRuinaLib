@@ -5,6 +5,6 @@ public static class LibraryDamageTypeExpansion
         LibraryDamageType.Blunt=>"blunt",
         LibraryDamageType.Slash=>"slash",
         LibraryDamageType.Pierce=>"pierce",
-        _=>"666"
+        _=>"NOPE"
     };
 }

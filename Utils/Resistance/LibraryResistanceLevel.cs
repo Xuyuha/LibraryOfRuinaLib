@@ -24,12 +24,12 @@ public static class LibraryResistanceLevelExtensions
 {
     public static decimal GetMultiplier(this LibraryResistanceLevel level) => level switch
     {
-        LibraryResistanceLevel.Immune => 0m,
-        LibraryResistanceLevel.Resist => 0.25m,
-        LibraryResistanceLevel.Endure => 0.5m,
+        LibraryResistanceLevel.Immune => 0.25m,
+        LibraryResistanceLevel.Resist => 0.5m,
+        LibraryResistanceLevel.Endure => 0.75m,
         LibraryResistanceLevel.Normal => 1m,
-        LibraryResistanceLevel.Vulnerable => 1.5m,
-        LibraryResistanceLevel.Fatal => 2m,
+        LibraryResistanceLevel.Vulnerable => 1.25m,
+        LibraryResistanceLevel.Fatal => 1.5m,
         _ => 1m
     };
 

@@ -28,16 +28,83 @@ internal static class AttackExecuteContext
             ? DamageType.Value
             : LibraryDamageType.None;
 
-    public static void SetFlag()
+    public static void SetFlag(object? attackCommand)
     {
-        IsInAttackExecute.Value = true;
-        DamageType.Value = LibraryDamageType.Blunt;
+        try
+        {
+            IsInAttackExecute.Value = true;
+            DamageType.Value = SafeResolveVanillaDamageType(attackCommand);
+        }
+        catch
+        {
+            IsInAttackExecute.Value = true;
+            DamageType.Value = LibraryDamageType.Blunt;
+        }
     }
 
     public static void ClearFlag()
     {
         IsInAttackExecute.Value = false;
         DamageType.Value = LibraryDamageType.None;
+    }
+
+    internal static LibraryDamageType ResolveVanillaDamageType(object? attackCommand)
+    {
+        return SafeResolveVanillaDamageType(attackCommand);
+    }
+
+    private static LibraryDamageType SafeResolveVanillaDamageType(object? attackCommand)
+    {
+        try
+        {
+            return ResolveVanillaDamageTypeUnsafe(attackCommand);
+        }
+        catch
+        {
+            return LibraryDamageType.Blunt;
+        }
+    }
+
+    private static LibraryDamageType ResolveVanillaDamageTypeUnsafe(object? attackCommand)
+    {
+        if (attackCommand == null)
+        {
+            return LibraryDamageType.Blunt;
+        }
+
+        // 原版 AttackCommand 区分点来自 beta 源码：
+        // WithHitCount 修改 _hitCount；TargetingAllOpponents/TargetingRandomOpponents 设置 IsMultiTargeted。
+        if (GetHitCount(attackCommand) > 1)
+        {
+            return LibraryDamageType.Pierce;
+        }
+
+        if (GetObjectProperty(attackCommand, "ModelSource") is CardModel &&
+            GetBoolProperty(attackCommand, "IsMultiTargeted") &&
+            !GetBoolProperty(attackCommand, "IsRandomlyTargeted"))
+        {
+            return LibraryDamageType.Slash;
+        }
+
+        return LibraryDamageType.Blunt;
+    }
+
+    private static int GetHitCount(object attackCommand)
+    {
+        FieldInfo? field = AccessTools.Field(attackCommand.GetType(), "_hitCount");
+        return field?.GetValue(attackCommand) is int hitCount ? hitCount : 1;
+    }
+
+    private static bool GetBoolProperty(object source, string propertyName)
+    {
+        MethodInfo? getter = AccessTools.PropertyGetter(source.GetType(), propertyName);
+        return getter?.Invoke(source, null) is bool value && value;
+    }
+
+    private static object? GetObjectProperty(object source, string propertyName)
+    {
+        MethodInfo? getter = AccessTools.PropertyGetter(source.GetType(), propertyName);
+        return getter?.Invoke(source, null);
     }
 }
 
@@ -58,9 +125,9 @@ internal static class LibraryAttackExecuteFlagPatch
     }
 
     [HarmonyPrefix]
-    private static void Prefix()
+    private static void Prefix(object __instance)
     {
-        AttackExecuteContext.SetFlag();
+        AttackExecuteContext.SetFlag(__instance);
     }
 
     [HarmonyTranspiler]
