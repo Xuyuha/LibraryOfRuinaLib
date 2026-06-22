@@ -22,7 +22,8 @@ internal static class AttackExecuteContext
 {
     internal static readonly AsyncLocal<bool> IsInAttackExecute = new();
     internal static readonly AsyncLocal<LibraryDamageType> DamageType = new();
-
+    internal static readonly AsyncLocal<List<int>?> PreDamageBlocks = new();
+    
     public static LibraryDamageType CurrentDamageType =>
         IsInAttackExecute.Value && DamageType.Value != LibraryDamageType.None
             ? DamageType.Value
@@ -204,7 +205,7 @@ internal static class LibraryAttackChaoDamagePatch
         var targetList = targets as IReadOnlyList<Creature> ?? new List<Creature>(targets);
         if (!targetList.Any(static target => target is LibraryCreature { IsPlayer: false }))
             return true;
-
+        AttackExecuteContext.PreDamageBlocks.Value = targetList.Select(c => c.Block).ToList();
         __result = LibraryCreatureCmd.Damage(
             choiceContext: choiceContext,
             targets: targetList,
@@ -261,15 +262,27 @@ internal static class LibraryAttackChaoDamagePatch
         CardModel? cardSource)
     {
         IEnumerable<DamageResult> results = await prior;
-        await LibraryCreatureCmd.ChaoDamage(
-            damageAmount: amount,
-            choiceContext: choiceContext,
-            targets: targets,
-            props: props,
-            dealer: dealer,
-            cardSource: cardSource,
-            damageResults: results,
-            type: AttackExecuteContext.CurrentDamageType);
+
+        List<int>? blocks = AttackExecuteContext.PreDamageBlocks.Value;
+        AttackExecuteContext.PreDamageBlocks.Value = null;
+
+        if (blocks == null || blocks.Count == 0)
+            return results;
+
+        var targetList = targets as IReadOnlyList<Creature> ?? new List<Creature>(targets);
+        for (int i = 0; i < targetList.Count && i < blocks.Count; i++)
+        {
+            decimal chaoDamage = Math.Max(amount - blocks[i], 0m);
+            await LibraryCreatureCmd.ChaoDamage(
+                damageAmount: chaoDamage,
+                choiceContext: choiceContext,
+                targets: [targetList[i]],
+                props: props,
+                dealer: dealer,
+                cardSource: cardSource,
+                damageResults: results,
+                type: AttackExecuteContext.CurrentDamageType);
+        }
         return results;
     }
 }

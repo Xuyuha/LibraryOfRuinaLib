@@ -1,0 +1,12 @@
+{
+  "id": "LibraryOfRuinaLib",
+  "name": "废墟图书馆基础库",
+  "author": "Hod?",
+  "description": "Shared base library for Library Of Ruina mods. Provides damage types, resistances, stagger system, and combat hook infrastructure.",
+  "version": "v1.0.0",
+  "min_game_version": "0.107.0",
+  "has_pck": true,
+  "has_dll": true,
+  "dependencies": [],
+  "affects_gameplay": true
+}
