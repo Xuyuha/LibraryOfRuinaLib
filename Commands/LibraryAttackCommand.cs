@@ -18,6 +18,7 @@ using Library.Entities.Creatures;
 using Library.Hooks;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using Library.Models;
+using MegaCrit.Sts2.Core.Logging;
 
 public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究，AttackCommand几乎没有与任何其他类交互，可以放心重置
 //todo：骰子相关的方法
@@ -543,7 +544,7 @@ public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究�
 				Dice.HasUseTimes++;
 			IEnumerable<LibraryCreature> targets = _singleTarget != null ? [_singleTarget] : validTargets;
 			int RollCount = 1;
-			for(int j = 1 ; j < RollCount ; j++)
+			for(int j = 0 ; j < RollCount ; j++)
 			{
 				await LibraryHooks.BeforeDiceRoll(combatState, choiceContext ?? new BlockingPlayerChoiceContext(),_singleTarget != null ? [_singleTarget] : validTargets, Dice);
 				Dice?.Roll(Attacker.Player);
@@ -556,16 +557,16 @@ public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究�
 				}
 			}
 			decimal damage = Dice != null ? Dice.CurrentBaseValue:((_calculatedDamageVar == null) ?_damagePerHit : _calculatedDamageVar.Calculate(singleTarget));
-			IEnumerable <int> Blocks = (_singleTarget != null ? [_singleTarget] :validTargets).Select(c => c.Block);
+			List<int> Blocks = (_singleTarget != null ? [_singleTarget] :validTargets).Select(c => c.Block).ToList();
 			IEnumerable<DamageResult> damageResults = await LibraryCreatureCmd.Damage(damageAmount: damage, choiceContext: choiceContext ?? new BlockingPlayerChoiceContext(), targets: (singleTarget != null) ? [singleTarget]  : ((IEnumerable<LibraryCreature>)validTargets), props: DamageProps, dealer: Attacker ,cardSource: ModelSource as CardModel,type : _damageType);
 			AddDamageResultsInternal(damageResults);
-			IEnumerable<LibraryChaoResult>? chaoResults = [];
-			for (int j = 0 ; j < Blocks.Count() ; j++){
-                IEnumerable<LibraryChaoResult>? results = await LibraryCreatureCmd.ChaoDamage(damageAmount: damage - Blocks.ElementAt(j), choiceContext: choiceContext ?? new BlockingPlayerChoiceContext(), target: singleTarget ?? validTargets.ElementAt(j), props: DamageProps, dealer: Attacker, cardSource: ModelSource as CardModel, type: _damageType, damageResults: damageResults);
+			List<LibraryChaoResult> chaoResults = [];
+			for (int j = 0 ; j < Blocks.Count ; j++){
+                IEnumerable<LibraryChaoResult>? results = await LibraryCreatureCmd.ChaoDamage(damageAmount: damage - Blocks[j], choiceContext: choiceContext ?? new BlockingPlayerChoiceContext(), target: singleTarget ?? validTargets.ElementAt(j), props: DamageProps, dealer: Attacker, cardSource: ModelSource as CardModel, type: _damageType, damageResults: damageResults);
 				if(results != null)
-					chaoResults = chaoResults.Concat(results);
+					chaoResults.AddRange(results);
 			}
-			if (chaoResults != null)
+			if (chaoResults.Count > 0)
 			{
 				AddChaoResultsInternal(chaoResults);
 			}

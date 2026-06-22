@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("LibraryOfRuinaLib")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+12cdf28f559ff504f121bdd5aaeab9744393d668")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8eab5bfc94b6432b1f8cdb1f0d77605a36114012")]
 [assembly: System.Reflection.AssemblyProductAttribute("LibraryOfRuinaLib")]
 [assembly: System.Reflection.AssemblyTitleAttribute("LibraryOfRuinaLib")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

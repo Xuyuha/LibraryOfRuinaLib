@@ -42,8 +42,8 @@ public class LibraryDice : DynamicVar
     private bool _shouldShowDamage = false;
     private bool _shouldShowChao = false;
     public decimal FloatValue {get;set;}
-    readonly LibraryDiceType DiceType ;
-    readonly LibraryCardModel SourceCard ;
+    public readonly LibraryDiceType DiceType ;
+    public readonly LibraryCardModel SourceCard ;
     private int IdNumber = 0;
     public static LocString DefaultDescription => new("dice","DICE_DEFAULT");
     public LocString Description =>  ShouldUseDefaultTip ? DefaultDescription:new("cards",DescriptionPath);

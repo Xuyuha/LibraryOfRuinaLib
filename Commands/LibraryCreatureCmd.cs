@@ -38,7 +38,7 @@ public static class LibraryCreatureCmd
 		for(int i = 0 ; i < blockTimes ; i++)
 		{
 			int RollCount = 1;
-			for(int j = 1 ; j < RollCount ; j++)
+			for(int j = 0 ; j < RollCount ; j++)
 			{
 				await LibraryHooks.BeforeDiceRoll(combatState, new BlockingPlayerChoiceContext(), [creature] , dice);
 				dice.Roll(cardPlay.Card.Owner);

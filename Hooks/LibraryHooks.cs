@@ -936,11 +936,11 @@ public static class LibraryHooks
     }
     public static bool ShouldReroll(ICombatState combatState,IEnumerable<Creature>? targets,LibraryDice dice,out ILibraryAbstractModel? trigger)
     {
-        foreach (ILibraryAbstractModel item in combatState.IterateHookListeners())
+        foreach (AbstractModel item in combatState.IterateHookListeners())
         {
-            if (item.ShouldReroll(targets,dice))
-            {
-                trigger = item;
+            if (item is ILibraryAbstractModel libraryAbstractModel 
+                && libraryAbstractModel.ShouldReroll(targets,dice)){
+                trigger = libraryAbstractModel;
                 return true;
             }
         }
@@ -949,11 +949,11 @@ public static class LibraryHooks
     }
     public static bool ShouldReuse(ICombatState combatState,IEnumerable<Creature>? targets,LibraryDice dice,out ILibraryAbstractModel? trigger)
     {
-        foreach (ILibraryAbstractModel item in combatState.IterateHookListeners())
+        foreach (AbstractModel item in combatState.IterateHookListeners())
         {
-            if (item.ShouldReuse(targets,dice))
-            {
-                trigger = item;
+            if (item is ILibraryAbstractModel libraryAbstractModel 
+                && libraryAbstractModel.ShouldReuse(targets,dice)){
+                trigger = libraryAbstractModel;
                 return true;
             }
         }
