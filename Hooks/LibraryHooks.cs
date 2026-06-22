@@ -11,6 +11,7 @@ using Library.Entities.Creatures;
 using Library.Utils;
 using Library.Resistance;
 using Library.Powers.Mode;
+using MegaCrit.Sts2.Core.Logging;
 using System.Text.RegularExpressions;
 using System.Runtime;
 using System.Threading.Tasks;
@@ -375,15 +376,97 @@ public static class LibraryHooks
     {
         foreach (AbstractModel model in runState.IterateHookListeners(combatState))
         {
-            choiceContext.PushModel(model);
-            await model.BeforeDamageReceived(choiceContext, target, amount, props, dealer, cardSource);
-            if (model is ILibraryAbstractModel libraryModel)    
+            bool pushedModel = false;
+            string hookPhase = "AbstractModel.BeforeDamageReceived";
+            try
             {
-                await libraryModel.BeforeDamageReceived(choiceContext, target, amount, props, dealer, cardSource,type);
+                choiceContext.PushModel(model);
+                pushedModel = true;
+                await model.BeforeDamageReceived(choiceContext, target, amount, props, dealer, cardSource);
+                if (model is ILibraryAbstractModel libraryModel)
+                {
+                    hookPhase = "ILibraryAbstractModel.BeforeDamageReceived";
+                    await libraryModel.BeforeDamageReceived(choiceContext, target, amount, props, dealer, cardSource,type);
+                }
             }
-            choiceContext.PopModel(model);
+            catch (Exception exception)
+            {
+                LogBeforeDamageReceivedListenerFailure(exception, model, hookPhase, target, amount, props, dealer, cardSource, type);
+                throw;
+            }
+            finally
+            {
+                if (pushedModel)
+                {
+                    choiceContext.PopModel(model);
+                }
+            }
             model.InvokeExecutionFinished();
         }
+    }
+
+    private static void LogBeforeDamageReceivedListenerFailure(Exception exception, AbstractModel model, string hookPhase, Creature target, decimal amount, ValueProp props, Creature? dealer, CardModel? cardSource, LibraryDamageType type)
+    {
+        try
+        {
+            Log.Error(
+                "[LibraryOfRuinaLib] BeforeDamageReceived listener failed. " +
+                $"hook={hookPhase}, modelId={GetModelId(model)}, modelType={model.GetType().FullName}, " +
+                $"target={GetCreatureId(target)}, dealer={GetCreatureId(dealer)}, card={GetCardId(cardSource)}, " +
+                $"amount={amount}, damageType={type}, props={props}, exception={exception}");
+        }
+        catch
+        {
+            
+        }
+    }
+
+    private static string GetModelId(AbstractModel model)
+    {
+        try
+        {
+            return model.Id.ToString();
+        }
+        catch
+        {
+            return "unknown-model-id";
+        }
+    }
+
+    private static string GetCardId(CardModel? card)
+    {
+        if (card == null)
+            return "null";
+
+        try
+        {
+            return card.Id.Entry;
+        }
+        catch
+        {
+            return card.GetType().FullName ?? card.GetType().Name;
+        }
+    }
+
+    private static string GetCreatureId(Creature? creature)
+    {
+        if (creature == null)
+            return "null";
+
+        try
+        {
+            if (creature.IsMonster)
+                return creature.Monster?.Id.Entry ?? "unknown-monster";
+
+            if (creature.IsPlayer)
+                return creature.Player?.Character.Id.Entry ?? "unknown-player";
+        }
+        catch
+        {
+            
+        }
+
+        return creature.GetType().FullName ?? creature.GetType().Name;
     }
     public static async Task BeforeDiceRoll(ICombatState combatState,PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, LibraryDice dice)
     {
