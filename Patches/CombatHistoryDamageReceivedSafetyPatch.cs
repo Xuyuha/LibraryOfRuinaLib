@@ -30,8 +30,9 @@ internal static class CombatHistoryDamageReceivedSafetyPatch
         {
             Log.Warn(
                 "[LibraryOfRuinaLib] Suppressed CombatHistory.DamageReceived NullReferenceException " +
-                $"for non-card Library damage. receiver={GetCreatureId(receiver)}, " +
-                $"dealer={GetCreatureId(dealer)}, damage={damageResult.UnblockedDamage}, props={damageResult.Props}");
+                $"for non-card or cross-assembly Library damage. receiver={GetCreatureId(receiver)}, " +
+                $"dealer={GetCreatureId(dealer)}, cardSource={GetCardSourceId(cardSource)}, " +
+                $"damage={damageResult.UnblockedDamage}, props={damageResult.Props}");
         }
         catch
         {
@@ -51,7 +52,17 @@ internal static class CombatHistoryDamageReceivedSafetyPatch
                && receiver is LibraryCreature { IsMonster: true }
                && result != null
                && ReferenceEquals(result.Receiver, receiver)
-               && cardSource == null;
+               && IsNonOwnedCardSource(receiver, cardSource);
+    }
+
+    private static bool IsNonOwnedCardSource(Creature receiver, CardModel? cardSource)
+    {
+        if (cardSource == null)
+            return true;
+
+        return !ReferenceEquals(
+            cardSource.GetType().Assembly,
+            receiver.Monster?.GetType().Assembly);
     }
 
     private static string GetCreatureId(Creature? creature)
@@ -66,5 +77,10 @@ internal static class CombatHistoryDamageReceivedSafetyPatch
             return creature.Player?.Character.Id.Entry ?? "unknown-player";
 
         return creature.GetType().Name;
+    }
+
+    private static string GetCardSourceId(CardModel? cardSource)
+    {
+        return cardSource?.Id.Entry ?? "null";
     }
 }
