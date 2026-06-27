@@ -109,10 +109,20 @@ public static class LibraryHooks
     {
         foreach (AbstractModel model in combatState.IterateHookListeners())
         {
-            await model.AfterBlockBroken(target);
-            if(model is ILibraryAbstractModel libraryAbstractModel)
+            string hookPhase = "AbstractModel.AfterBlockBroken";
+            try
             {
-                await libraryAbstractModel.AfterBlockBroken(target, type);
+                await model.AfterBlockBroken(target);
+                if(model is ILibraryAbstractModel libraryAbstractModel)
+                {
+                    hookPhase = "ILibraryAbstractModel.AfterBlockBroken";
+                    await libraryAbstractModel.AfterBlockBroken(target, type);
+                }
+            }
+            catch (Exception exception)
+            {
+                LogAfterBlockBrokenListenerFailure(exception, model, hookPhase, target, type);
+                throw;
             }
             model.InvokeExecutionFinished();
         }
@@ -414,6 +424,21 @@ public static class LibraryHooks
                 $"hook={hookPhase}, modelId={GetModelId(model)}, modelType={model.GetType().FullName}, " +
                 $"target={GetCreatureId(target)}, dealer={GetCreatureId(dealer)}, card={GetCardId(cardSource)}, " +
                 $"amount={amount}, damageType={type}, props={props}, exception={exception}");
+        }
+        catch
+        {
+            
+        }
+    }
+
+    private static void LogAfterBlockBrokenListenerFailure(Exception exception, AbstractModel model, string hookPhase, Creature target, LibraryDamageType type)
+    {
+        try
+        {
+            Log.Error(
+                "[LibraryOfRuinaLib] AfterBlockBroken listener failed. " +
+                $"hook={hookPhase}, modelId={GetModelId(model)}, modelType={model.GetType().FullName}, " +
+                $"target={GetCreatureId(target)}, damageType={type}, exception={exception}");
         }
         catch
         {
