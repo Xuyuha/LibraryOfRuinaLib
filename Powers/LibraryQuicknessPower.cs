@@ -14,6 +14,7 @@ public sealed class LibraryQuicknessPower : LibraryPowerModel
     public override bool AllowNegative => false;
     public override async Task AfterSideTurnEnd(PlayerChoiceContext choiceContext, CombatSide side, IEnumerable<Creature> participants)
     {
+        if (side != CombatSide.Player) return;
         foreach(var c in CombatState.Enemies.ToList())
         {
             await CreatureCmd.Damage(new ThrowingPlayerChoiceContext(),c,Amount,ValueProp.Unpowered,Owner);

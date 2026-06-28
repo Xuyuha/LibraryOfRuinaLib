@@ -66,7 +66,7 @@
   "DAMAGE_TYPE_RESISTANCE.tooltip_format": "{0}：{1}",
   "LIBRARY_QUICKNESS_POWER.title": "迅捷",
   "LIBRARY_QUICKNESS_POWER.description":"每回合结束后，对所有敌人造成相当于该效果层数的点伤害并使该效果层数减1",
-  "LIBRARY_QUICKNESS_POWER.smartDescription": "每回合结束后，对所有敌人造成{Amount}点伤害并使该效果层数减1",
+  "LIBRARY_QUICKNESS_POWER.smartDescription": "回合结束时，对所有敌人造成[blue]{Amount}[/blue]点伤害并使该效果层数减[blue]1[/blue]",
   "LIBRARY_BINDING_POWER.title": "束缚",
   "LIBRARY_BINDING_POWER.description":"持续回合内，每当自身受到小于该效果层数的未被格挡的攻击伤害时，将伤害提升为该效果层数",
   "LIBRARY_BINDING_POWER.smartDescription": "{IsPermanent:[gold]永久[/gold]|在接下来的[blue]{Turns}[/blue]回合内}，[gold]{OwnerName}[/gold]每当受到小于[blue]{Amount}[/blue]的未被格挡的攻击伤害时，将伤害提升为[blue]{Amount}[/blue]。",

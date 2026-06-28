@@ -10,6 +10,23 @@ namespace Library.Models;
 
 public abstract class LibraryRelicModel : RelicModel,ILibraryAbstractModel
 {
+    public virtual bool HasRightClick => false;
+
+    public virtual bool CanHandleRightClickLocal(LibraryRightClickContext context)
+    {
+        return HasRightClick;
+    }
+
+    public virtual bool CanExecuteRightClick(LibraryRightClickExecutionContext context)
+    {
+        return HasRightClick;
+    }
+
+    public virtual Task OnRightClick(LibraryRightClickExecutionContext context)
+    {
+        return Task.CompletedTask;
+    }
+
     public virtual Task BeforeDiceRoll(PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, LibraryDice dice)
     {
         return Task.CompletedTask;
