@@ -39,6 +39,11 @@ public sealed class LibraryCreatureResistanceData
             PhysicalResistance = new(other);
             ChaosResistance = new(other);
         }
+        public LibraryCreatureResistanceData(LibraryCreatureResistanceData other)
+        {
+            PhysicalResistance = new(other.PhysicalResistance);
+            ChaosResistance = new(other.ChaosResistance);
+        }
     public Resistance PhysicalResistance = new(){
     };
     public Resistance ChaosResistance= new(){

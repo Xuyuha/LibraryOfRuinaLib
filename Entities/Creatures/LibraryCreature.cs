@@ -44,11 +44,11 @@ public class LibraryCreature : Creature//扩展Creature，添加Chao值属性
     public bool RestoreChaoOnNextOwnerTurn { get; set; }
     public bool IsStunPending => RestoreChaoOnNextOwnerTurn;
     public int StunPlayerTurnsRemaining => _stunPlayerTurnsRemaining;
-    public LibraryCreatureResistanceData ResistanceData => _resistanceData;
+    public LibraryCreatureResistanceData ResistanceData => _resistanceData ??= new();
 
     public void SaveAndSetStunResistance()
     {
-        _preStunResistanceData = _resistanceData;
+        _preStunResistanceData ??= new LibraryCreatureResistanceData(ResistanceData);
         _resistanceData = new(LibraryResistanceLevel.Fatal);
         RestoreChaoOnNextOwnerTurn = true;
         LibraryPhysicalResistanceIconsUi.Refresh(HealthBar);
@@ -57,8 +57,17 @@ public class LibraryCreature : Creature//扩展Creature，添加Chao值属性
 
     public void RestorePreStunResistance()
     {
+        if (_preStunResistanceData == null)
+        {
+            RestoreChaoOnNextOwnerTurn = false;
+            LibraryPhysicalResistanceIconsUi.Refresh(HealthBar);
+            LibraryChaosResistanceIconsUi.Refresh(HealthBar);
+            return;
+        }
+
         _resistanceData = _preStunResistanceData;
         _preStunResistanceData = null;
+        RestoreChaoOnNextOwnerTurn = false;
         LibraryPhysicalResistanceIconsUi.Refresh(HealthBar);
         LibraryChaosResistanceIconsUi.Refresh(HealthBar);
     }
@@ -177,11 +186,7 @@ public class LibraryCreature : Creature//扩展Creature，添加Chao值属性
         if (CombatState != null && !IsDead)
         {
             SaveAndSetStunResistance();
-            if (string.IsNullOrEmpty(nextMoveId))
-            {
-                List<MonsterState> stateLog = Monster?.MoveStateMachine?.StateLog!;
-                nextMoveId = stateLog.Last().Id;
-            }
+            nextMoveId = ResolvePostStunMoveId(Monster, nextMoveId);
             MoveState state = new MoveState("STUNNED", stunMove, new StunIntent())
             {
                 FollowUpStateId = nextMoveId,
@@ -190,17 +195,51 @@ public class LibraryCreature : Creature//扩展Creature，添加Chao值属性
             Monster?.SetMoveImmediate(state);
         }
     }
+    private static string? ResolvePostStunMoveId(MonsterModel monster, string? nextMoveId)
+    {
+        if (IsValidPostStunMoveId(monster, nextMoveId))
+        {
+            return nextMoveId;
+        }
+
+        string? loggedMoveId = monster.MoveStateMachine?.StateLog
+            .LastOrDefault(state => IsValidPostStunMoveId(monster, state.Id))
+            ?.Id;
+        if (loggedMoveId != null)
+        {
+            return loggedMoveId;
+        }
+
+        string? currentMoveId = monster.NextMove?.Id;
+        if (IsValidPostStunMoveId(monster, currentMoveId))
+        {
+            return currentMoveId;
+        }
+
+        return monster.MoveStateMachine?.States.Values
+            .OfType<MoveState>()
+            .FirstOrDefault(state => IsValidPostStunMoveId(monster, state.Id))
+            ?.Id;
+    }
+
+    private static bool IsValidPostStunMoveId(MonsterModel monster, string? moveId)
+    {
+        return !string.IsNullOrEmpty(moveId)
+            && moveId != MonsterModel.stunnedMoveId
+            && moveId != "UNSET_MOVE"
+            && monster.MoveStateMachine?.States.ContainsKey(moveId) == true;
+    }
     public NHealthBar? HealthBar => GetCreatureNode()?.GetNode<NCreatureStateDisplay>("%HealthBar")?.GetNode<NHealthBar>("%HealthBar");
     public LibraryResistanceLevel GetChaosResistanceLevel(LibraryDamageType type) => type switch{
-        LibraryDamageType.Blunt=>_resistanceData.ChaosResistance.Blunt,
-        LibraryDamageType.Slash=>_resistanceData.ChaosResistance.Slash,
-        LibraryDamageType.Pierce=>_resistanceData.ChaosResistance.Pierce,
+        LibraryDamageType.Blunt=>ResistanceData.ChaosResistance.Blunt,
+        LibraryDamageType.Slash=>ResistanceData.ChaosResistance.Slash,
+        LibraryDamageType.Pierce=>ResistanceData.ChaosResistance.Pierce,
         _=>LibraryResistanceLevel.Normal
     } ;
     public LibraryResistanceLevel GetPhysicalResistanceLevel(LibraryDamageType type) => type switch{
-        LibraryDamageType.Blunt=>_resistanceData.PhysicalResistance.Blunt,
-        LibraryDamageType.Slash=>_resistanceData.PhysicalResistance.Slash,
-        LibraryDamageType.Pierce=>_resistanceData.PhysicalResistance.Pierce,
+        LibraryDamageType.Blunt=>ResistanceData.PhysicalResistance.Blunt,
+        LibraryDamageType.Slash=>ResistanceData.PhysicalResistance.Slash,
+        LibraryDamageType.Pierce=>ResistanceData.PhysicalResistance.Pierce,
         _=>LibraryResistanceLevel.Normal
     } ;
 
@@ -209,13 +248,13 @@ public class LibraryCreature : Creature//扩展Creature，添加Chao值属性
         switch (type)
         {
             case LibraryDamageType.Blunt:
-                _resistanceData.PhysicalResistance.Blunt = resistanceValue;
+                ResistanceData.PhysicalResistance.Blunt = resistanceValue;
                 break;
             case LibraryDamageType.Slash:
-                _resistanceData.PhysicalResistance.Slash = resistanceValue;
+                ResistanceData.PhysicalResistance.Slash = resistanceValue;
                 break;
             case LibraryDamageType.Pierce:
-                _resistanceData.PhysicalResistance.Pierce = resistanceValue;
+                ResistanceData.PhysicalResistance.Pierce = resistanceValue;
                 break;
         }
         LibraryPhysicalResistanceIconsUi.Refresh(HealthBar);
@@ -225,13 +264,13 @@ public class LibraryCreature : Creature//扩展Creature，添加Chao值属性
         switch (type)
         {
             case LibraryDamageType.Blunt:
-                _resistanceData.ChaosResistance.Blunt = resistanceValue;
+                ResistanceData.ChaosResistance.Blunt = resistanceValue;
                 break;
             case LibraryDamageType.Slash:
-                _resistanceData.ChaosResistance.Slash = resistanceValue;
+                ResistanceData.ChaosResistance.Slash = resistanceValue;
                 break;
             case LibraryDamageType.Pierce:
-                _resistanceData.ChaosResistance.Pierce = resistanceValue;
+                ResistanceData.ChaosResistance.Pierce = resistanceValue;
                 break;
         }
         LibraryChaosResistanceIconsUi.Refresh(HealthBar);
