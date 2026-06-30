@@ -16,6 +16,7 @@ public sealed class LibraryRelicRightClickAction : GameAction
 {
     private readonly Player _player;
     private readonly ModelId _relicId;
+    private readonly int _relicIndex;
     private readonly LibraryRightClickTrigger _trigger;
     private readonly GameActionType _actionType;
 
@@ -26,11 +27,13 @@ public sealed class LibraryRelicRightClickAction : GameAction
     public LibraryRelicRightClickAction(
         Player player,
         ModelId relicId,
+        int relicIndex,
         LibraryRightClickTrigger trigger,
         GameActionType actionType)
     {
         _player = player;
         _relicId = relicId;
+        _relicIndex = relicIndex;
         _trigger = trigger;
         _actionType = NormalizeActionType(actionType);
     }
@@ -42,7 +45,7 @@ public sealed class LibraryRelicRightClickAction : GameAction
             : GameActionType.NonCombat;
 
         RunManager.Instance.ActionQueueSynchronizer.RequestEnqueue(
-            new LibraryRelicRightClickAction(player, relic.Id, trigger, actionType));
+            new LibraryRelicRightClickAction(player, relic.Id, FindRelicIndex(player, relic), trigger, actionType));
         return true;
     }
 
@@ -103,6 +106,7 @@ public sealed class LibraryRelicRightClickAction : GameAction
         return new NetLibraryRelicRightClickAction
         {
             RelicId = _relicId,
+            RelicIndex = _relicIndex,
             IsController = _trigger.IsController,
             Metadata = _trigger.Metadata ?? string.Empty,
             HasMetadata = _trigger.Metadata != null,
@@ -117,13 +121,35 @@ public sealed class LibraryRelicRightClickAction : GameAction
 
     private bool TryResolveRelic(out LibraryRelicModel relic)
     {
-        relic = _player.Relics
-            .OfType<LibraryRelicModel>()
-            .FirstOrDefault(candidate => candidate.Id == _relicId)!;
+        relic = null!;
+        if (_relicIndex >= 0
+            && _relicIndex < _player.Relics.Count
+            && _player.Relics[_relicIndex] is LibraryRelicModel indexedRelic
+            && indexedRelic.Id == _relicId)
+        {
+            relic = indexedRelic;
+        }
+        else
+        {
+            relic = _player.Relics
+                .OfType<LibraryRelicModel>()
+                .FirstOrDefault(candidate => candidate.Id == _relicId)!;
+        }
 
         return relic != null
             && !relic.HasBeenRemovedFromState
             && relic.Owner == _player;
+    }
+
+    private static int FindRelicIndex(Player player, LibraryRelicModel relic)
+    {
+        for (int i = 0; i < player.Relics.Count; i++)
+        {
+            if (ReferenceEquals(player.Relics[i], relic))
+                return i;
+        }
+
+        return -1;
     }
 
     private static GameActionType NormalizeActionType(GameActionType actionType)
@@ -140,6 +166,7 @@ public sealed class LibraryRelicRightClickAction : GameAction
 public struct NetLibraryRelicRightClickAction : INetAction, IPacketSerializable
 {
     public ModelId RelicId;
+    public int RelicIndex;
     public bool IsController;
     public bool HasMetadata;
     public string Metadata;
@@ -150,6 +177,7 @@ public struct NetLibraryRelicRightClickAction : INetAction, IPacketSerializable
         return new LibraryRelicRightClickAction(
             player,
             RelicId,
+            RelicIndex,
             new LibraryRightClickTrigger(IsController, HasMetadata ? Metadata : null),
             ActionType);
     }
@@ -157,6 +185,7 @@ public struct NetLibraryRelicRightClickAction : INetAction, IPacketSerializable
     public void Serialize(PacketWriter writer)
     {
         writer.WriteFullModelId(RelicId);
+        writer.WriteInt(RelicIndex);
         writer.WriteBool(IsController);
         writer.WriteBool(HasMetadata);
         if (HasMetadata)
@@ -169,6 +198,7 @@ public struct NetLibraryRelicRightClickAction : INetAction, IPacketSerializable
     public void Deserialize(PacketReader reader)
     {
         RelicId = reader.ReadFullModelId();
+        RelicIndex = reader.ReadInt();
         IsController = reader.ReadBool();
         HasMetadata = reader.ReadBool();
         Metadata = HasMetadata ? reader.ReadString() : string.Empty;
