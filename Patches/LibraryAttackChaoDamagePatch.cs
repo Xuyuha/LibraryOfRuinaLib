@@ -10,6 +10,7 @@ using Library.Entities.Creatures;
 using Library.Models;
 using Library.Resistance;
 using MegaCrit.Sts2.Core.Commands;
+using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models;
@@ -171,7 +172,7 @@ internal static class LibraryAttackExecuteFlagPatch
 ///     只当在 AttackCommand.Execute 执行流中时，在 CreatureCmd.Damage 后追加混乱伤害。
 /// </summary>
 [HarmonyPatch(typeof(CreatureCmd), nameof(CreatureCmd.Damage),
-    new[] { typeof(PlayerChoiceContext), typeof(IEnumerable<Creature>), typeof(decimal), typeof(ValueProp), typeof(Creature), typeof(CardModel) })]
+    new[] { typeof(PlayerChoiceContext), typeof(IEnumerable<Creature>), typeof(decimal), typeof(ValueProp), typeof(Creature), typeof(CardModel), typeof(CardPlay) })]
 internal static class LibraryAttackChaoDamagePatch
 {
     [HarmonyPrefix]
@@ -182,6 +183,7 @@ internal static class LibraryAttackChaoDamagePatch
         ValueProp props,
         Creature? dealer,
         CardModel? cardSource,
+        CardPlay? cardPlay,
         ref Task<IEnumerable<DamageResult>> __result)
     {
         if (!AttackExecuteContext.IsInAttackExecute.Value)
@@ -226,6 +228,7 @@ internal static class LibraryAttackChaoDamagePatch
         ValueProp props,
         Creature? dealer,
         CardModel? cardSource,
+        CardPlay? cardPlay,
         ref Task<IEnumerable<DamageResult>> __result)
     {
         if (!AttackExecuteContext.IsInAttackExecute.Value)
