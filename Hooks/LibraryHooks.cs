@@ -615,7 +615,7 @@ public static class LibraryHooks
             }
         }
     }
-    public static decimal ModifyDamage(IRunState runState, ICombatState combatState, Creature target, Creature? dealer, decimal damage, ValueProp props, CardModel? cardSource, ModifyDamageHookType modifyDamageHookType, CardPreviewMode previewMode, out IEnumerable<AbstractModel> modifiers,LibraryDamageType type)
+    public static decimal ModifyDamage(IRunState runState, ICombatState combatState, Creature? target, Creature? dealer, decimal damage, ValueProp props, CardModel? cardSource, CardPlay? cardPlay, ModifyDamageHookType modifyDamageHookType, CardPreviewMode previewMode, out IEnumerable<AbstractModel> modifiers,LibraryDamageType type)
     {
         List<AbstractModel> modifiers2 = new List<AbstractModel>();
         decimal num = damage;
@@ -666,7 +666,7 @@ public static class LibraryHooks
             foreach (Creature item in combatState?.HittableEnemies ?? Array.Empty<Creature>())
             {
                 List<AbstractModel> modifiers3;
-                decimal num3 = ModifyDamageInternal(runState, combatState, item, dealer, num, props, cardSource, modifyDamageHookType, out modifiers3,type);
+                decimal num3 = ModifyDamageInternal(runState, combatState, item, dealer, num, props, cardSource, cardPlay, modifyDamageHookType, out modifiers3,type);
                 if (!num2.HasValue)
                 {
                     num2 = num3;
@@ -691,7 +691,7 @@ public static class LibraryHooks
         }
         if (!flag4 || !flag5)
         {
-            num = ModifyDamageInternal(runState, combatState, target, dealer, num, props, cardSource, modifyDamageHookType, out modifiers2,type);
+            num = ModifyDamageInternal(runState, combatState, target, dealer, num, props, cardSource, cardPlay, modifyDamageHookType, out modifiers2,type);
         }
         modifiers = modifiers2;
         return Math.Max(0m, num);
@@ -699,7 +699,7 @@ public static class LibraryHooks
         flag2 = flag3;
         goto IL_00bf;
     }
-    private static decimal ModifyDamageInternal(IRunState runState, ICombatState? combatState, Creature? target, Creature? dealer, decimal damage, ValueProp props, CardModel? cardSource, ModifyDamageHookType modifyDamageHookType, out List<AbstractModel> modifiers,LibraryDamageType type)
+    private static decimal ModifyDamageInternal(IRunState runState, ICombatState? combatState, Creature? target, Creature? dealer, decimal damage, ValueProp props, CardModel? cardSource, CardPlay? cardPlay, ModifyDamageHookType modifyDamageHookType, out List<AbstractModel> modifiers,LibraryDamageType type)
     {
         decimal num = damage;
         List<AbstractModel> list = new List<AbstractModel>();
@@ -707,7 +707,7 @@ public static class LibraryHooks
         {
             foreach (AbstractModel item in runState.IterateHookListeners(combatState))
             {
-                decimal num2 = item.ModifyDamageAdditive(target, num, props, dealer, cardSource);
+                decimal num2 = item.ModifyDamageAdditive(target, num, props, dealer, cardSource, cardPlay);
                 if(item is ILibraryAbstractModel libraryAbstractModel)    
                     num2 += libraryAbstractModel.ModifyDamageAdditive(target, num, props, dealer, cardSource,type);
                 num += num2;
@@ -721,7 +721,7 @@ public static class LibraryHooks
         {
             foreach (AbstractModel item2 in runState.IterateHookListeners(combatState))
             {
-                decimal num3 = item2.ModifyDamageMultiplicative(target, num, props, dealer, cardSource);;
+                decimal num3 = item2.ModifyDamageMultiplicative(target, num, props, dealer, cardSource, cardPlay);
                 if(item2 is ILibraryAbstractModel libraryAbstractModel)    
                     num3 *= libraryAbstractModel.ModifyDamageMultiplicative(target, num, props, dealer, cardSource,type);
                 num *= num3;
@@ -734,7 +734,7 @@ public static class LibraryHooks
         decimal num4 = decimal.MaxValue;
         foreach (AbstractModel item3 in runState.IterateHookListeners(combatState))
         {
-            decimal num5 = item3.ModifyDamageCap(target, props, dealer, cardSource);
+            decimal num5 = item3.ModifyDamageCap(target, props, dealer, cardSource, cardPlay);
             if(item3 is ILibraryAbstractModel libraryAbstractModel)    
                 num5 = Math.Min(num5, libraryAbstractModel.ModifyDamageCap(target, props, dealer, cardSource,type));
             if (num5 < num4)

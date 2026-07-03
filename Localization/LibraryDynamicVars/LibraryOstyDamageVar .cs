@@ -41,7 +41,7 @@ public class LibraryOstyDamageVar : OstyDamageVar
 		if (runGlobalHooks)
 		{
 			ICombatState combatState = card.CombatState ?? card.Owner.Creature.CombatState;
-			num = LibraryHooks.ModifyDamage(card.Owner.RunState, combatState, target, card.Owner.Osty, base.BaseValue, Props, card, ModifyDamageHookType.All, previewMode, out IEnumerable<AbstractModel> _, DamageType);
+			num = LibraryHooks.ModifyDamage(card.Owner.RunState, combatState, target, card.Owner.Osty, base.BaseValue, Props, card, null, ModifyDamageHookType.All, previewMode, out IEnumerable<AbstractModel> _, DamageType);
 		}
 		PreviewValue = ResistancePreview.ApplyPhysicalResistancePreview(
 			card,

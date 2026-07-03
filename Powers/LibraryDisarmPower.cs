@@ -28,7 +28,7 @@ public sealed class LibraryDisarmPower : LibraryDurationPowerModel//破防，玩
             return -Amount;
         return 0m;
     }
-    public override decimal ModifyDamageAdditive(Creature? target, decimal amount, ValueProp props, Creature? dealer, CardModel? cardSource)
+    public override decimal ModifyDamageAdditive(Creature? target, decimal amount, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay)
     {
         if(Owner != target)
             return 0m;

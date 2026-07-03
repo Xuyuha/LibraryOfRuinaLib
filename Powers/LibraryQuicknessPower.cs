@@ -14,7 +14,7 @@ public sealed class LibraryQuicknessPower : LibraryPowerModel
     public override bool AllowNegative => false;
     public override async Task AfterSideTurnEnd(PlayerChoiceContext choiceContext, CombatSide side, IEnumerable<Creature> participants)
     {
-        if (side != CombatSide.Player)
+        if (Owner.Side == side && side == CombatSide.Enemy)
         {
             foreach (var p in CombatState.Players.ToList())
             {
@@ -24,11 +24,15 @@ public sealed class LibraryQuicknessPower : LibraryPowerModel
                 ValueProp.Unpowered,
                 Owner);
             }
+            await PowerCmd.Decrement(this);
         }
-        else foreach(var c in CombatState.Enemies.ToList())
+        else if (Owner.Side == side && side == CombatSide.Player)
         {
-            await CreatureCmd.Damage(new ThrowingPlayerChoiceContext(),c,Amount,ValueProp.Unpowered,Owner);
+            foreach(var c in CombatState.Enemies.ToList())
+            {
+                await CreatureCmd.Damage(new ThrowingPlayerChoiceContext(),c,Amount,ValueProp.Unpowered,Owner);
+            }
+            await PowerCmd.Decrement(this);
         }
-        await PowerCmd.Decrement(this);
     }
 }

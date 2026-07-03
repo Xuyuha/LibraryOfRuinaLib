@@ -41,7 +41,7 @@ public class LibraryCalculatedDamageVar : CalculatedDamageVar
 		if (runGlobalHooks)
 		{
 			ICombatState combatState = card.CombatState ?? card.Owner.Creature.CombatState;
-			base.PreviewValue = LibraryHooks.ModifyDamage(card.Owner.RunState, combatState, target, IsFromOsty ? card.Owner.Osty : card.Owner.Creature, num, Props, card, ModifyDamageHookType.All, previewMode, out IEnumerable<AbstractModel> _, DamageType);
+			base.PreviewValue = LibraryHooks.ModifyDamage(card.Owner.RunState, combatState, target, IsFromOsty ? card.Owner.Osty : card.Owner.Creature, num, Props, card, null, ModifyDamageHookType.All, previewMode, out IEnumerable<AbstractModel> _, DamageType);
 		}
 		else if (!card.IsEnchantmentPreview)
 		{

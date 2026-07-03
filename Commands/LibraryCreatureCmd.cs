@@ -62,14 +62,14 @@ public static class LibraryCreatureCmd
 			dice.HasUseTimes++;
 		}
 	}
-	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, Creature target, DamageVar damageVar, CardModel cardSource ,LibraryDamageType type = LibraryDamageType.None)
+	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, Creature target, DamageVar damageVar, CardModel cardSource, LibraryDamageType type = LibraryDamageType.None, CardPlay? cardPlay = null)
 	{
-		return await Damage(choiceContext, target, damageVar.BaseValue, damageVar.Props, cardSource,type);
+		return await Damage(choiceContext, target, damageVar.BaseValue, damageVar.Props, cardSource, type, cardPlay);
 	}
 
-	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, Creature target, decimal amount, ValueProp props, CardModel cardSource ,LibraryDamageType type = LibraryDamageType.None)
+	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, Creature target, decimal amount, ValueProp props, CardModel cardSource, LibraryDamageType type = LibraryDamageType.None, CardPlay? cardPlay = null)
 	{
-		return await Damage(choiceContext, new List<Creature> { target }, amount, props, cardSource.Owner.Creature as Creature, cardSource,type);
+		return await Damage(choiceContext, new List<Creature> { target }, amount, props, cardSource.Owner.Creature as Creature, cardSource, type, cardPlay);
 	}
 
 	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, IEnumerable<Creature> targets, DamageVar damageVar, Creature dealer ,LibraryDamageType type = LibraryDamageType.None)
@@ -79,7 +79,7 @@ public static class LibraryCreatureCmd
 
 	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, IEnumerable<Creature> targets, decimal amount, ValueProp props, Creature dealer ,LibraryDamageType type = LibraryDamageType.None)
 	{
-		return await Damage(choiceContext, targets, amount, props, dealer, null,type);
+		return await Damage(choiceContext, targets, amount, props, dealer, null, type);
 	}
 
 	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, Creature target, DamageVar damageVar, Creature dealer ,LibraryDamageType type = LibraryDamageType.None)
@@ -89,25 +89,25 @@ public static class LibraryCreatureCmd
 
 	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, Creature target, decimal amount, ValueProp props, Creature dealer ,LibraryDamageType type = LibraryDamageType.None)
 	{
-		return await Damage(choiceContext, new List<Creature> { target }, amount, props, dealer, null,type);
+		return await Damage(choiceContext, new List<Creature> { target }, amount, props, dealer, null, type);
 	}
 
-	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, Creature target, DamageVar damageVar, Creature? dealer, CardModel? cardSource ,LibraryDamageType type = LibraryDamageType.None)
+	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, Creature target, DamageVar damageVar, Creature? dealer, CardModel? cardSource, LibraryDamageType type = LibraryDamageType.None, CardPlay? cardPlay = null)
 	{
-		return await Damage(choiceContext, new List<Creature> { target }, damageVar.BaseValue, damageVar.Props, dealer, cardSource,type);
+		return await Damage(choiceContext, new List<Creature> { target }, damageVar.BaseValue, damageVar.Props, dealer, cardSource, type, cardPlay);
 	}
 
-	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, Creature target, decimal amount, ValueProp props, Creature? dealer, CardModel? cardSource ,LibraryDamageType type = LibraryDamageType.None)
+	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, Creature target, decimal amount, ValueProp props, Creature? dealer, CardModel? cardSource, LibraryDamageType type = LibraryDamageType.None, CardPlay? cardPlay = null)
 	{
-		return await Damage(choiceContext, new List<Creature> { target }, amount, props, dealer, cardSource,type);
+		return await Damage(choiceContext, new List<Creature> { target }, amount, props, dealer, cardSource, type, cardPlay);
 	}
 
-	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, IEnumerable<Creature> targets, DamageVar damageVar, Creature? dealer, CardModel? cardSource ,LibraryDamageType type = LibraryDamageType.None)
+	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, IEnumerable<Creature> targets, DamageVar damageVar, Creature? dealer, CardModel? cardSource, LibraryDamageType type = LibraryDamageType.None, CardPlay? cardPlay = null)
 	{
-		return await Damage(choiceContext, targets, damageVar.BaseValue, damageVar.Props, dealer, cardSource,type);
+		return await Damage(choiceContext, targets, damageVar.BaseValue, damageVar.Props, dealer, cardSource, type, cardPlay);
 	}
 
-	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, IEnumerable<Creature> targets, decimal damageAmount, ValueProp props, Creature? dealer, CardModel? cardSource ,LibraryDamageType type = LibraryDamageType.None)
+	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, IEnumerable<Creature> targets, decimal damageAmount, ValueProp props, Creature? dealer, CardModel? cardSource, LibraryDamageType type = LibraryDamageType.None, CardPlay? cardPlay = null)
 	{
 		if (dealer != null && dealer.IsDead)
 		{
@@ -125,7 +125,7 @@ public static class LibraryCreatureCmd
 		{
 			if(originalTarget.IsPlayer)
 			{
-				await CreatureCmd.Damage(choiceContext, originalTarget, damageAmount, props, dealer, cardSource);
+				await CreatureCmd.Damage(choiceContext, originalTarget, damageAmount, props, dealer, cardSource, cardPlay);
 				continue;
 			}
 			if (originalTarget.IsDead)
@@ -134,7 +134,7 @@ public static class LibraryCreatureCmd
 			}
 			IEnumerable<AbstractModel> modifiers;
 			Log.Info("LibraryDamage");
-			decimal modifiedAmount = LibraryHooks.ModifyDamage(runState, combatState, originalTarget, dealer, damageAmount, props, cardSource, ModifyDamageHookType.All, CardPreviewMode.None, out modifiers,type);
+			decimal modifiedAmount = LibraryHooks.ModifyDamage(runState, combatState, originalTarget, dealer, damageAmount, props, cardSource, cardPlay, ModifyDamageHookType.All, CardPreviewMode.None, out modifiers,type);
 			await LibraryHooks.AfterModifyingDamageAmount(runState, combatState, cardSource, modifiers,type);
 			await LibraryHooks.BeforeDamageReceived(choiceContext, runState, combatState, originalTarget, modifiedAmount, props, dealer, cardSource,type);  
 			Creature creature = originalTarget.PetOwner?.Creature ?? originalTarget;

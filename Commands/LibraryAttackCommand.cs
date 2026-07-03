@@ -101,9 +101,9 @@ public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究�
 
 	public string? HitVfx { get; private set; }
 	public AttackCommand ToAttackCommand { get; private set; }
-	public LibraryAttackCommand FromCard(CardModel card)
+	public LibraryAttackCommand FromCard(CardModel card, CardPlay? cardPlay = null)
 	{
-		ToAttackCommand = ToAttackCommand.FromCard(card);
+		ToAttackCommand = ToAttackCommand.FromCard(card, cardPlay);
 		if (Attacker != null)
 		{
 			throw new InvalidOperationException("Attacker has already been set.");
@@ -121,9 +121,9 @@ public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究�
 		return this;
 	}
 
-	public LibraryAttackCommand FromOsty(Creature osty, CardModel card)
+	public LibraryAttackCommand FromOsty(Creature osty, CardModel card, CardPlay? cardPlay = null)
 	{
-		ToAttackCommand = ToAttackCommand.FromOsty(osty, card);
+		ToAttackCommand = ToAttackCommand.FromOsty(osty, card, cardPlay);
 		if (!(osty.Monster is Osty))
 		{
 			throw new ArgumentException("Creature is not Osty");
@@ -315,9 +315,9 @@ public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究�
 		return this;
 	}
 
-	public static async Task<AttackContext> CreateContextAsync(ICombatState combatState, PlayerChoiceContext choiceContext, CardModel cardSource)
+	public static async Task<AttackContext> CreateContextAsync(ICombatState combatState, PlayerChoiceContext choiceContext, CardPlay cardPlay)
 	{	
-		return await AttackContext.CreateAsync(combatState, choiceContext, cardSource);
+		return await AttackContext.CreateAsync(combatState, choiceContext, cardPlay);
 	}
 
 
@@ -398,7 +398,7 @@ public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究�
 
 
 
-	public async Task<LibraryAttackCommand> Execute(PlayerChoiceContext? choiceContext,CardPlay cardPlay = null)
+	public async Task<LibraryAttackCommand> Execute(PlayerChoiceContext? choiceContext,CardPlay? cardPlay = null)
 	{
 		ICombatState? combatState = Attacker?.CombatState;
 		if (Attacker == null)
@@ -558,7 +558,7 @@ public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究�
 			}
 			decimal damage = Dice != null ? Dice.CurrentBaseValue:((_calculatedDamageVar == null) ?_damagePerHit : _calculatedDamageVar.Calculate(singleTarget));
 			List<int> Blocks = (_singleTarget != null ? [_singleTarget] :validTargets).Select(c => c.Block).ToList();
-			IEnumerable<DamageResult> damageResults = await LibraryCreatureCmd.Damage(damageAmount: damage, choiceContext: choiceContext ?? new BlockingPlayerChoiceContext(), targets: (singleTarget != null) ? [singleTarget]  : ((IEnumerable<LibraryCreature>)validTargets), props: DamageProps, dealer: Attacker ,cardSource: ModelSource as CardModel,type : _damageType);
+			IEnumerable<DamageResult> damageResults = await LibraryCreatureCmd.Damage(damageAmount: damage, choiceContext: choiceContext ?? new BlockingPlayerChoiceContext(), targets: (singleTarget != null) ? [singleTarget]  : ((IEnumerable<LibraryCreature>)validTargets), props: DamageProps, dealer: Attacker ,cardSource: ModelSource as CardModel, cardPlay: cardPlay, type : _damageType);
 			AddDamageResultsInternal(damageResults);
 			List<LibraryChaoResult> chaoResults = [];
 			for (int j = 0 ; j < Blocks.Count ; j++){
