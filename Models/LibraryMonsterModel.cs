@@ -11,6 +11,8 @@ using Library.Powers.Mode;
 namespace Library.Models;
 public abstract class LibraryMonsterModel : MonsterModel,ILibraryAbstractModel
 {
+    public virtual bool ShowResistanceUi => true;
+
     public virtual LibraryCreatureResistanceData.Resistance? DefaultPhysicalResistanceData => null;
 
     /// <summary>混乱抗性值。null = 无混乱抗性条。</summary>

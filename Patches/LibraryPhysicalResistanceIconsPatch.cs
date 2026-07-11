@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using Godot;
 using HarmonyLib;
 using Library.Entities.Creatures;
+using Library.Models;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization;
@@ -72,7 +73,7 @@ internal static class LibraryPhysicalResistanceIconsUi//TODO:你们来做物理�
         var libCreature = creature as LibraryCreature;
         State state = GetOrCreateState(healthBar);
 
-        bool shouldShow = libCreature != null
+        bool shouldShow = libCreature?.Monster is LibraryMonsterModel { ShowResistanceUi: true }
             && creature.IsAlive;
 
         if (!shouldShow)
