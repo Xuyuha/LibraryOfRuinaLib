@@ -15,3 +15,4 @@ libs/sts2.dll
 *.ps1
 *.sln
 *.pck
+build/

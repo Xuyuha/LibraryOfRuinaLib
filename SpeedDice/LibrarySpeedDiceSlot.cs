@@ -25,12 +25,12 @@ public sealed class LibrarySpeedDiceSlot
     public Creature? Target { get; internal set; }
 
     public bool RequiresTarget =>
-        Card?.TargetType is TargetType.AnyEnemy or TargetType.AnyAlly;
+        Card?.GetSpeedDiceTargetType() is TargetType.AnyEnemy or TargetType.AnyAlly;
 
     public bool HasValidTarget =>
         !RequiresTarget
         || Target is { IsAlive: true }
-        && Card?.IsValidTarget(Target) == true;
+        && Card?.IsValidSpeedDiceTarget(Target) == true;
 
     public int ReservedEnergy { get; internal set; }
 

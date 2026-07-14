@@ -201,7 +201,9 @@ internal static class LibrarySpeedDiceService
             LibrarySpeedDiceSlot slot = state.Slots[slotIndex];
             if (slot.Card != null)
             {
-                cardToTarget = slot.Card.RequiresTarget() ? slot.Card : null;
+                cardToTarget = slot.Card.RequiresSpeedDiceTarget()
+                    ? slot.Card
+                    : null;
             }
             else
             {
@@ -241,7 +243,7 @@ internal static class LibrarySpeedDiceService
                 slot.Target = null;
                 slot.ReservedEnergy = energy;
                 slot.ReservedStars = stars;
-                cardToTarget = card.RequiresTarget() ? card : null;
+                cardToTarget = card.RequiresSpeedDiceTarget() ? card : null;
                 state.NotifyChanged();
             }
         }
@@ -428,12 +430,19 @@ internal static class LibrarySpeedDiceService
                 if (card == null)
                     continue;
 
+                int reservedEnergy = slot.ReservedEnergy;
+                int reservedStars = slot.ReservedStars;
                 slot.ClearReservation();
                 state.ResolvingSlot = slot;
                 state.NotifyChanged();
                 try
                 {
-                    bool triggered = await ResolveCardAsync(state, slot, card);
+                    bool triggered = await ResolveCardAsync(
+                        state,
+                        slot,
+                        card,
+                        reservedEnergy,
+                        reservedStars);
                     if (triggered)
                         state.CurrentTurnTriggeredCards++;
                 }
@@ -461,7 +470,9 @@ internal static class LibrarySpeedDiceService
     private static async Task<bool> ResolveCardAsync(
         LibrarySpeedDiceCombatState state,
         LibrarySpeedDiceSlot slot,
-        CardModel card)
+        CardModel card,
+        int reservedEnergy,
+        int reservedStars)
     {
         var choiceContext = new BlockingPlayerChoiceContext();
         try
@@ -471,21 +482,28 @@ internal static class LibrarySpeedDiceService
             await LibraryClashResolver.Current.ResolveAsync(clashContext);
             target = clashContext.Target;
 
+            card.CanPlay(out UnplayableReason reason, out _);
+            reason &= ~(
+                UnplayableReason.EnergyCostTooHigh
+                | UnplayableReason.StarCostTooHigh);
             if (clashContext.CancelCard
-                || !card.CanPlay(out _, out _)
-                || !card.IsValidTarget(target))
+                || reason != UnplayableReason.None
+                || !card.IsValidSpeedDiceTarget(target))
             {
                 await ReturnCardToHandAsync(card);
                 return false;
             }
 
-            (int energySpent, int starsSpent) = await card.SpendResources();
+            await SpendReservedResourcesAsync(
+                card,
+                reservedEnergy,
+                reservedStars);
             var resources = new ResourceInfo
             {
-                EnergySpent = energySpent,
-                EnergyValue = energySpent,
-                StarsSpent = starsSpent,
-                StarValue = starsSpent,
+                EnergySpent = reservedEnergy,
+                EnergyValue = reservedEnergy,
+                StarsSpent = reservedStars,
+                StarValue = reservedStars,
             };
             await card.OnPlayWrapper(
                 choiceContext,
@@ -500,6 +518,38 @@ internal static class LibrarySpeedDiceService
                 $"[LibraryOfRuinaLib] Speed-die card {card.Id.Entry} failed: {exception}");
             await DiscardFailedCardAsync(card);
             return false;
+        }
+    }
+
+    private static async Task SpendReservedResourcesAsync(
+        CardModel card,
+        int energy,
+        int stars)
+    {
+        energy = Math.Max(0, energy);
+        stars = Math.Max(0, stars);
+
+        if (energy > 0)
+        {
+            CombatManager.Instance.History.EnergySpent(
+                card.CombatState,
+                energy,
+                card.Owner);
+            card.Owner.PlayerCombatState!.LoseEnergy(energy);
+        }
+        await Hook.AfterEnergySpent(
+            card.CombatState,
+            card,
+            energy);
+
+        card.LastStarsSpent = stars;
+        if (stars > 0)
+        {
+            card.Owner.PlayerCombatState!.LoseStars(stars);
+            await Hook.AfterStarsSpent(
+                card.Owner.Creature.CombatState,
+                stars,
+                card.Owner);
         }
     }
 
@@ -526,7 +576,7 @@ internal static class LibrarySpeedDiceService
             || slotIndex < 0
             || slotIndex >= state.Slots.Count
             || !ReferenceEquals(state.Slots[slotIndex].Card, card)
-            || !card.RequiresTarget()
+            || !card.RequiresSpeedDiceTarget()
             || NTargetManager.Instance.IsInSelection)
         {
             return;
@@ -538,7 +588,7 @@ internal static class LibrarySpeedDiceService
         {
             NTargetManager targetManager = NTargetManager.Instance;
             targetManager.StartTargeting(
-                card.TargetType,
+                card.GetSpeedDiceTargetType(),
                 targetingOrigin,
                 TargetMode.ClickMouseToTarget,
                 () =>
@@ -551,7 +601,7 @@ internal static class LibrarySpeedDiceService
                 node =>
                 {
                     Creature? target = GetCreatureFromTargetNode(node);
-                    return target != null && card.IsValidTarget(target);
+                    return target != null && card.IsValidSpeedDiceTarget(target);
                 });
 
             Node? selectedNode = await targetManager.SelectionFinished();
@@ -568,7 +618,7 @@ internal static class LibrarySpeedDiceService
                     && slotIndex >= 0
                     && slotIndex < state.Slots.Count
                     && ReferenceEquals(state.Slots[slotIndex].Card, card)
-                    && card.IsValidTarget(selectedTarget))
+                    && card.IsValidSpeedDiceTarget(selectedTarget))
                 {
                     state.Slots[slotIndex].Target = selectedTarget;
                     state.NotifyChanged();
@@ -652,8 +702,18 @@ internal static class LibrarySpeedDiceService
         out int energy,
         out int stars)
     {
-        energy = Math.Max(0, card.EnergyCost.GetWithModifiers(CostModifiers.All));
-        stars = Math.Max(0, card.GetStarCostWithModifiers());
+        bool hasCustomCost = card is ILibrarySpeedDiceCard;
+        if (card is ILibrarySpeedDiceCard speedDiceCard)
+        {
+            energy = Math.Max(0, speedDiceCard.SpeedDiceResourceCost.Energy);
+            stars = Math.Max(0, speedDiceCard.SpeedDiceResourceCost.Stars);
+        }
+        else
+        {
+            energy = Math.Max(0, card.EnergyCost.GetWithModifiers(CostModifiers.All));
+            stars = Math.Max(0, card.GetStarCostWithModifiers());
+        }
+
         int energyAvailable = Math.Max(
             0,
             state.Player.PlayerCombatState!.Energy - state.ReservedEnergy);
@@ -661,7 +721,8 @@ internal static class LibrarySpeedDiceService
             0,
             state.Player.PlayerCombatState!.Stars - state.ReservedStars);
 
-        if (energy > energyAvailable
+        if (!hasCustomCost
+            && energy > energyAvailable
             && card.CombatState != null
             && Hook.ShouldPayExcessEnergyCostWithStars(card.CombatState, card.Owner))
         {
@@ -761,8 +822,38 @@ internal static class LibrarySpeedDiceService
 
 internal static class LibrarySpeedDiceCardExtensions
 {
-    public static bool RequiresTarget(this CardModel card)
+    public static TargetType GetSpeedDiceTargetType(this CardModel card)
     {
-        return card.TargetType is TargetType.AnyEnemy or TargetType.AnyAlly;
+        return card is ILibrarySpeedDiceCard speedDiceCard
+            ? speedDiceCard.SpeedDiceTargetType
+            : card.TargetType;
+    }
+
+    public static bool RequiresSpeedDiceTarget(this CardModel card)
+    {
+        return card.GetSpeedDiceTargetType()
+            is TargetType.AnyEnemy or TargetType.AnyAlly;
+    }
+
+    public static bool IsValidSpeedDiceTarget(
+        this CardModel card,
+        Creature? target)
+    {
+        TargetType targetType = card.GetSpeedDiceTargetType();
+        if (target == null)
+        {
+            return targetType is not TargetType.AnyEnemy
+                and not TargetType.AnyAlly;
+        }
+
+        if (!target.IsAlive)
+            return false;
+
+        return targetType switch
+        {
+            TargetType.AnyEnemy => target.Side != card.Owner.Creature.Side,
+            TargetType.AnyAlly => target.Side == card.Owner.Creature.Side,
+            _ => false,
+        };
     }
 }
