@@ -50,6 +50,7 @@ public class LibraryCreature : Creature//扩展Creature，添加Chao值属性
     {
         _preStunResistanceData ??= new LibraryCreatureResistanceData(ResistanceData);
         _resistanceData = new(LibraryResistanceLevel.Fatal);
+        _stunPlayerTurnsRemaining = CombatState?.CurrentSide == CombatSide.Enemy ? 2 : 1;
         RestoreChaoOnNextOwnerTurn = true;
         LibraryPhysicalResistanceIconsUi.Refresh(HealthBar);
         LibraryChaosResistanceIconsUi.Refresh(HealthBar);
@@ -59,6 +60,7 @@ public class LibraryCreature : Creature//扩展Creature，添加Chao值属性
     {
         if (_preStunResistanceData == null)
         {
+            _stunPlayerTurnsRemaining = 0;
             RestoreChaoOnNextOwnerTurn = false;
             LibraryPhysicalResistanceIconsUi.Refresh(HealthBar);
             LibraryChaosResistanceIconsUi.Refresh(HealthBar);
@@ -67,6 +69,7 @@ public class LibraryCreature : Creature//扩展Creature，添加Chao值属性
 
         _resistanceData = _preStunResistanceData;
         _preStunResistanceData = null;
+        _stunPlayerTurnsRemaining = 0;
         RestoreChaoOnNextOwnerTurn = false;
         LibraryPhysicalResistanceIconsUi.Refresh(HealthBar);
         LibraryChaosResistanceIconsUi.Refresh(HealthBar);
