@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Text.Json;
+using Godot;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Localization;
@@ -13,6 +14,7 @@ namespace Library.Localization;
 internal static class LibraryResistanceLocalization
 {
     private const string PowersTableName = "powers";
+    private const string DiceTableName = "dice";
 
     private const string DefaultLanguage = "eng";
 
@@ -35,6 +37,10 @@ internal static class LibraryResistanceLocalization
                 locManager,
                 PowersTableName,
                 WithSlugifiedModelIdKeys(LoadPowerEntries(language) ?? LoadPowerEntries(DefaultLanguage)));
+            MergeTable(
+                locManager,
+                DiceTableName,
+                LoadDiceEntries(language) ?? LoadDiceEntries(DefaultLanguage));
         }
         catch (Exception)
         {
@@ -84,6 +90,24 @@ internal static class LibraryResistanceLocalization
     {
         string resourceName = $"LibraryOfRuinaLib.Localization.{language}.powers.json";
         return LoadEntries(resourceName);
+    }
+
+    private static Dictionary<string, string>? LoadDiceEntries(string language)
+    {
+        string resourceName = $"LibraryOfRuinaLib.Localization.{language}.dice.json";
+        return LoadEntries(resourceName)
+            ?? LoadResourceEntries($"res://LibraryOfRuinaLib/localization/{language}/dice.json");
+    }
+
+    private static Dictionary<string, string>? LoadResourceEntries(string resourcePath)
+    {
+        if (!Godot.FileAccess.FileExists(resourcePath))
+        {
+            return null;
+        }
+
+        using Godot.FileAccess file = Godot.FileAccess.Open(resourcePath, Godot.FileAccess.ModeFlags.Read);
+        return JsonSerializer.Deserialize<Dictionary<string, string>>(file.GetAsText());
     }
 
     private static Dictionary<string, string>? LoadEntries(string resourceName)

@@ -14,13 +14,18 @@ using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.ValueProps;
 
 namespace Library.Utils;
 public class LibraryDice : DynamicVar
 {
     public const ValueProp Props = ValueProp.Move;
-    public LibraryDice( decimal minValue,decimal floatValue, LibraryDiceType diceType, LibraryCardModel sourceCard, string name):
+    public LibraryDice(decimal minValue, decimal floatValue, LibraryDiceType diceType, LibraryCardModel sourceCard, string name)
+        : this(minValue, floatValue, diceType, (CardModel)sourceCard, name)
+    {
+    }
+    public LibraryDice(decimal minValue, decimal floatValue, LibraryDiceType diceType, CardModel sourceCard, string name):
     base(name , minValue)
     {
         DiceType = diceType;
@@ -43,16 +48,16 @@ public class LibraryDice : DynamicVar
     private bool _shouldShowChao = false;
     public decimal FloatValue {get;set;}
     public readonly LibraryDiceType DiceType ;
-    public readonly LibraryCardModel SourceCard ;
+    public readonly CardModel SourceCard ;
     private int IdNumber = 0;
     public static LocString DefaultDescription => new("dice","DICE_DEFAULT");
     public LocString Description =>  ShouldUseDefaultTip ? DefaultDescription:new("cards",DescriptionPath);
-    public string DescriptionIconPath => $"res://images/dice/{DiceType.String()}.png";
+    public string DescriptionIconPath => $"res://LibraryOfRuinaLib/images/dice/{DiceType.String()}.png";
     public virtual string DescriptionPath =>SourceCard.Id.Entry+"_"+Name.ToUpperInvariant()+ ".description";
     private Func<PlayerChoiceContext, CardPlay, int ,Task>? _diceEffct ;
-    public string PackedIconPath => ImageHelper.GetImagePath("dice/big_icon/" + DiceType.String() + ".tres");
+    public string PackedIconPath => $"res://LibraryOfRuinaLib/images/dice/big_icon/{DiceType.String()}.tres";
     public LocString Title => new("dice",DiceType.String().ToUpper()+"_DICE");
-	public Texture2D PackedIcon=> ResourceLoader.Load<Texture2D>($"res://images/dice/big_icon/{DiceType.String()}.png", null, ResourceLoader.CacheMode.Reuse);
+	public Texture2D PackedIcon=> ResourceLoader.Load<Texture2D>(PackedIconPath, null, ResourceLoader.CacheMode.Reuse);
     public LibraryDamageType DamageType => (LibraryDamageType)DiceType;
     public int UseTimes = 1;
     public bool EnableCustomUseTimes = false;
@@ -64,25 +69,53 @@ public class LibraryDice : DynamicVar
     public LibraryAttackCommand? Command = null;
     public LibraryDice WithUseTimes (int useTimes)
     {
+        if (useTimes < 1)
+        {
+            throw new ArgumentOutOfRangeException(nameof(useTimes), "Dice use times must be at least 1.");
+        }
         UseTimes = useTimes;
         EnableCustomUseTimes = true;
         return this;
     }
-    public void Roll(Player player){
-        int minValue = (int)BaseValue;
-        int maxValue = (int)(BaseValue + FloatValue + 1);
-        minValue = maxValue < minValue ? maxValue : minValue;
-        CurrentBaseValue = player.RunState.Rng.Niche.NextInt(minValue,maxValue);
-    }
-    public async Task TriggerDiceEffect(PlayerChoiceContext choiceContext, CardPlay cardPlay)
+    public void Roll(Player player)
     {
-        if(_diceEffct == null)return;
-        ICombatState? combatState = cardPlay?.Card?.CombatState;
+        ArgumentNullException.ThrowIfNull(player);
+        Roll(player.RunState);
+    }
+    public void Roll(IRunState runState)
+    {
+        ArgumentNullException.ThrowIfNull(runState);
+        if (BaseValue != decimal.Truncate(BaseValue) || FloatValue != decimal.Truncate(FloatValue))
+        {
+            throw new InvalidOperationException($"Dice {Name} requires integer minimum and range values.");
+        }
+        if (FloatValue < 0)
+        {
+            throw new InvalidOperationException($"Dice {Name} cannot have a negative range.");
+        }
+
+        int minValue = checked((int)BaseValue);
+        int maxExclusive = checked((int)(BaseValue + FloatValue + 1));
+        CurrentBaseValue = runState.Rng.Niche.NextInt(minValue, maxExclusive);
+    }
+    public async Task TriggerDiceEffect(PlayerChoiceContext choiceContext, CardPlay? cardPlay)
+    {
+        if (cardPlay == null)
+        {
+            return;
+        }
+        IEnumerable<Creature> targets = cardPlay.Target == null ? [] : [cardPlay.Target];
+        await TriggerDiceEffect(choiceContext, cardPlay, targets);
+    }
+    public async Task TriggerDiceEffect(PlayerChoiceContext choiceContext, CardPlay? cardPlay, IEnumerable<Creature>? targets)
+    {
+        if(_diceEffct == null || cardPlay == null)return;
+        ICombatState? combatState = cardPlay.Card.CombatState;
         if(combatState == null)return;
-        if(!LibraryHooks.TryDiceEffect(combatState, choiceContext, [cardPlay.Target], cardPlay.Card,this)) return;
-        await LibraryHooks.BeforeDiceEffect(combatState, choiceContext, [cardPlay.Target], cardPlay.Card, this);
+        if(!LibraryHooks.TryDiceEffect(combatState, choiceContext, targets, cardPlay.Card,this)) return;
+        await LibraryHooks.BeforeDiceEffect(combatState, choiceContext, targets, cardPlay.Card, this);
         await _diceEffct(choiceContext, cardPlay, CurrentBaseValue);
-        await LibraryHooks.AfterDiceEffect(combatState, choiceContext, [cardPlay.Target], cardPlay.Card, this);
+        await LibraryHooks.AfterDiceEffect(combatState, choiceContext, targets, cardPlay.Card, this);
     }
     public LibraryDice WithDiceEffect(Func<PlayerChoiceContext, CardPlay, int ,Task>? diceEffct){
 		if (_diceEffct != null)

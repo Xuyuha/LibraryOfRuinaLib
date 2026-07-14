@@ -30,36 +30,55 @@ using MegaCrit.Sts2.Core.Runs.History;
 using MegaCrit.Sts2.Core.ValueProps;
 public static class LibraryCreatureCmd
 {
+	private const int MaxAdditionalDiceRolls = 32;
+	private const int MaxAdditionalDiceUses = 32;
+
 	public static async Task GainBlock(Creature creature, CardPlay? cardPlay, LibraryDice dice, bool fast = false)
 	{
+		ArgumentNullException.ThrowIfNull(cardPlay);
 		int blockTimes = dice.EnableCustomUseTimes? dice.UseTimes : 1;
 		ICombatState combatState = cardPlay.Card.CombatState!;
 		dice.HasUseTimes = 0;
+		int additionalUses = 0;
 		for(int i = 0 ; i < blockTimes ; i++)
 		{
-			int RollCount = 1;
-			for(int j = 0 ; j < RollCount ; j++)
+			dice.HasUseTimes = i + 1;
+			int additionalRolls = 0;
+			while (true)
 			{
 				await LibraryHooks.BeforeDiceRoll(combatState, new BlockingPlayerChoiceContext(), [creature] , dice);
 				dice.Roll(cardPlay.Card.Owner);
 				await LibraryHooks.AfterDiceRoll(combatState, new BlockingPlayerChoiceContext(), [creature] , dice);
-				if(LibraryHooks.ShouldReroll(combatState,[creature],dice,out ILibraryAbstractModel? trigger))
+				if(!LibraryHooks.ShouldReroll(combatState,[creature],dice,out ILibraryAbstractModel? trigger))
 				{
-					j++;
-					if(trigger != null)
-						await trigger.AfterRerolling(new BlockingPlayerChoiceContext(),[creature],dice);
+					break;
 				}
+				if (additionalRolls >= MaxAdditionalDiceRolls)
+				{
+					Log.Warn($"[LibraryOfRuinaLib.Dice] Reroll limit reached for {dice.Name}.");
+					break;
+				}
+				additionalRolls++;
+				if(trigger != null)
+					await trigger.AfterRerolling(new BlockingPlayerChoiceContext(),[creature],dice);
 			}
 			int amount = dice.CurrentBaseValue;
 			await CreatureCmd.GainBlock(creature, amount, ValueProp.Move, cardPlay, fast);
-			await dice.TriggerDiceEffect(new BlockingPlayerChoiceContext(), cardPlay);
+			await dice.TriggerDiceEffect(new BlockingPlayerChoiceContext(), cardPlay, [creature]);
 			if (LibraryHooks.ShouldReuse(combatState,[creature],dice,out ILibraryAbstractModel? trigger1))
 			{
-				blockTimes++;
-				if(trigger1 != null)
-					await trigger1.AfterReusing(new BlockingPlayerChoiceContext(), [creature] ,dice);
+				if (additionalUses >= MaxAdditionalDiceUses)
+				{
+					Log.Warn($"[LibraryOfRuinaLib.Dice] Reuse limit reached for {dice.Name}.");
+				}
+				else
+				{
+					additionalUses++;
+					blockTimes++;
+					if(trigger1 != null)
+						await trigger1.AfterReusing(new BlockingPlayerChoiceContext(), [creature] ,dice);
+				}
 			}
-			dice.HasUseTimes++;
 		}
 	}
 	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, Creature target, DamageVar damageVar, CardModel cardSource, LibraryDamageType type = LibraryDamageType.None, CardPlay? cardPlay = null)
