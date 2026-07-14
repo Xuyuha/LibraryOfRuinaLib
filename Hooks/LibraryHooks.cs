@@ -15,6 +15,7 @@ using MegaCrit.Sts2.Core.Logging;
 using System.Text.RegularExpressions;
 using System.Runtime;
 using System.Threading.Tasks;
+using Library.SpeedDice;
 namespace Library.Hooks;
 
 public static class LibraryHooks
@@ -188,6 +189,7 @@ public static class LibraryHooks
     }
     public static async Task AfterDamageGiven(PlayerChoiceContext choiceContext, ICombatState combatState, Creature? dealer, DamageResult results, ValueProp props, Creature target, CardModel? cardSource,LibraryDamageType type)
     {
+        LibrarySpeedDiceService.RecordDamageGiven(dealer, results, target);
         foreach (AbstractModel model in combatState.IterateHookListeners())
         {
             choiceContext.PushModel(model);
@@ -202,6 +204,7 @@ public static class LibraryHooks
     }
     public static async Task AfterDamageReceived(PlayerChoiceContext choiceContext, IRunState runState, ICombatState combatState, Creature target, DamageResult result, ValueProp props, Creature? dealer, CardModel? cardSource,LibraryDamageType type) 
     {
+        LibrarySpeedDiceService.RecordDamageReceived(target, result);
         foreach (AbstractModel model in runState.IterateHookListeners(combatState))
         {
             choiceContext.PushModel(model);
