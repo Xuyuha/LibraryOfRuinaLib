@@ -4,6 +4,7 @@ using Godot;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
+using MegaCrit.Sts2.Core.ControllerInput;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Multiplayer;
@@ -14,6 +15,7 @@ using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Multiplayer.Game;
 using MegaCrit.Sts2.Core.Nodes.Combat;
+using MegaCrit.Sts2.Core.Nodes.CommonUi;
 using MegaCrit.Sts2.Core.Nodes.Multiplayer;
 using MegaCrit.Sts2.Core.Random;
 using MegaCrit.Sts2.Core.Runs;
@@ -148,7 +150,66 @@ internal static class LibrarySpeedDiceService
         state.ReplaceSlots(GetDiceCount(state));
     }
 
-    public static bool CanConsumeLockInput()
+    public static async Task FinishPlayerTurnAsync(
+        Player player,
+        IReadOnlySet<CardModel> retainedCards)
+    {
+        if (!States.TryGetValue(
+                player,
+                out LibrarySpeedDiceCombatState? state))
+        {
+            return;
+        }
+
+        await state.Gate.WaitAsync();
+        try
+        {
+            List<LibrarySpeedDiceSlot> equippedSlots = state.Slots
+                .Where(slot => slot.Card != null)
+                .ToList();
+            if (equippedSlots.Count == 0)
+                return;
+
+            var cardsToRetain = new List<CardModel>();
+            var cardsToDiscard = new List<CardModel>();
+            foreach (LibrarySpeedDiceSlot slot in equippedSlots)
+            {
+                CardModel card = slot.Card!;
+                if (card.Pile?.Type != PileType.Play)
+                {
+                    slot.ClearCard();
+                    continue;
+                }
+
+                if (retainedCards.Contains(card))
+                    cardsToRetain.Add(card);
+                else
+                    cardsToDiscard.Add(card);
+            }
+
+            await MoveEquippedCardsAsync(
+                equippedSlots,
+                cardsToRetain,
+                PileType.Hand);
+            await MoveEquippedCardsAsync(
+                equippedSlots,
+                cardsToDiscard,
+                PileType.Discard);
+            state.NotifyChanged();
+        }
+        catch (Exception exception)
+        {
+            Log.Error(
+                "[LibraryOfRuinaLib] Failed to finish speed-dice turn cleanup: "
+                + exception);
+        }
+        finally
+        {
+            state.Gate.Release();
+        }
+    }
+
+    public static bool CanConsumeAdvanceInput()
     {
         if (!TryGetLocalState(out LibrarySpeedDiceCombatState? state)
             || state == null
@@ -166,10 +227,10 @@ internal static class LibrarySpeedDiceService
         return RunManager.Instance.ActionExecutor.CurrentlyRunningAction == null;
     }
 
-    public static Task LockAndResolveLocalAsync()
+    public static Task AdvanceLocalAsync()
     {
         return TryGetLocalState(out LibrarySpeedDiceCombatState? state) && state != null
-            ? LockAndResolveAsync(state)
+            ? AdvanceAsync(state)
             : Task.CompletedTask;
     }
 
@@ -178,6 +239,45 @@ internal static class LibrarySpeedDiceService
         return TryGetLocalState(out LibrarySpeedDiceCombatState? state)
             && state != null
             && HasMissingRequiredTargets(state);
+    }
+
+    internal static bool CanInteractWithSlot(
+        LibrarySpeedDiceCombatState state,
+        int slotIndex,
+        out bool canAcceptSelectedCard)
+    {
+        canAcceptSelectedCard = false;
+        if (!IsStateUsable(state)
+            || !state.HasRolled
+            || state.IsLocked
+            || state.IsResolving
+            || state.IsSelectingTarget
+            || slotIndex < 0
+            || slotIndex >= state.Slots.Count)
+        {
+            return false;
+        }
+
+        LibrarySpeedDiceSlot slot = state.Slots[slotIndex];
+        if (slot.IsSpent)
+            return false;
+        if (slot.Card != null)
+            return true;
+
+        CardModel? card = GetSelectedCard();
+        canAcceptSelectedCard =
+            card != null
+            && card.Owner == state.Player
+            && card.Pile?.Type == PileType.Hand
+            && !card.EnergyCost.CostsX
+            && !card.HasStarCostX
+            && CanEquipCard(state, card)
+            && TryCalculateReservation(
+                state,
+                card,
+                out _,
+                out _);
+        return canAcceptSelectedCard;
     }
 
     public static async Task ActivateSlotAsync(int slotIndex, Control targetingOrigin)
@@ -190,6 +290,7 @@ internal static class LibrarySpeedDiceService
         try
         {
             if (!IsStateUsable(state)
+                || !state.HasRolled
                 || state.IsLocked
                 || state.IsResolving
                 || slotIndex < 0
@@ -269,6 +370,7 @@ internal static class LibrarySpeedDiceService
         try
         {
             if (!IsStateUsable(state)
+                || !state.HasRolled
                 || state.IsLocked
                 || state.IsResolving
                 || slotIndex < 0
@@ -372,48 +474,106 @@ internal static class LibrarySpeedDiceService
             return;
         }
 
-        AddDamageEmotion(
-            state,
-            Math.Max(0, result.UnblockedDamage - result.OverkillDamage),
-            isDamageGiven: true);
+        if (state.Participant.Emotion.GainEmotionFromDamage)
+        {
+            AddDamageEmotion(
+                state,
+                Math.Max(0, result.UnblockedDamage - result.OverkillDamage),
+                isDamageGiven: true);
+        }
         if (result.WasTargetKilled)
             AddEmotionUnits(state, state.Participant.Emotion.KillEmotionUnits);
     }
 
     public static void RecordDamageReceived(Creature target, DamageResult result)
     {
-        if (target.Player == null
-            || !TryGetState(target.Player, out LibrarySpeedDiceCombatState? state)
-            || state == null)
+        if (target.Player == null)
         {
             return;
         }
 
-        AddDamageEmotion(
-            state,
-            Math.Max(0, result.UnblockedDamage - result.OverkillDamage),
-            isDamageGiven: false);
+        if (TryGetState(
+                target.Player,
+                out LibrarySpeedDiceCombatState? targetState)
+            && targetState != null
+            && targetState.Participant.Emotion.GainEmotionFromDamage)
+        {
+            AddDamageEmotion(
+                targetState,
+                Math.Max(0, result.UnblockedDamage - result.OverkillDamage),
+                isDamageGiven: false);
+        }
     }
 
-    private static async Task LockAndResolveAsync(LibrarySpeedDiceCombatState state)
+    public static void RecordAllyDeath(
+        ICombatState? combatState,
+        Creature creature,
+        bool wasRemovalPrevented)
+    {
+        if (wasRemovalPrevented
+            || creature.Player == null
+            || combatState == null)
+        {
+            return;
+        }
+
+        foreach (Player ally in combatState.Players)
+        {
+            if (ally == creature.Player
+                || ally.Creature.IsDead
+                || !TryGetState(
+                    ally,
+                    out LibrarySpeedDiceCombatState? allyState)
+                || allyState == null)
+            {
+                continue;
+            }
+
+            AddEmotionUnits(
+                allyState,
+                allyState.Participant.Emotion.AllyDeathEmotionUnits);
+        }
+    }
+
+    private static async Task AdvanceAsync(LibrarySpeedDiceCombatState state)
     {
         await state.Gate.WaitAsync();
         try
         {
-            if (!CanConsumeLockInput()
+            if (!CanConsumeAdvanceInput()
                 || state.IsLocked
                 || state.IsResolving)
             {
                 return;
             }
 
+            LibrarySpeedDiceAudio.PlayAdvance();
             NPlayerHand.Instance?.CancelAllCardPlay();
+            if (!state.HasRolled)
+            {
+                int emotionUnits = 0;
+                foreach (LibrarySpeedDiceSlot slot in state.Slots)
+                {
+                    slot.FinalValue = state.GameplayRng.NextInt(
+                        state.Participant.MinSpeed,
+                        state.Participant.MaxSpeed + 1);
+                    slot.DisplayValue = slot.FinalValue;
+                    if (slot.FinalValue == state.Participant.MinSpeed
+                        || slot.FinalValue == state.Participant.MaxSpeed)
+                    {
+                        emotionUnits += state.Participant.Emotion
+                            .ExtremeRollEmotionUnits;
+                    }
+                }
+
+                AddEmotionUnits(state, emotionUnits);
+                state.HasRolled = true;
+                state.NotifyChanged();
+                return;
+            }
+
             foreach (LibrarySpeedDiceSlot slot in state.Slots)
             {
-                slot.FinalValue = state.GameplayRng.NextInt(
-                    state.Participant.MinSpeed,
-                    state.Participant.MaxSpeed + 1);
-                slot.DisplayValue = slot.FinalValue;
                 slot.IsLocked = true;
             }
 
@@ -449,6 +609,7 @@ internal static class LibrarySpeedDiceService
                 finally
                 {
                     state.ResolvingSlot = null;
+                    slot.IsSpent = true;
                     slot.ClearCard();
                     state.NotifyChanged();
                 }
@@ -456,7 +617,7 @@ internal static class LibrarySpeedDiceService
         }
         catch (Exception exception)
         {
-            Log.Error("[LibraryOfRuinaLib] Speed-dice resolution failed: " + exception);
+            Log.Error("[LibraryOfRuinaLib] Speed-dice advance failed: " + exception);
         }
         finally
         {
@@ -560,6 +721,7 @@ internal static class LibrarySpeedDiceService
         Control targetingOrigin)
     {
         if (!GodotObject.IsInstanceValid(targetingOrigin)
+            || !state.HasRolled
             || state.IsSelectingTarget)
         {
             return;
@@ -570,6 +732,7 @@ internal static class LibrarySpeedDiceService
             SceneTree.SignalName.ProcessFrame);
 
         if (!IsStateUsable(state)
+            || !state.HasRolled
             || state.IsLocked
             || state.IsResolving
             || state.IsSelectingTarget
@@ -584,15 +747,21 @@ internal static class LibrarySpeedDiceService
 
         state.IsSelectingTarget = true;
         state.NotifyChanged();
+        LibrarySpeedDiceTargetLine? targetLine = null;
         try
         {
             NTargetManager targetManager = NTargetManager.Instance;
+            TargetMode targetMode =
+                NControllerManager.Instance?.IsUsingController == true
+                    ? TargetMode.Controller
+                    : TargetMode.ClickMouseToTarget;
             targetManager.StartTargeting(
                 card.GetSpeedDiceTargetType(),
                 targetingOrigin,
-                TargetMode.ClickMouseToTarget,
+                targetMode,
                 () =>
                     !IsStateUsable(state)
+                    || !state.HasRolled
                     || state.IsLocked
                     || state.IsResolving
                     || slotIndex < 0
@@ -603,6 +772,10 @@ internal static class LibrarySpeedDiceService
                     Creature? target = GetCreatureFromTargetNode(node);
                     return target != null && card.IsValidSpeedDiceTarget(target);
                 });
+            targetLine = LibrarySpeedDiceTargetLine.Begin(
+                targetManager,
+                targetingOrigin,
+                targetMode == TargetMode.Controller);
 
             Node? selectedNode = await targetManager.SelectionFinished();
             Creature? selectedTarget = GetCreatureFromTargetNode(selectedNode);
@@ -613,6 +786,7 @@ internal static class LibrarySpeedDiceService
             try
             {
                 if (IsStateUsable(state)
+                    && state.HasRolled
                     && !state.IsLocked
                     && !state.IsResolving
                     && slotIndex >= 0
@@ -635,6 +809,7 @@ internal static class LibrarySpeedDiceService
         }
         finally
         {
+            targetLine?.Stop();
             state.IsSelectingTarget = false;
             state.NotifyChanged();
         }
@@ -669,6 +844,36 @@ internal static class LibrarySpeedDiceService
             return null;
 
         return (CurrentCardPlayField?.GetValue(hand) as NCardPlay)?.Holder.CardModel;
+    }
+
+    private static async Task MoveEquippedCardsAsync(
+        IReadOnlyList<LibrarySpeedDiceSlot> equippedSlots,
+        IReadOnlyList<CardModel> cards,
+        PileType destination)
+    {
+        if (cards.Count == 0)
+            return;
+
+        IReadOnlyList<CardPileAddResult> results = await CardPileCmd.Add(
+            cards,
+            destination,
+            skipVisuals: destination != PileType.Hand);
+        foreach (CardPileAddResult result in results)
+        {
+            if (!result.success)
+            {
+                Log.Error(
+                    $"[LibraryOfRuinaLib] Failed to move unused speed-dice card "
+                    + $"{result.cardAdded.Id.Entry} to {destination}.");
+                continue;
+            }
+
+            LibrarySpeedDiceSlot? slot = equippedSlots.FirstOrDefault(
+                candidate => ReferenceEquals(
+                    candidate.Card,
+                    result.cardAdded));
+            slot?.ClearCard();
+        }
     }
 
     private static bool CanEquipCard(

@@ -20,6 +20,8 @@ public sealed class LibrarySpeedDiceSlot
 
     public bool IsLocked { get; internal set; }
 
+    public bool IsSpent { get; internal set; }
+
     public CardModel? Card { get; internal set; }
 
     public Creature? Target { get; internal set; }

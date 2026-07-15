@@ -4,9 +4,15 @@ public sealed class LibraryEmotionConfig
 {
     public IReadOnlyList<int> UnitThresholds { get; init; } = [3, 3, 5, 7, 9];
 
+    public bool GainEmotionFromDamage { get; init; } = true;
+
     public decimal DamageUnitFractionOfMaxHp { get; init; } = 0.10m;
 
+    public int ExtremeRollEmotionUnits { get; init; }
+
     public int KillEmotionUnits { get; init; } = 3;
+
+    public int AllyDeathEmotionUnits { get; init; }
 
     public int MaxEnergyPerLevel { get; init; } = 1;
 

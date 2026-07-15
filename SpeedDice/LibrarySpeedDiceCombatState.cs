@@ -22,6 +22,8 @@ public sealed class LibrarySpeedDiceCombatState
 
     public IReadOnlyList<LibrarySpeedDiceSlot> Slots => _slots;
 
+    public bool HasRolled { get; internal set; }
+
     public bool IsLocked { get; internal set; }
 
     public bool IsResolving { get; internal set; }
@@ -55,6 +57,7 @@ public sealed class LibrarySpeedDiceCombatState
         _slots.Clear();
         for (int i = 0; i < count; i++)
             _slots.Add(new LibrarySpeedDiceSlot(i, Participant.MinSpeed));
+        HasRolled = false;
         IsLocked = false;
         IsResolving = false;
         IsSelectingTarget = false;

@@ -20,6 +20,8 @@ internal static class LibraryEmotionBarUi
     private const float ForegroundInsetVertical = 3f;
     private const float ForegroundContainerInset = 10f;
     private const float MinFillWidth = 12f;
+    private const float BadgeWidth = 44f;
+    private const float BadgeHeight = 51f;
 
     private static readonly FieldInfo? CreatureField =
         AccessTools.Field(typeof(NHealthBar), "_creature");
@@ -93,10 +95,6 @@ internal static class LibraryEmotionBarUi
     private static void CreateNodes(NHealthBar healthBar, UiState state)
     {
         Control hpBarContainer = healthBar.HpBarContainer;
-        Node? parent = hpBarContainer.GetParent();
-        if (parent == null)
-            return;
-
         NinePatchRect? sourceBackground =
             hpBarContainer.GetNodeOrNull<NinePatchRect>("HpBackground");
         NinePatchRect? sourceFill =
@@ -109,21 +107,32 @@ internal static class LibraryEmotionBarUi
         {
             Name = ContainerName,
             MouseFilter = Control.MouseFilterEnum.Ignore,
-            ZIndex = hpBarContainer.ZIndex,
-            ZAsRelative = hpBarContainer.ZAsRelative,
+            ZIndex = 1,
+            ZAsRelative = true,
+            AnchorLeft = 0f,
+            AnchorTop = 0f,
+            AnchorRight = 1f,
+            AnchorBottom = 0f,
+            OffsetLeft = 0f,
+            OffsetTop = -(BarHeight + BarGap) * 2f,
+            OffsetRight = 0f,
+            OffsetBottom = -(BarHeight + BarGap) * 2f + BarHeight,
         };
-        parent.AddChild(bar);
-        parent.MoveChild(bar, hpBarContainer.GetIndex());
+        hpBarContainer.AddChild(bar);
 
         var background = (NinePatchRect)sourceBackground.Duplicate(15);
         background.Name = "EmotionBackground";
         background.Modulate = BackgroundColor;
         background.Visible = true;
         background.MouseFilter = Control.MouseFilterEnum.Ignore;
+        background.AnchorLeft = 0f;
+        background.AnchorTop = 0f;
         background.AnchorRight = 1f;
         background.AnchorBottom = 1f;
         background.OffsetLeft = 1f;
+        background.OffsetTop = 0f;
         background.OffsetRight = -1f;
+        background.OffsetBottom = 0f;
         bar.AddChild(background);
 
         var foregroundContainer = new Control
@@ -131,6 +140,8 @@ internal static class LibraryEmotionBarUi
             Name = "EmotionForegroundContainer",
             ClipChildren = CanvasItem.ClipChildrenMode.Only,
             MouseFilter = Control.MouseFilterEnum.Ignore,
+            AnchorLeft = 0f,
+            AnchorTop = 0f,
             AnchorRight = 1f,
             AnchorBottom = 1f,
             OffsetLeft = ForegroundInset,
@@ -146,9 +157,13 @@ internal static class LibraryEmotionBarUi
         fill.Material = null;
         fill.SelfModulate = FillColor;
         fill.MouseFilter = Control.MouseFilterEnum.Ignore;
+        fill.AnchorLeft = 0f;
+        fill.AnchorTop = 0f;
         fill.AnchorRight = 1f;
         fill.AnchorBottom = 1f;
+        fill.OffsetLeft = 0f;
         fill.OffsetTop = -4f;
+        fill.OffsetRight = 0f;
         fill.OffsetBottom = 4f;
         foreach (Node child in fill.GetChildren())
             child.QueueFree();
@@ -158,9 +173,13 @@ internal static class LibraryEmotionBarUi
         var valueLabel = new Label
         {
             Name = "EmotionValueLabel",
+            AnchorLeft = 0f,
+            AnchorTop = 0f,
             AnchorRight = 1f,
             AnchorBottom = 1f,
+            OffsetLeft = 0f,
             OffsetTop = -6f,
+            OffsetRight = 0f,
             OffsetBottom = 7f,
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
@@ -173,8 +192,14 @@ internal static class LibraryEmotionBarUi
         {
             Name = "EmotionLevelBadge",
             Texture = ResourceLoader.Load<Texture2D>(BorderPath),
-            Position = new Vector2(-34f, -5f),
-            Size = new Vector2(38f, 24f),
+            AnchorLeft = 0f,
+            AnchorTop = 0f,
+            AnchorRight = 0f,
+            AnchorBottom = 0f,
+            OffsetLeft = -BadgeWidth + 2f,
+            OffsetTop = (BarHeight - BadgeHeight) * 0.5f,
+            OffsetRight = 2f,
+            OffsetBottom = (BarHeight + BadgeHeight) * 0.5f,
             ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
             StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
             MouseFilter = Control.MouseFilterEnum.Ignore,
@@ -185,13 +210,19 @@ internal static class LibraryEmotionBarUi
         var badgeLabel = new Label
         {
             Name = "EmotionLevelLabel",
+            AnchorLeft = 0f,
+            AnchorTop = 0f,
             AnchorRight = 1f,
-            AnchorBottom = 1f,
+            AnchorBottom = 0f,
+            OffsetLeft = 0f,
+            OffsetTop = 1f,
+            OffsetRight = 0f,
+            OffsetBottom = 20f,
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
             MouseFilter = Control.MouseFilterEnum.Ignore,
         };
-        ApplyLabelTheme(badgeLabel, font, 17);
+        ApplyBadgeLabelTheme(badgeLabel, font);
         badge.AddChild(badgeLabel);
 
         state.BarContainer = bar;
@@ -211,18 +242,22 @@ internal static class LibraryEmotionBarUi
         label.AddThemeConstantOverride("outline_size", 9);
     }
 
+    private static void ApplyBadgeLabelTheme(Label label, Font? font)
+    {
+        if (font != null)
+            label.AddThemeFontOverride("font", font);
+        label.AddThemeFontSizeOverride("font_size", 10);
+        label.AddThemeColorOverride("font_color", FillColor);
+        label.AddThemeColorOverride("font_outline_color", Colors.White);
+        label.AddThemeConstantOverride("outline_size", 1);
+    }
+
     private static void SyncLayout(NHealthBar healthBar, UiState state)
     {
         if (state.BarContainer == null)
             return;
 
         Control hpBar = healthBar.HpBarContainer;
-        state.BarContainer.Position = new Vector2(
-            hpBar.Position.X,
-            hpBar.Position.Y - (BarHeight + BarGap) * 2f);
-        state.BarContainer.Size = new Vector2(hpBar.Size.X, BarHeight);
-        state.BarContainer.ZIndex = hpBar.ZIndex;
-        state.BarContainer.ZAsRelative = hpBar.ZAsRelative;
         state.MaxFillWidth = Math.Max(0f, hpBar.Size.X - ForegroundContainerInset);
     }
 
