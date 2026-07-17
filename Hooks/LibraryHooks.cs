@@ -15,11 +15,99 @@ using MegaCrit.Sts2.Core.Logging;
 using System.Text.RegularExpressions;
 using System.Runtime;
 using System.Threading.Tasks;
+using Library.Combat;
 using Library.SpeedDice;
 namespace Library.Hooks;
 
 public static class LibraryHooks
 {
+    public static bool HasIncomingDamageInterceptor(
+        IRunState runState,
+        ICombatState combatState)
+    {
+        return !LibraryIncomingDamageInterception.IsSuppressed
+            && runState.IterateHookListeners(combatState)
+                .Any(static model =>
+                    model is ILibraryIncomingDamageInterceptor);
+    }
+
+    public static async Task<LibraryIncomingDamageResolution>
+        InterceptIncomingDamage(
+            PlayerChoiceContext choiceContext,
+            IRunState runState,
+            ICombatState combatState,
+            Creature target,
+            decimal amount,
+            ValueProp props,
+            Creature? dealer,
+            CardModel? cardSource,
+            CardPlay? cardPlay,
+            LibraryDamageType type)
+    {
+        decimal originalDamage = Math.Max(0m, amount);
+        if (originalDamage <= 0m
+            || LibraryIncomingDamageInterception.IsSuppressed)
+        {
+            return LibraryIncomingDamageResolution.PassThrough(
+                originalDamage);
+        }
+
+        decimal remainingDamage = originalDamage;
+        decimal interceptedDamage = 0m;
+        foreach (AbstractModel model in
+                 runState.IterateHookListeners(combatState))
+        {
+            if (model is not ILibraryIncomingDamageInterceptor interceptor)
+            {
+                continue;
+            }
+
+            bool pushedModel = false;
+            try
+            {
+                choiceContext.PushModel(model);
+                pushedModel = true;
+                LibraryIncomingDamageResolution candidate =
+                    await interceptor.InterceptIncomingDamageAsync(
+                        new LibraryIncomingDamageContext(
+                            choiceContext,
+                            target,
+                            dealer,
+                            originalDamage,
+                            remainingDamage,
+                            props,
+                            cardSource,
+                            cardPlay,
+                            type));
+                decimal normalizedRemaining = Math.Clamp(
+                    candidate.RemainingDamage,
+                    0m,
+                    remainingDamage);
+                interceptedDamage +=
+                    remainingDamage - normalizedRemaining;
+                remainingDamage = normalizedRemaining;
+            }
+            finally
+            {
+                if (pushedModel)
+                {
+                    choiceContext.PopModel(model);
+                }
+            }
+
+            model.InvokeExecutionFinished();
+            if (remainingDamage <= 0m)
+            {
+                break;
+            }
+        }
+
+        return new LibraryIncomingDamageResolution(
+            remainingDamage,
+            interceptedDamage,
+            interceptedDamage > 0m && remainingDamage <= 0m);
+    }
+
     public static async Task BeforeSetPhysicalResistance(ICombatState combatState,PlayerChoiceContext choiceContext,LibraryCreature target, Creature? dealer,LibraryDamageType type,LibraryResistanceLevel resistanceValue)
     {
         foreach (AbstractModel model in combatState.IterateHookListeners())

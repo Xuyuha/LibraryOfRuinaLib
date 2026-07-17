@@ -6,15 +6,19 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using HarmonyLib;
+using Library.Combat;
 using Library.Entities.Creatures;
+using Library.Hooks;
 using Library.Models;
 using Library.Resistance;
+using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Cards;
+using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.ValueProps;
 
 namespace Library.Patches;
@@ -186,9 +190,6 @@ internal static class LibraryAttackChaoDamagePatch
         CardPlay? cardPlay,
         ref Task<IEnumerable<DamageResult>> __result)
     {
-        if (!AttackExecuteContext.IsInAttackExecute.Value)
-            return true;
-
         if (props.HasFlag(ValueProp.Unpowered))
             return true;
 
@@ -205,9 +206,32 @@ internal static class LibraryAttackChaoDamagePatch
             return true;
 
         var targetList = targets as IReadOnlyList<Creature> ?? new List<Creature>(targets);
-        if (!targetList.Any(static target => target is LibraryCreature { IsPlayer: false }))
+        if (targetList.Count == 0)
             return true;
-        AttackExecuteContext.PreDamageBlocks.Value = targetList.Select(c => c.Block).ToList();
+
+        ICombatState combatState = targetList[0].CombatState;
+        IRunState runState =
+            IRunState.GetFrom(targetList.Append(dealer).OfType<Creature>());
+        bool isAttackExecute =
+            AttackExecuteContext.IsInAttackExecute.Value;
+        bool needsLibraryDamage =
+            isAttackExecute
+            && targetList.Any(static target =>
+                target is LibraryCreature { IsPlayer: false });
+        bool hasInterceptor =
+            !LibraryIncomingDamageInterception.IsSuppressed
+            && LibraryHooks.HasIncomingDamageInterceptor(
+                runState,
+                combatState);
+        if (!needsLibraryDamage && !hasInterceptor)
+            return true;
+
+        if (isAttackExecute)
+        {
+            AttackExecuteContext.PreDamageBlocks.Value =
+                targetList.Select(c => c.Block).ToList();
+        }
+
         __result = LibraryCreatureCmd.Damage(
             choiceContext: choiceContext,
             targets: targetList,
@@ -215,7 +239,10 @@ internal static class LibraryAttackChaoDamagePatch
             props: props,
             dealer: dealer,
             cardSource: cardSource,
-            type: AttackExecuteContext.CurrentDamageType);
+            cardPlay: cardPlay,
+            type: isAttackExecute
+                ? AttackExecuteContext.CurrentDamageType
+                : LibraryDamageType.None);
 
         return false;
     }

@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 using Godot;
+using Library.Combat;
 using Library.Entities.Creatures;
 using Library.Hooks;
 using Library.Models;
@@ -143,16 +144,6 @@ public static class LibraryCreatureCmd
 		bool ranBeforeApplyingDamage = false;
 		foreach (Creature originalTarget in targetList)
 		{
-			if(originalTarget.IsPlayer)
-			{
-				if (!ranBeforeApplyingDamage && beforeApplyingDamage != null)
-				{
-					ranBeforeApplyingDamage = true;
-					await beforeApplyingDamage();
-				}
-				await CreatureCmd.Damage(choiceContext, originalTarget, damageAmount, props, dealer, cardSource, cardPlay);
-				continue;
-			}
 			if (originalTarget.IsDead)
 			{
 				continue;
@@ -167,9 +158,24 @@ public static class LibraryCreatureCmd
 				await beforeApplyingDamage();
 			}
 			await LibraryHooks.BeforeDamageReceived(choiceContext, runState, combatState, originalTarget, modifiedAmount, props, dealer, cardSource,type);  
+			LibraryIncomingDamageResolution interception =
+				await LibraryHooks.InterceptIncomingDamage(
+					choiceContext,
+					runState,
+					combatState,
+					originalTarget,
+					modifiedAmount,
+					props,
+					dealer,
+					cardSource,
+					cardPlay,
+					type);
+			decimal remainingDamage = interception.RemainingDamage;
 			Creature creature = originalTarget.PetOwner?.Creature ?? originalTarget;
-			decimal blockedDamage = creature.DamageBlockInternal(modifiedAmount, props);
-			decimal unblockedDamageBeforeResistance = Math.Max(modifiedAmount - blockedDamage, 0m);
+			decimal blockedDamage = creature.DamageBlockInternal(remainingDamage, props);
+			decimal totalBlockedDamage =
+				blockedDamage + interception.InterceptedDamage;
+			decimal unblockedDamageBeforeResistance = Math.Max(remainingDamage - blockedDamage, 0m);
 			decimal unblockedDamageAfterResistance = LibraryDamageCalculate.CalculateHpLoss(unblockedDamageBeforeResistance, originalTarget as LibraryCreature, props, type);
 			decimal unblockedDamage = LibraryHooks.ModifyHpLostBeforeOsty(runState, combatState, originalTarget, unblockedDamageAfterResistance, props, dealer, cardSource, out modifiers,type);
 			await LibraryHooks.AfterModifyingHpLostBeforeOsty(runState, combatState, modifiers,type);
@@ -179,10 +185,14 @@ public static class LibraryCreatureCmd
 			DamageResult unblockedDamageResult = unblockedDamageTarget.LoseHpInternal(unblockedDamage, props);
 			List<DamageResult> damageResults = new List<DamageResult>(1) { unblockedDamageResult };
 			bool wasBlockBroken = originalTarget.Block <= 0 && blockedDamage > 0m;
-			bool wasFullyBlocked = !props.HasFlag(ValueProp.Unblockable) && (blockedDamage > 0m || originalTarget.Block > 0) && (int)unblockedDamage == 0;
+			bool wasFullyBlocked =
+				interception.WasFullyIntercepted
+				|| (!props.HasFlag(ValueProp.Unblockable)
+					&& (blockedDamage > 0m || originalTarget.Block > 0)
+					&& (int)unblockedDamage == 0);
 			if (originalTarget == unblockedDamageTarget)
 			{
-				unblockedDamageResult.BlockedDamage = (int)blockedDamage;
+				unblockedDamageResult.BlockedDamage = (int)totalBlockedDamage;
 				unblockedDamageResult.WasBlockBroken = wasBlockBroken;
 				unblockedDamageResult.WasFullyBlocked = wasFullyBlocked;
 			}
@@ -191,7 +201,7 @@ public static class LibraryCreatureCmd
 				decimal originalTargetDamage = LibraryHooks.ModifyHpLostAfterOsty(runState, combatState, originalTarget, unblockedDamageResult.OverkillDamage, props, dealer, cardSource, out modifiers,type);
 				await LibraryHooks.AfterModifyingHpLostAfterOsty(runState, combatState, modifiers,type);
 				DamageResult damageResult = ((!(originalTargetDamage > 0m)) ? new DamageResult(originalTarget, props) : originalTarget.LoseHpInternal(originalTargetDamage, props));
-				damageResult.BlockedDamage = (int)blockedDamage;
+				damageResult.BlockedDamage = (int)totalBlockedDamage;
 				damageResult.WasBlockBroken = wasBlockBroken;
 				damageResult.WasFullyBlocked = wasFullyBlocked;
 				damageResults.Add(damageResult);
