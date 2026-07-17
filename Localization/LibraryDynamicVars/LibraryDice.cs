@@ -48,7 +48,7 @@ public class LibraryDice : DynamicVar
     private bool _shouldShowChao = false;
     public decimal FloatValue {get;set;}
     public readonly LibraryDiceType DiceType ;
-    public readonly CardModel SourceCard ;
+    public CardModel SourceCard ;
     private int IdNumber = 0;
     public static LocString DefaultDescription => new("dice","DICE_DEFAULT");
     public LocString Description =>  ShouldUseDefaultTip ? DefaultDescription:new("cards",DescriptionPath);
@@ -67,6 +67,12 @@ public class LibraryDice : DynamicVar
         private set;
     }
     public LibraryAttackCommand? Command = null;
+    public override void SetOwner(AbstractModel owner)
+    {
+        base.SetOwner(owner);
+        if (owner is CardModel card)
+            SourceCard = card;
+    }
     public LibraryDice WithUseTimes (int useTimes)
     {
         if (useTimes < 1)

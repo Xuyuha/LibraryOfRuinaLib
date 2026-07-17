@@ -1,7 +1,5 @@
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using Godot;
-using HarmonyLib;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.ControllerInput;
@@ -27,10 +25,8 @@ internal static class LibrarySpeedDiceService
     private static readonly object Sync = new();
     private static readonly List<LibrarySpeedDiceParticipant> Participants = [];
     private static readonly ConditionalWeakTable<Player, LibrarySpeedDiceCombatState> States = new();
-    private static readonly FieldInfo? CurrentCardPlayField =
-        AccessTools.Field(typeof(NPlayerHand), "_currentCardPlay");
-
     private static WeakReference<LibrarySpeedDiceCombatState>? _localState;
+    private static CardModel? _explicitlySelectedCard;
 
     public static void RegisterParticipant(LibrarySpeedDiceParticipant participant)
     {
@@ -115,6 +111,7 @@ internal static class LibrarySpeedDiceService
 
     public static void ClearCombat()
     {
+        _explicitlySelectedCard = null;
         if (_localState != null
             && _localState.TryGetTarget(out LibrarySpeedDiceCombatState? state))
         {
@@ -133,7 +130,7 @@ internal static class LibrarySpeedDiceService
             return;
         }
 
-        state.Emotion.TryLevelUp();
+        state.Emotion.TryLevelUp(state.Participant.Emotion);
         state.PreviousTurnTriggeredCards = state.CurrentTurnTriggeredCards;
         state.CurrentTurnTriggeredCards = 0;
         state.BonusDrawPending =
@@ -280,11 +277,101 @@ internal static class LibrarySpeedDiceService
         return canAcceptSelectedCard;
     }
 
+    public static bool CanEquipCard(CardModel card)
+    {
+        return card.Owner != null
+            && TryGetState(
+                card.Owner,
+                out LibrarySpeedDiceCombatState? state)
+            && state != null
+            && CanEquipCard(state, card)
+            && state.Slots.Any(slot =>
+                !slot.IsSpent
+                && !slot.IsLocked
+                && slot.Card == null);
+    }
+
+    public static bool TryBeginEquipSelection(CardModel card)
+    {
+        if (_explicitlySelectedCard != null
+            || !CanEquipCard(card))
+        {
+            return false;
+        }
+
+        _explicitlySelectedCard = card;
+        if (TryGetState(
+                card.Owner,
+                out LibrarySpeedDiceCombatState? state)
+            && state != null)
+        {
+            state.NotifyChanged();
+        }
+
+        return true;
+    }
+
+    public static void EndEquipSelection(CardModel card)
+    {
+        if (!ReferenceEquals(_explicitlySelectedCard, card))
+            return;
+
+        _explicitlySelectedCard = null;
+        if (card.Owner != null
+            && TryGetState(
+                card.Owner,
+                out LibrarySpeedDiceCombatState? state)
+            && state != null)
+        {
+            state.NotifyChanged();
+        }
+    }
+
     public static async Task ActivateSlotAsync(int slotIndex, Control targetingOrigin)
     {
         if (!TryGetLocalState(out LibrarySpeedDiceCombatState? state) || state == null)
             return;
 
+        if (_explicitlySelectedCard != null)
+            return;
+
+        await ActivateSlotAsync(
+            state,
+            slotIndex,
+            targetingOrigin,
+            GetSelectedCard(),
+            allowRetargetExisting: true);
+    }
+
+    public static async Task EquipCardAsync(
+        CardModel card,
+        int slotIndex,
+        Control targetingOrigin)
+    {
+        if (card.Owner == null
+            || !TryGetState(
+                card.Owner,
+                out LibrarySpeedDiceCombatState? state)
+            || state == null)
+        {
+            return;
+        }
+
+        await ActivateSlotAsync(
+            state,
+            slotIndex,
+            targetingOrigin,
+            card,
+            allowRetargetExisting: false);
+    }
+
+    private static async Task ActivateSlotAsync(
+        LibrarySpeedDiceCombatState state,
+        int slotIndex,
+        Control targetingOrigin,
+        CardModel? selectedCard,
+        bool allowRetargetExisting)
+    {
         CardModel? cardToTarget = null;
         await state.Gate.WaitAsync();
         try
@@ -302,13 +389,16 @@ internal static class LibrarySpeedDiceService
             LibrarySpeedDiceSlot slot = state.Slots[slotIndex];
             if (slot.Card != null)
             {
+                if (!allowRetargetExisting)
+                    return;
+
                 cardToTarget = slot.Card.RequiresSpeedDiceTarget()
                     ? slot.Card
                     : null;
             }
             else
             {
-                CardModel? card = GetSelectedCard();
+                CardModel? card = selectedCard;
                 if (card == null
                     || card.Owner != state.Player
                     || card.Pile?.Type != PileType.Hand
@@ -839,11 +929,14 @@ internal static class LibrarySpeedDiceService
 
     private static CardModel? GetSelectedCard()
     {
-        NPlayerHand? hand = NPlayerHand.Instance;
-        if (hand == null)
-            return null;
+        if (_explicitlySelectedCard is { } explicitCard)
+        {
+            if (explicitCard.Pile?.Type == PileType.Hand)
+                return explicitCard;
 
-        return (CurrentCardPlayField?.GetValue(hand) as NCardPlay)?.Holder.CardModel;
+            _explicitlySelectedCard = null;
+        }
+        return null;
     }
 
     private static async Task MoveEquippedCardsAsync(
@@ -877,6 +970,31 @@ internal static class LibrarySpeedDiceService
     }
 
     private static bool CanEquipCard(
+        LibrarySpeedDiceCombatState state,
+        CardModel card)
+    {
+        if (!IsStateUsable(state)
+            || !state.HasRolled
+            || state.IsLocked
+            || state.IsResolving
+            || state.IsSelectingTarget
+            || card.Owner != state.Player
+            || card.Pile?.Type != PileType.Hand
+            || card.EnergyCost.CostsX
+            || card.HasStarCostX
+            || !CanParticipantEquipCard(state, card))
+        {
+            return false;
+        }
+
+        return TryCalculateReservation(
+            state,
+            card,
+            out _,
+            out _);
+    }
+
+    private static bool CanParticipantEquipCard(
         LibrarySpeedDiceCombatState state,
         CardModel card)
     {

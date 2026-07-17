@@ -126,7 +126,7 @@ public static class LibraryCreatureCmd
 		return await Damage(choiceContext, targets, damageVar.BaseValue, damageVar.Props, dealer, cardSource, type, cardPlay);
 	}
 
-	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, IEnumerable<Creature> targets, decimal damageAmount, ValueProp props, Creature? dealer, CardModel? cardSource, LibraryDamageType type = LibraryDamageType.None, CardPlay? cardPlay = null)
+	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, IEnumerable<Creature> targets, decimal damageAmount, ValueProp props, Creature? dealer, CardModel? cardSource, LibraryDamageType type = LibraryDamageType.None, CardPlay? cardPlay = null, Func<Task>? beforeApplyingDamage = null)
 	{
 		if (dealer != null && dealer.IsDead)
 		{
@@ -140,10 +140,16 @@ public static class LibraryCreatureCmd
 		}
 		ICombatState combatState = targetList[0].CombatState;
 		IRunState runState = IRunState.GetFrom(targetList.Append(dealer).OfType<Creature>());
+		bool ranBeforeApplyingDamage = false;
 		foreach (Creature originalTarget in targetList)
 		{
 			if(originalTarget.IsPlayer)
 			{
+				if (!ranBeforeApplyingDamage && beforeApplyingDamage != null)
+				{
+					ranBeforeApplyingDamage = true;
+					await beforeApplyingDamage();
+				}
 				await CreatureCmd.Damage(choiceContext, originalTarget, damageAmount, props, dealer, cardSource, cardPlay);
 				continue;
 			}
@@ -155,6 +161,11 @@ public static class LibraryCreatureCmd
 			Log.Info("LibraryDamage");
 			decimal modifiedAmount = LibraryHooks.ModifyDamage(runState, combatState, originalTarget, dealer, damageAmount, props, cardSource, cardPlay, ModifyDamageHookType.All, CardPreviewMode.None, out modifiers,type);
 			await LibraryHooks.AfterModifyingDamageAmount(runState, combatState, cardSource, modifiers,type);
+			if (!ranBeforeApplyingDamage && beforeApplyingDamage != null)
+			{
+				ranBeforeApplyingDamage = true;
+				await beforeApplyingDamage();
+			}
 			await LibraryHooks.BeforeDamageReceived(choiceContext, runState, combatState, originalTarget, modifiedAmount, props, dealer, cardSource,type);  
 			Creature creature = originalTarget.PetOwner?.Creature ?? originalTarget;
 			decimal blockedDamage = creature.DamageBlockInternal(modifiedAmount, props);

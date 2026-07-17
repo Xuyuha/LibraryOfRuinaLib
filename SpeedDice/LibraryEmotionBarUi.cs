@@ -265,21 +265,30 @@ internal static class LibraryEmotionBarUi
         UiState state,
         LibrarySpeedDiceCombatState combatState)
     {
-        int value = combatState.Emotion.Value;
+        IReadOnlyList<int> thresholds =
+            combatState.Participant.Emotion.UnitThresholds;
+        int level = Math.Clamp(
+            combatState.Emotion.Level,
+            0,
+            thresholds.Count - 1);
+        int required = thresholds[level];
+        int current = combatState.Emotion.Level >= thresholds.Count
+            ? required
+            : Math.Clamp(combatState.Emotion.Units, 0, required);
         if (state.Fill != null)
         {
-            state.Fill.Visible = value > 0;
-            if (value > 0)
+            state.Fill.Visible = current > 0;
+            if (current > 0)
             {
                 float width = Math.Max(
                     MinFillWidth,
-                    value / 100f * state.MaxFillWidth);
+                    (float)current / required * state.MaxFillWidth);
                 state.Fill.OffsetRight = width - state.MaxFillWidth;
             }
         }
 
         if (state.ValueLabel != null)
-            state.ValueLabel.Text = $"{value}/100";
+            state.ValueLabel.Text = $"{current}/{required}";
         if (state.Badge != null)
             state.Badge.Visible = combatState.Emotion.Level > 0;
         if (state.BadgeLabel != null)

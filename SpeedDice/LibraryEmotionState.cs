@@ -6,28 +6,27 @@ public sealed class LibraryEmotionState
 
     public int Level { get; private set; }
 
-    public int Value { get; private set; }
-
-    public bool IsReadyToLevelUp => Value >= 100 && Level < 5;
+    public int Units => _units;
 
     internal void AddUnits(int amount, LibraryEmotionConfig config)
     {
-        if (amount <= 0 || Level >= 5)
+        if (amount <= 0 || Level >= config.UnitThresholds.Count)
             return;
 
         int threshold = config.UnitThresholds[Level];
         _units = Math.Min(threshold, _units + amount);
-        Value = Math.Min(100, _units * 100 / threshold);
     }
 
-    internal bool TryLevelUp()
+    internal bool TryLevelUp(LibraryEmotionConfig config)
     {
-        if (!IsReadyToLevelUp)
+        if (Level >= config.UnitThresholds.Count
+            || _units < config.UnitThresholds[Level])
+        {
             return false;
+        }
 
         Level++;
         _units = 0;
-        Value = 0;
         return true;
     }
 }

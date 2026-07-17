@@ -1,3 +1,4 @@
+using Godot;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Entities.Players;
 
@@ -29,5 +30,31 @@ public static class LibrarySpeedDice
         out LibrarySpeedDiceSlot? slot)
     {
         return LibrarySpeedDiceService.TryGetResolvingSlot(card, out slot);
+    }
+
+    public static bool CanEquipCard(CardModel card)
+    {
+        return LibrarySpeedDiceService.CanEquipCard(card);
+    }
+
+    public static bool TryBeginEquipSelection(CardModel card)
+    {
+        return LibrarySpeedDiceService.TryBeginEquipSelection(card);
+    }
+
+    public static void EndEquipSelection(CardModel card)
+    {
+        LibrarySpeedDiceService.EndEquipSelection(card);
+    }
+
+    public static Task EquipCardAsync(
+        CardModel card,
+        int slotIndex,
+        Control targetingOrigin)
+    {
+        return LibrarySpeedDiceService.EquipCardAsync(
+            card,
+            slotIndex,
+            targetingOrigin);
     }
 }
