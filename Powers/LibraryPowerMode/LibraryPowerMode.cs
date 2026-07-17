@@ -294,7 +294,7 @@ public abstract class LibraryPowerMode
 		return Task.CompletedTask;
 	}
 
-	public virtual Task AfterBlockBroken(Creature creature)
+	public virtual Task AfterBlockBroken(PlayerChoiceContext choiceContext, Creature target, Creature? breaker)
 	{
 		return Task.CompletedTask;
 	}
@@ -478,7 +478,7 @@ public abstract class LibraryPowerMode
 		return Task.CompletedTask;
 	}
 
-	public virtual Task AfterModifyingCardPlayResultPileOrPosition(CardModel card, PileType pileType, CardPilePosition position)
+	public virtual Task AfterModifyingCardPlayResultLocation(CardModel card, CardLocation cardLocation)
 	{
 		return Task.CompletedTask;
 	}
@@ -728,9 +728,9 @@ public abstract class LibraryPowerMode
 		return playCount;
 	}
 
-	public virtual (PileType, CardPilePosition) ModifyCardPlayResultPileTypeAndPosition(CardModel card, bool isAutoPlay, ResourceInfo resources, PileType pileType, CardPilePosition position)
+	public virtual CardLocation ModifyCardPlayResultLocation(CardModel card, bool isAutoPlay, ResourceInfo resources, CardLocation cardLocation)
 	{
-		return (pileType, position);
+		return cardLocation;
 	}
 
 	public virtual int ModifyOrbPassiveTriggerCounts(OrbModel orb, int triggerCount)
