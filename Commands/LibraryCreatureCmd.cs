@@ -272,7 +272,12 @@ public static class LibraryCreatureCmd
 			Creature originalTarget = unblockedDamageResult.Receiver;
 			if (unblockedDamageResult.WasBlockBroken)
 			{
-				await LibraryHooks.AfterBlockBroken(originalTarget.CombatState, originalTarget,type);
+				await LibraryHooks.AfterBlockBroken(
+					originalTarget.CombatState,
+					choiceContext,
+					originalTarget,
+					dealer,
+					type);
 			}
 			if (unblockedDamageResult.UnblockedDamage > 0)
 			{

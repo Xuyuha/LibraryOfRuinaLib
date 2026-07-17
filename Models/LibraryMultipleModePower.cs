@@ -383,10 +383,10 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
         await AfterBlockGained(creature, amount, props, cardSource , null);
 	}
 
-	public sealed override async Task AfterBlockBroken(Creature creature)
+	public sealed override async Task AfterBlockBroken(PlayerChoiceContext choiceContext, Creature target, Creature? breaker)
 	{
-        await Mode.AfterBlockBroken(creature);
-        await AfterBlockBroken(creature , null);
+        await Mode.AfterBlockBroken(choiceContext, target, breaker);
+        await AfterBlockBroken(choiceContext, target, breaker, null);
 	}
 
 	public sealed override async Task AfterCardChangedPiles(CardModel card, PileType oldPileType, AbstractModel? clonedBy)
@@ -602,10 +602,10 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
         await AfterModifyingCardPlayCount(card);
 	}
 
-	public sealed override async Task AfterModifyingCardPlayResultPileOrPosition(CardModel card, PileType pileType, CardPilePosition position)
+	public sealed override async Task AfterModifyingCardPlayResultLocation(CardModel card, CardLocation cardLocation)
 	{
-        await Mode.AfterModifyingCardPlayResultPileOrPosition(card, pileType, position);
-        await AfterModifyingCardPlayResultPileOrPosition(card, pileType, position , null);
+        await Mode.AfterModifyingCardPlayResultLocation(card, cardLocation);
+        await AfterModifyingCardPlayResultLocation(card, cardLocation, null);
 	}
 
 	public sealed override async Task AfterModifyingOrbPassiveTriggerCount(OrbModel orb)
@@ -917,11 +917,11 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
 		return playCount;
 	}
 
-	public sealed override (PileType, CardPilePosition) ModifyCardPlayResultPileTypeAndPosition(CardModel card, bool isAutoPlay, ResourceInfo resources, PileType pileType, CardPilePosition position)
+	public sealed override CardLocation ModifyCardPlayResultLocation(CardModel card, bool isAutoPlay, ResourceInfo resources, CardLocation cardLocation)
 	{
-        (pileType, position) = Mode.ModifyCardPlayResultPileTypeAndPosition(card, isAutoPlay, resources, pileType, position);
-        (pileType, position) = ModifyCardPlayResultPileTypeAndPosition(card, isAutoPlay, resources, pileType, position , null);
-		return (pileType, position);
+        cardLocation = Mode.ModifyCardPlayResultLocation(card, isAutoPlay, resources, cardLocation);
+        cardLocation = ModifyCardPlayResultLocation(card, isAutoPlay, resources, cardLocation, null);
+		return cardLocation;
 	}
 
 	public sealed override int ModifyOrbPassiveTriggerCounts(OrbModel orb, int triggerCount)
@@ -1624,7 +1624,11 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
 		return Task.CompletedTask;
 	}
 
-	public virtual Task AfterBlockBroken(Creature creature, object? _ = null)
+	public virtual Task AfterBlockBroken(
+		PlayerChoiceContext choiceContext,
+		Creature target,
+		Creature? breaker,
+		object? _ = null)
 	{
 		return Task.CompletedTask;
 	}
@@ -1809,7 +1813,7 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
 		return Task.CompletedTask;
 	}
 
-	public virtual Task AfterModifyingCardPlayResultPileOrPosition(CardModel card, PileType pileType, CardPilePosition position, object? _ = null)
+	public virtual Task AfterModifyingCardPlayResultLocation(CardModel card, CardLocation cardLocation, object? _ = null)
 	{
 		return Task.CompletedTask;
 	}
@@ -2066,9 +2070,14 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
 		return playCount;
 	}
 
-	public virtual (PileType, CardPilePosition) ModifyCardPlayResultPileTypeAndPosition(CardModel card, bool isAutoPlay, ResourceInfo resources, PileType pileType, CardPilePosition position, object? _ = null)
+	public virtual CardLocation ModifyCardPlayResultLocation(
+		CardModel card,
+		bool isAutoPlay,
+		ResourceInfo resources,
+		CardLocation cardLocation,
+		object? _ = null)
 	{
-		return (pileType, position);
+		return cardLocation;
 	}
 
 	public virtual int ModifyOrbPassiveTriggerCounts(OrbModel orb, int triggerCount, object? _ = null)

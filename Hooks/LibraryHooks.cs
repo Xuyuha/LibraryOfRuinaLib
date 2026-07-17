@@ -105,14 +105,19 @@ public static class LibraryHooks
             model.InvokeExecutionFinished();
         }
     }
-    public static async Task AfterBlockBroken(ICombatState combatState, Creature target,LibraryDamageType type) 
+    public static async Task AfterBlockBroken(
+        ICombatState combatState,
+        PlayerChoiceContext choiceContext,
+        Creature target,
+        Creature? breaker,
+        LibraryDamageType type)
     {
         foreach (AbstractModel model in combatState.IterateHookListeners())
         {
             string hookPhase = "AbstractModel.AfterBlockBroken";
             try
             {
-                await model.AfterBlockBroken(target);
+                await model.AfterBlockBroken(choiceContext, target, breaker);
                 if(model is ILibraryAbstractModel libraryAbstractModel)
                 {
                     hookPhase = "ILibraryAbstractModel.AfterBlockBroken";
