@@ -30,7 +30,7 @@ public sealed class LibraryEndurancePower : LibraryDurationPowerModel//忍耐，
             return Amount;
         return 0m;
     }
-    public override decimal ModifyDamageAdditive(Creature? target, decimal amount, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay)
+    public override decimal ModifyDamageAdditive(Creature? target, decimal amount, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay, LibraryDamageType type)
     {
         if(Owner != target)
             return 0m;

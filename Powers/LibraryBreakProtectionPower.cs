@@ -1,5 +1,6 @@
 using Library.Models;
 using MegaCrit.Sts2.Core.Combat;
+using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Powers;
 using MegaCrit.Sts2.Core.Models;
@@ -17,7 +18,7 @@ public sealed class LibraryBreakProtectionPower : LibraryDurationPowerModel//振
         return OppositeSideOf(owner);
     }
 
-    public override decimal ModifyChaoDamageAdditive(Creature? target, decimal amount, ValueProp props, Creature? dealer, CardModel? cardSource, LibraryDamageType type)
+    public override decimal ModifyChaoDamageAdditive(Creature? target, decimal amount, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay, LibraryDamageType type)
     {
         if(Owner != target)
             return 0m;

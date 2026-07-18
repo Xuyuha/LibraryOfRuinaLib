@@ -714,7 +714,7 @@ public static class LibraryHooks
             {
                 decimal num2 = item.ModifyDamageAdditive(target, num, props, dealer, cardSource, cardPlay);
                 if(item is ILibraryAbstractModel libraryAbstractModel)    
-                    num2 += libraryAbstractModel.ModifyDamageAdditive(target, num, props, dealer, cardSource,type);
+                    num2 += libraryAbstractModel.ModifyDamageAdditive(target, num, props, dealer, cardSource, cardPlay,type);
                 num += num2;
                 if (num2 != 0m)
                 {
@@ -728,7 +728,7 @@ public static class LibraryHooks
             {
                 decimal num3 = item2.ModifyDamageMultiplicative(target, num, props, dealer, cardSource, cardPlay);
                 if(item2 is ILibraryAbstractModel libraryAbstractModel)    
-                    num3 *= libraryAbstractModel.ModifyDamageMultiplicative(target, num, props, dealer, cardSource,type);
+                    num3 *= libraryAbstractModel.ModifyDamageMultiplicative(target, num, props, dealer, cardSource, cardPlay,type);
                 num *= num3;
                 if (num3 != 1m)
                 {
@@ -741,7 +741,7 @@ public static class LibraryHooks
         {
             decimal num5 = item3.ModifyDamageCap(target, props, dealer, cardSource, cardPlay);
             if(item3 is ILibraryAbstractModel libraryAbstractModel)    
-                num5 = Math.Min(num5, libraryAbstractModel.ModifyDamageCap(target, props, dealer, cardSource,type));
+                num5 = Math.Min(num5, libraryAbstractModel.ModifyDamageCap(target, props, dealer, cardSource, cardPlay,type));
             if (num5 < num4)
             {
                 num4 = num5;
@@ -813,7 +813,7 @@ public static class LibraryHooks
         modifiers = list;
         return num;
     }
-    public static decimal ModifyChaoDamage(IRunState runState, ICombatState combatState, Creature target, Creature? dealer, decimal chaoDamage, ValueProp props, CardModel? cardSource, ModifyChaoDamageHookType modifyChaoDamageHookType, CardPreviewMode previewMode, out IEnumerable<AbstractModel> modifiers,LibraryDamageType type)
+    public static decimal ModifyChaoDamage(IRunState runState, ICombatState combatState, Creature target, Creature? dealer, decimal chaoDamage, ValueProp props, CardModel? cardSource, CardPlay? cardPlay, ModifyChaoDamageHookType modifyChaoDamageHookType, CardPreviewMode previewMode, out IEnumerable<AbstractModel> modifiers,LibraryDamageType type)
     {
         if(target is not LibraryCreature libraryCreature)
         {
@@ -869,7 +869,7 @@ public static class LibraryHooks
             foreach (Creature item in combatState?.HittableEnemies ?? Array.Empty<Creature>())
             {
                 List<AbstractModel> modifiers3;
-                decimal num3 = ModifyChaoDamageInternal(runState, combatState, item, dealer, num, props, cardSource, modifyChaoDamageHookType, out modifiers3,type);
+                decimal num3 = ModifyChaoDamageInternal(runState, combatState, item, dealer, num, props, cardSource, cardPlay, modifyChaoDamageHookType, out modifiers3,type);
                 if (!num2.HasValue)
                 {
                     num2 = num3;
@@ -894,7 +894,7 @@ public static class LibraryHooks
         }
         if (!flag4 || !flag5)
         {
-            num = ModifyChaoDamageInternal(runState, combatState, target, dealer, num, props, cardSource, modifyChaoDamageHookType, out modifiers2,type);
+            num = ModifyChaoDamageInternal(runState, combatState, target, dealer, num, props, cardSource, cardPlay, modifyChaoDamageHookType, out modifiers2,type);
         }
         modifiers = modifiers2;
         return Math.Max(0m, num);
@@ -902,7 +902,7 @@ public static class LibraryHooks
         flag2 = flag3;
         goto IL_00bf;
     }    
-    private static decimal ModifyChaoDamageInternal(IRunState runState, ICombatState? combatState, Creature? target, Creature? dealer, decimal damage, ValueProp props, CardModel? cardSource, ModifyChaoDamageHookType modifyChaoDamageHookType, out List<AbstractModel> modifiers,LibraryDamageType type)
+    private static decimal ModifyChaoDamageInternal(IRunState runState, ICombatState? combatState, Creature? target, Creature? dealer, decimal damage, ValueProp props, CardModel? cardSource, CardPlay? cardPlay, ModifyChaoDamageHookType modifyChaoDamageHookType, out List<AbstractModel> modifiers,LibraryDamageType type)
     {
         decimal num = damage;
         List<AbstractModel> list = new List<AbstractModel>();
@@ -912,7 +912,7 @@ public static class LibraryHooks
             {
                 if(item is not ILibraryAbstractModel libraryAbstractModel)
                     continue;
-                decimal num2 = libraryAbstractModel.ModifyChaoDamageAdditive(target, num, props, dealer, cardSource,type);
+                decimal num2 = libraryAbstractModel.ModifyChaoDamageAdditive(target, num, props, dealer, cardSource, cardPlay,type);
                 num += num2;
                 if (num2 != 0m)
                 {
@@ -926,7 +926,7 @@ public static class LibraryHooks
             {
                 if(item2 is not ILibraryAbstractModel libraryAbstractModel)
                     continue;
-                decimal num3 = libraryAbstractModel.ModifyChaoDamageMultiplicative(target, num, props, dealer, cardSource,type);
+                decimal num3 = libraryAbstractModel.ModifyChaoDamageMultiplicative(target, num, props, dealer, cardSource, cardPlay,type);
                 num *= num3;
                 if (num3 != 1m)
                 {
@@ -939,7 +939,7 @@ public static class LibraryHooks
         {
             if(item3 is not ILibraryAbstractModel libraryAbstractModel)
                 continue;
-            decimal num5 = libraryAbstractModel.ModifyChaoDamageCap(target, props, dealer, cardSource,type);
+            decimal num5 = libraryAbstractModel.ModifyChaoDamageCap(target, props, dealer, cardSource, cardPlay,type);
             if (num5 < num4)
             {
                 num4 = num5;

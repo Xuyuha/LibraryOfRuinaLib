@@ -10,7 +10,7 @@ public sealed class LibraryStrongPower : LibraryDurationPowerModel//威力增强
 {
     public override PowerType Type => PowerType.Buff;
     public override PowerStackType StackType => PowerStackType.Counter;
-    public override decimal ModifyDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay){
+    public override decimal ModifyDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay, LibraryDamageType type){
 		if (base.Owner != dealer)
 		{
 			return 0m;
@@ -21,7 +21,7 @@ public sealed class LibraryStrongPower : LibraryDurationPowerModel//威力增强
 		}
 		return base.Amount;
 	}
-    public override decimal ModifyChaoDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, LibraryDamageType type)
+    public override decimal ModifyChaoDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay, LibraryDamageType type)
     {
 		if (base.Owner != dealer)
 		{
