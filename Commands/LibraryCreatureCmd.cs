@@ -173,8 +173,6 @@ public static class LibraryCreatureCmd
 			decimal remainingDamage = interception.RemainingDamage;
 			Creature creature = originalTarget.PetOwner?.Creature ?? originalTarget;
 			decimal blockedDamage = creature.DamageBlockInternal(remainingDamage, props);
-			decimal totalBlockedDamage =
-				blockedDamage + interception.InterceptedDamage;
 			decimal unblockedDamageBeforeResistance = Math.Max(remainingDamage - blockedDamage, 0m);
 			decimal unblockedDamageAfterResistance = LibraryDamageCalculate.CalculateHpLoss(unblockedDamageBeforeResistance, originalTarget as LibraryCreature, props, type);
 			decimal unblockedDamage = LibraryHooks.ModifyHpLostBeforeOsty(runState, combatState, originalTarget, unblockedDamageAfterResistance, props, dealer, cardSource, out modifiers,type);
@@ -192,7 +190,7 @@ public static class LibraryCreatureCmd
 					&& (int)unblockedDamage == 0);
 			if (originalTarget == unblockedDamageTarget)
 			{
-				unblockedDamageResult.BlockedDamage = (int)totalBlockedDamage;
+				unblockedDamageResult.BlockedDamage = (int)blockedDamage;
 				unblockedDamageResult.WasBlockBroken = wasBlockBroken;
 				unblockedDamageResult.WasFullyBlocked = wasFullyBlocked;
 			}
@@ -201,7 +199,7 @@ public static class LibraryCreatureCmd
 				decimal originalTargetDamage = LibraryHooks.ModifyHpLostAfterOsty(runState, combatState, originalTarget, unblockedDamageResult.OverkillDamage, props, dealer, cardSource, out modifiers,type);
 				await LibraryHooks.AfterModifyingHpLostAfterOsty(runState, combatState, modifiers,type);
 				DamageResult damageResult = ((!(originalTargetDamage > 0m)) ? new DamageResult(originalTarget, props) : originalTarget.LoseHpInternal(originalTargetDamage, props));
-				damageResult.BlockedDamage = (int)totalBlockedDamage;
+				damageResult.BlockedDamage = (int)blockedDamage;
 				damageResult.WasBlockBroken = wasBlockBroken;
 				damageResult.WasFullyBlocked = wasFullyBlocked;
 				damageResults.Add(damageResult);
@@ -222,7 +220,12 @@ public static class LibraryCreatureCmd
 				Node vfxContainer = receiver.GetVfxContainer();
 				if (damage > 0 || (modifiedAmount == 0m && item.Receiver == unblockedDamageTarget))
 				{
-					LibraryRuinaDamageNumberVfx? damageVfx = LibraryRuinaDamageNumberVfx.CreatePhysical(receiver, item, type);
+					Node2D? damageVfx = receiver is LibraryCreature
+						? LibraryRuinaDamageNumberVfx.CreatePhysical(
+							receiver,
+							item,
+							type)
+						: NDamageNumVfx.Create(receiver, item);
 					if (damageVfx != null)
 					{
 						if (vfxContainer != null)

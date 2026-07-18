@@ -1,4 +1,5 @@
 using Library.Models;
+using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Powers;
@@ -10,6 +11,13 @@ public sealed class LibraryStrongPower : LibraryDurationPowerModel//威力增强
 {
     public override PowerType Type => PowerType.Buff;
     public override PowerStackType StackType => PowerStackType.Counter;
+
+    // 玩家侧延到敌方回合结束衰减，反击攻击骰仍享受加成；敌人保持自身回合结束衰减。
+    protected override CombatSide GetDecaySide(Creature owner)
+    {
+        return owner.IsPlayer ? OppositeSideOf(owner) : owner.Side;
+    }
+
     public override decimal ModifyDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay){
 		if (base.Owner != dealer)
 		{

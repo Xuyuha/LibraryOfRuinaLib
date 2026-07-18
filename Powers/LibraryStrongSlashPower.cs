@@ -1,4 +1,5 @@
 using Library.Models;
+using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Powers;
 using MegaCrit.Sts2.Core.Models;
@@ -9,6 +10,12 @@ public sealed class LibraryStrongSlashPower : LibraryDurationPowerModel//穿刺�
 {
     public override PowerType Type => PowerType.Buff;
     public override PowerStackType StackType => PowerStackType.Counter;
+
+    protected override CombatSide GetDecaySide(Creature owner)
+    {
+        return owner.IsPlayer ? OppositeSideOf(owner) : owner.Side;
+    }
+
     public override decimal ModifyDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, LibraryDamageType type){
 		if (base.Owner != dealer)
 		{

@@ -15,9 +15,10 @@ public sealed class LibraryEndurancePower : LibraryDurationPowerModel//忍耐，
     public override PowerType Type => PowerType.Buff;
     public override PowerStackType StackType => PowerStackType.Counter;
 
+    // 玩家侧也按敌方回合结束衰减，保证反击阶段仍生效，并在下个玩家回合开始前消失。
     protected override CombatSide GetDecaySide(Creature owner)
     {
-        return owner.IsPlayer ? owner.Side : OppositeSideOf(owner);
+        return OppositeSideOf(owner);
     }
 
     public override decimal ModifyBlockAdditive(Creature target, decimal block, ValueProp props, CardModel? cardSource, CardPlay? cardPlay)

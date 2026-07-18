@@ -16,3 +16,4 @@ libs/sts2.dll
 *.sln
 *.pck
 build/
+.codex-tmp/

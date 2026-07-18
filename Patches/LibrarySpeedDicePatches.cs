@@ -192,12 +192,6 @@ internal static class LibrarySpeedDiceHotkeyPatch
             return true;
         }
 
-        if (LibrarySpeedDiceService.HasMissingRequiredTargetsLocal())
-        {
-            __instance.GetViewport()?.SetInputAsHandled();
-            return false;
-        }
-
         if (!LibrarySpeedDiceService.CanConsumeAdvanceInput())
             return true;
 

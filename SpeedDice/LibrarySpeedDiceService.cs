@@ -213,7 +213,6 @@ internal static class LibrarySpeedDiceService
             || state.IsLocked
             || state.IsResolving
             || state.IsSelectingTarget
-            || HasMissingRequiredTargets(state)
             || state.Player.PlayerCombatState!.Phase != PlayerTurnPhase.Play
             || CombatManager.Instance.PlayerActionsDisabled
             || CombatManager.Instance.IsOverOrEnding)
@@ -229,13 +228,6 @@ internal static class LibrarySpeedDiceService
         return TryGetLocalState(out LibrarySpeedDiceCombatState? state) && state != null
             ? AdvanceAsync(state)
             : Task.CompletedTask;
-    }
-
-    public static bool HasMissingRequiredTargetsLocal()
-    {
-        return TryGetLocalState(out LibrarySpeedDiceCombatState? state)
-            && state != null
-            && HasMissingRequiredTargets(state);
     }
 
     internal static bool CanInteractWithSlot(
@@ -662,6 +654,9 @@ internal static class LibrarySpeedDiceService
                 return;
             }
 
+            if (!await RepairInvalidTargetsBeforeResolutionAsync(state))
+                return;
+
             foreach (LibrarySpeedDiceSlot slot in state.Slots)
             {
                 slot.IsLocked = true;
@@ -729,9 +724,23 @@ internal static class LibrarySpeedDiceService
         try
         {
             Creature? target = slot.Target;
+            if (!card.IsValidSpeedDiceTarget(target))
+            {
+                target = GetRandomValidTarget(state, card);
+                slot.Target = target;
+                state.NotifyChanged();
+            }
+
             var clashContext = new LibraryClashContext(state.Player, slot, target);
             await LibraryClashResolver.Current.ResolveAsync(clashContext);
             target = clashContext.Target;
+            if (!clashContext.CancelCard
+                && !card.IsValidSpeedDiceTarget(target))
+            {
+                target = GetRandomValidTarget(state, card);
+                slot.Target = target;
+                state.NotifyChanged();
+            }
 
             card.CanPlay(out UnplayableReason reason, out _);
             reason &= ~(
@@ -1017,6 +1026,72 @@ internal static class LibrarySpeedDiceService
             slot.Card != null
             && slot.RequiresTarget
             && !slot.HasValidTarget);
+    }
+
+    private static async Task<bool> RepairInvalidTargetsBeforeResolutionAsync(
+        LibrarySpeedDiceCombatState state)
+    {
+        bool changed = false;
+        foreach (LibrarySpeedDiceSlot slot in state.Slots)
+        {
+            CardModel? card = slot.Card;
+            if (card == null || !slot.RequiresTarget || slot.HasValidTarget)
+                continue;
+
+            if (!slot.IsSpent && card.Pile?.Type == PileType.Play)
+            {
+                CardPileAddResult result = await CardPileCmd.Add(
+                    card,
+                    PileType.Hand);
+                if (result.success)
+                {
+                    slot.ClearCard();
+                    changed = true;
+                    continue;
+                }
+            }
+
+            Creature? target = GetRandomValidTarget(state, card);
+            if (target != null)
+            {
+                slot.Target = target;
+                changed = true;
+            }
+        }
+
+        if (changed)
+            state.NotifyChanged();
+        return !HasMissingRequiredTargets(state);
+    }
+
+    private static Creature? GetRandomValidTarget(
+        LibrarySpeedDiceCombatState state,
+        CardModel card)
+    {
+        var combatState = state.Player.Creature.CombatState;
+        if (combatState == null)
+            return null;
+
+        Creature owner = state.Player.Creature;
+        IEnumerable<Creature> candidates =
+            card.GetSpeedDiceTargetType() switch
+            {
+                TargetType.AnyEnemy => combatState
+                    .GetOpponentsOf(owner)
+                    .Where(candidate => candidate.IsHittable),
+                TargetType.AnyAlly => combatState.PlayerCreatures
+                    .Where(candidate =>
+                        candidate.IsHittable
+                        && !ReferenceEquals(candidate, owner)),
+                _ => [],
+            };
+        candidates = candidates.Where(candidate =>
+            card.IsValidSpeedDiceTarget(candidate)
+            && Hook.ShouldAllowTargeting(
+                combatState,
+                candidate,
+                out _));
+        return state.Player.RunState.Rng.CombatTargets.NextItem(candidates);
     }
 
     private static bool TryCalculateReservation(
