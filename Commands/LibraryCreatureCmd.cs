@@ -144,6 +144,12 @@ public static class LibraryCreatureCmd
 		bool ranBeforeApplyingDamage = false;
 		foreach (Creature originalTarget in targetList)
 		{
+			// 玩家受伤直接走原版伤害管线，不经过Library的拦截/抗性/混乱系统
+			if (originalTarget.IsPlayer)
+			{
+				await CreatureCmd.Damage(choiceContext, originalTarget, damageAmount, props, dealer, cardSource, cardPlay);
+				continue;
+			}
 			if (originalTarget.IsDead)
 			{
 				continue;

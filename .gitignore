@@ -17,3 +17,6 @@ libs/sts2.dll
 *.pck
 build/
 .codex-tmp/
+.claude*
+CLAUDE.md
+LibraryOfRuinaLib.sln.DotSettings.user

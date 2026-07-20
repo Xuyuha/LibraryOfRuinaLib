@@ -7,6 +7,6 @@ public readonly record struct LibrarySpeedDiceResourceCost(int Energy, int Stars
 public interface ILibrarySpeedDiceCard
 {
     LibrarySpeedDiceResourceCost SpeedDiceResourceCost { get; }
-
-    TargetType SpeedDiceTargetType { get; }
+    
+    TargetType SpeedDiceTargetType { get; } 
 }

@@ -17,12 +17,12 @@ using MegaCrit.Sts2.Core.Nodes.CommonUi;
 using MegaCrit.Sts2.Core.Nodes.Multiplayer;
 using MegaCrit.Sts2.Core.Random;
 using MegaCrit.Sts2.Core.Runs;
-
+using MegaCrit.Sts2.Core.Context;
 namespace Library.SpeedDice;
 
 internal static class LibrarySpeedDiceService
 {
-    private static readonly object Sync = new();
+    private static readonly Lock Sync = new();
     private static readonly List<LibrarySpeedDiceParticipant> Participants = [];
     private static readonly ConditionalWeakTable<Player, LibrarySpeedDiceCombatState> States = new();
     private static WeakReference<LibrarySpeedDiceCombatState>? _localState;
@@ -32,7 +32,7 @@ internal static class LibrarySpeedDiceService
     {
         ArgumentNullException.ThrowIfNull(participant);
         participant.Validate();
-
+        
         lock (Sync)
         {
             Participants.RemoveAll(x => x.Id == participant.Id);
@@ -48,7 +48,7 @@ internal static class LibrarySpeedDiceService
         if (!IsSingleplayerEnabled() || player.PlayerCombatState == null)
             return false;
 
-        LibrarySpeedDiceParticipant? participant = FindParticipant(player);
+        var participant = FindParticipant(player);
         if (participant == null)
             return false;
 
@@ -59,7 +59,7 @@ internal static class LibrarySpeedDiceService
             States.Add(player, state);
         }
 
-        if (MegaCrit.Sts2.Core.Context.LocalContext.IsMe(player))
+        if (LocalContext.IsMe(player))
             _localState = new WeakReference<LibrarySpeedDiceCombatState>(state);
 
         return true;
@@ -78,9 +78,8 @@ internal static class LibrarySpeedDiceService
         out LibrarySpeedDiceSlot? slot)
     {
         slot = null;
-        Player? owner = card.Owner;
-        if (owner == null
-            || !TryGetState(owner, out LibrarySpeedDiceCombatState? state)
+        var owner = card.Owner;
+        if (!TryGetState(owner, out var state)
             || state == null)
         {
             return false;
@@ -96,9 +95,9 @@ internal static class LibrarySpeedDiceService
         out LibrarySpeedDiceSlot? slot)
     {
         slot = null;
-        Player? owner = card.Owner;
+        var owner = card.Owner;
         if (owner == null
-            || !TryGetState(owner, out LibrarySpeedDiceCombatState? state)
+            || !TryGetState(owner, out var state)
             || state?.ResolvingSlot == null
             || !ReferenceEquals(state.ResolvingSlot.Card, card))
         {
@@ -113,7 +112,7 @@ internal static class LibrarySpeedDiceService
     {
         _explicitlySelectedCard = null;
         if (_localState != null
-            && _localState.TryGetTarget(out LibrarySpeedDiceCombatState? state))
+            && _localState.TryGetTarget(out var state))
         {
             States.Remove(state.Player);
         }
@@ -124,7 +123,7 @@ internal static class LibrarySpeedDiceService
     {
         if (side != CombatSide.Player
             || creature.Player == null
-            || !TryGetState(creature.Player, out LibrarySpeedDiceCombatState? state)
+            || !TryGetState(creature.Player, out var state)
             || state == null)
         {
             return;
@@ -138,7 +137,7 @@ internal static class LibrarySpeedDiceService
             && state.PreviousTurnTriggeredCards
             >= state.Participant.Emotion.BonusDrawRequiredTriggeredCards;
 
-        uint turnMixin = unchecked(
+        var turnMixin = unchecked(
             (uint)(state.Player.PlayerCombatState!.TurnNumber * 0x45D9F3B)
             ^ (uint)(state.Player.RunState.TotalFloor * 0x119DE1F3));
         state.GameplayRng = new Rng(
@@ -153,7 +152,7 @@ internal static class LibrarySpeedDiceService
     {
         if (!States.TryGetValue(
                 player,
-                out LibrarySpeedDiceCombatState? state))
+                out var state))
         {
             return;
         }
@@ -161,7 +160,7 @@ internal static class LibrarySpeedDiceService
         await state.Gate.WaitAsync();
         try
         {
-            List<LibrarySpeedDiceSlot> equippedSlots = state.Slots
+            var equippedSlots = state.Slots
                 .Where(slot => slot.Card != null)
                 .ToList();
             if (equippedSlots.Count == 0)
@@ -169,9 +168,9 @@ internal static class LibrarySpeedDiceService
 
             var cardsToRetain = new List<CardModel>();
             var cardsToDiscard = new List<CardModel>();
-            foreach (LibrarySpeedDiceSlot slot in equippedSlots)
+            foreach (var slot in equippedSlots)
             {
-                CardModel card = slot.Card!;
+                var card = slot.Card!;
                 if (card.Pile?.Type != PileType.Play)
                 {
                     slot.ClearCard();
@@ -208,7 +207,7 @@ internal static class LibrarySpeedDiceService
 
     public static bool CanConsumeAdvanceInput()
     {
-        if (!TryGetLocalState(out LibrarySpeedDiceCombatState? state)
+        if (!TryGetLocalState(out var state)
             || state == null
             || state.IsLocked
             || state.IsResolving
@@ -225,7 +224,7 @@ internal static class LibrarySpeedDiceService
 
     public static Task AdvanceLocalAsync()
     {
-        return TryGetLocalState(out LibrarySpeedDiceCombatState? state) && state != null
+        return TryGetLocalState(out var state) && state != null
             ? AdvanceAsync(state)
             : Task.CompletedTask;
     }
@@ -247,13 +246,13 @@ internal static class LibrarySpeedDiceService
             return false;
         }
 
-        LibrarySpeedDiceSlot slot = state.Slots[slotIndex];
+        var slot = state.Slots[slotIndex];
         if (slot.IsSpent)
             return false;
         if (slot.Card != null)
             return true;
 
-        CardModel? card = GetSelectedCard();
+        var card = GetSelectedCard();
         canAcceptSelectedCard =
             card != null
             && card.Owner == state.Player
@@ -274,7 +273,7 @@ internal static class LibrarySpeedDiceService
         return card.Owner != null
             && TryGetState(
                 card.Owner,
-                out LibrarySpeedDiceCombatState? state)
+                out var state)
             && state != null
             && CanEquipCard(state, card)
             && state.Slots.Any(slot =>
@@ -294,7 +293,7 @@ internal static class LibrarySpeedDiceService
         _explicitlySelectedCard = card;
         if (TryGetState(
                 card.Owner,
-                out LibrarySpeedDiceCombatState? state)
+                out var state)
             && state != null)
         {
             state.NotifyChanged();
@@ -312,7 +311,7 @@ internal static class LibrarySpeedDiceService
         if (card.Owner != null
             && TryGetState(
                 card.Owner,
-                out LibrarySpeedDiceCombatState? state)
+                out var state)
             && state != null)
         {
             state.NotifyChanged();
@@ -321,7 +320,7 @@ internal static class LibrarySpeedDiceService
 
     public static async Task ActivateSlotAsync(int slotIndex, Control targetingOrigin)
     {
-        if (!TryGetLocalState(out LibrarySpeedDiceCombatState? state) || state == null)
+        if (!TryGetLocalState(out var state) || state == null)
             return;
 
         if (_explicitlySelectedCard != null)
@@ -343,7 +342,7 @@ internal static class LibrarySpeedDiceService
         if (card.Owner == null
             || !TryGetState(
                 card.Owner,
-                out LibrarySpeedDiceCombatState? state)
+                out var state)
             || state == null)
         {
             return;
@@ -378,7 +377,7 @@ internal static class LibrarySpeedDiceService
                 return;
             }
 
-            LibrarySpeedDiceSlot slot = state.Slots[slotIndex];
+            var slot = state.Slots[slotIndex];
             if (slot.Card != null)
             {
                 if (!allowRetargetExisting)
@@ -390,7 +389,7 @@ internal static class LibrarySpeedDiceService
             }
             else
             {
-                CardModel? card = selectedCard;
+                var card = selectedCard;
                 if (card == null
                     || card.Owner != state.Player
                     || card.Pile?.Type != PileType.Hand
@@ -401,10 +400,10 @@ internal static class LibrarySpeedDiceService
                     return;
                 }
 
-                if (!TryCalculateReservation(state, card, out int energy, out int stars))
+                if (!TryCalculateReservation(state, card, out var energy, out var stars))
                     return;
 
-                NPlayerHand? hand = NPlayerHand.Instance;
+                var hand = NPlayerHand.Instance;
                 if (hand != null)
                 {
                     hand.CancelAllCardPlay();
@@ -412,7 +411,7 @@ internal static class LibrarySpeedDiceService
                         hand.Remove(card);
                 }
 
-                CardPileAddResult result = await CardPileCmd.Add(
+                var result = await CardPileCmd.Add(
                     card,
                     PileType.Play,
                     skipVisuals: true);
@@ -445,7 +444,7 @@ internal static class LibrarySpeedDiceService
 
     public static async Task UnequipCardAsync(int slotIndex)
     {
-        if (!TryGetLocalState(out LibrarySpeedDiceCombatState? state) || state == null)
+        if (!TryGetLocalState(out var state) || state == null)
             return;
 
         await state.Gate.WaitAsync();
@@ -461,12 +460,12 @@ internal static class LibrarySpeedDiceService
                 return;
             }
 
-            LibrarySpeedDiceSlot slot = state.Slots[slotIndex];
-            CardModel? card = slot.Card;
+            var slot = state.Slots[slotIndex];
+            var card = slot.Card;
             if (card == null)
                 return;
 
-            CardPileAddResult result = await CardPileCmd.Add(card, PileType.Hand);
+            var result = await CardPileCmd.Add(card, PileType.Hand);
             if (!result.success)
                 return;
 
@@ -483,26 +482,34 @@ internal static class LibrarySpeedDiceService
         }
     }
 
+    /// <summary>
+    /// 应用速度骰子资源预定的限制：如果其他速度骰子已经预定了部分能量/星光，
+    /// 则当前卡必须用剩余资源支付。能量不足时可用星光补足缺口（1:2比率），
+    /// 设置对应的UnplayableReason。
+    /// </summary>
     public static void ApplyReservedResourceRestriction(
         CardModel card,
         ref UnplayableReason reason,
         ref bool result)
     {
-        if (!TryGetState(card.Owner, out LibrarySpeedDiceCombatState? state)
+        if (!TryGetState(card.Owner, out var state)
             || state == null
             || state.ReservedEnergy <= 0 && state.ReservedStars <= 0)
         {
             return;
         }
 
-        PlayerCombatState? resources = card.Owner?.PlayerCombatState;
+        var resources = card.Owner?.PlayerCombatState;
         if (resources == null)
             return;
-        int energyAvailable = Math.Max(0, resources.Energy - state.ReservedEnergy);
-        int starsAvailable = Math.Max(0, resources.Stars - state.ReservedStars);
-        int energyCost = Math.Max(0, card.EnergyCost.GetWithModifiers(CostModifiers.All));
-        int starCost = Math.Max(0, card.GetStarCostWithModifiers());
+        // 可用资源 = 总资源 - 已被其他速度骰子预定的部分
+        var energyAvailable = Math.Max(0, resources.Energy - state.ReservedEnergy);
+        var starsAvailable = Math.Max(0, resources.Stars - state.ReservedStars);
+        var energyCost = Math.Max(0, card.EnergyCost.GetWithModifiers(CostModifiers.All));
+        var starCost = Math.Max(0, card.GetStarCostWithModifiers());
 
+        // 能量不足时，用星光补足缺口
+        // 兑换比率：1点能量缺口 = 2点星光额外消耗
         if (energyCost > energyAvailable
             && card.CombatState != null
             && Hook.ShouldPayExcessEnergyCostWithStars(card.CombatState, card.Owner))
@@ -520,7 +527,7 @@ internal static class LibrarySpeedDiceService
 
     public static int GetMaxEnergyBonus(Player player)
     {
-        return TryGetState(player, out LibrarySpeedDiceCombatState? state) && state != null
+        return TryGetState(player, out var state) && state != null
             ? state.Emotion.Level * state.Participant.Emotion.MaxEnergyPerLevel
             : 0;
     }
@@ -531,7 +538,7 @@ internal static class LibrarySpeedDiceService
         ref decimal count)
     {
         if (!fromHandDraw
-            || !TryGetState(player, out LibrarySpeedDiceCombatState? state)
+            || !TryGetState(player, out var state)
             || state == null
             || !state.BonusDrawPending)
         {
@@ -550,7 +557,7 @@ internal static class LibrarySpeedDiceService
     {
         if (dealer?.Player == null
             || target.Side == dealer.Side
-            || !TryGetState(dealer.Player, out LibrarySpeedDiceCombatState? state)
+            || !TryGetState(dealer.Player, out var state)
             || state == null)
         {
             return;
@@ -576,7 +583,7 @@ internal static class LibrarySpeedDiceService
 
         if (TryGetState(
                 target.Player,
-                out LibrarySpeedDiceCombatState? targetState)
+                out var targetState)
             && targetState != null
             && targetState.Participant.Emotion.GainEmotionFromDamage)
         {
@@ -599,13 +606,13 @@ internal static class LibrarySpeedDiceService
             return;
         }
 
-        foreach (Player ally in combatState.Players)
+        foreach (var ally in combatState.Players)
         {
             if (ally == creature.Player
                 || ally.Creature.IsDead
                 || !TryGetState(
                     ally,
-                    out LibrarySpeedDiceCombatState? allyState)
+                    out var allyState)
                 || allyState == null)
             {
                 continue;
@@ -633,8 +640,8 @@ internal static class LibrarySpeedDiceService
             NPlayerHand.Instance?.CancelAllCardPlay();
             if (!state.HasRolled)
             {
-                int emotionUnits = 0;
-                foreach (LibrarySpeedDiceSlot slot in state.Slots)
+                var emotionUnits = 0;
+                foreach (var slot in state.Slots)
                 {
                     slot.FinalValue = state.GameplayRng.NextInt(
                         state.Participant.MinSpeed,
@@ -657,7 +664,7 @@ internal static class LibrarySpeedDiceService
             if (!await RepairInvalidTargetsBeforeResolutionAsync(state))
                 return;
 
-            foreach (LibrarySpeedDiceSlot slot in state.Slots)
+            foreach (var slot in state.Slots)
             {
                 slot.IsLocked = true;
             }
@@ -669,20 +676,20 @@ internal static class LibrarySpeedDiceService
             IEnumerable<LibrarySpeedDiceSlot> orderedSlots = state.Slots
                 .OrderByDescending(x => x.FinalValue)
                 .ThenBy(x => x.Index);
-            foreach (LibrarySpeedDiceSlot slot in orderedSlots)
+            foreach (var slot in orderedSlots)
             {
-                CardModel? card = slot.Card;
+                var card = slot.Card;
                 if (card == null)
                     continue;
 
-                int reservedEnergy = slot.ReservedEnergy;
-                int reservedStars = slot.ReservedStars;
+                var reservedEnergy = slot.ReservedEnergy;
+                var reservedStars = slot.ReservedStars;
                 slot.ClearReservation();
                 state.ResolvingSlot = slot;
                 state.NotifyChanged();
                 try
                 {
-                    bool triggered = await ResolveCardAsync(
+                    var triggered = await ResolveCardAsync(
                         state,
                         slot,
                         card,
@@ -702,7 +709,7 @@ internal static class LibrarySpeedDiceService
         }
         catch (Exception exception)
         {
-            Log.Error("[LibraryOfRuinaLib] Speed-dice advance failed: " + exception);
+            Log.Error("[LibraryOfRuinaLib] Speed dice advance failed: " + exception);
         }
         finally
         {
@@ -723,7 +730,7 @@ internal static class LibrarySpeedDiceService
         var choiceContext = new BlockingPlayerChoiceContext();
         try
         {
-            Creature? target = slot.Target;
+            var target = slot.Target;
             if (!card.IsValidSpeedDiceTarget(target))
             {
                 target = GetRandomValidTarget(state, card);
@@ -742,7 +749,7 @@ internal static class LibrarySpeedDiceService
                 state.NotifyChanged();
             }
 
-            card.CanPlay(out UnplayableReason reason, out _);
+            card.CanPlay(out var reason, out _);
             reason &= ~(
                 UnplayableReason.EnergyCostTooHigh
                 | UnplayableReason.StarCostTooHigh);
@@ -775,7 +782,7 @@ internal static class LibrarySpeedDiceService
         catch (Exception exception)
         {
             Log.Error(
-                $"[LibraryOfRuinaLib] Speed-die card {card.Id.Entry} failed: {exception}");
+                $"[LibraryOfRuinaLib] Speed die card {card.Id.Entry} failed: {exception}");
             await DiscardFailedCardAsync(card);
             return false;
         }
@@ -792,13 +799,13 @@ internal static class LibrarySpeedDiceService
         if (energy > 0)
         {
             CombatManager.Instance.History.EnergySpent(
-                card.CombatState,
+                card.CombatState!,
                 energy,
                 card.Owner);
             card.Owner.PlayerCombatState!.LoseEnergy(energy);
         }
         await Hook.AfterEnergySpent(
-            card.CombatState,
+            card.CombatState!,
             card,
             energy);
 
@@ -807,7 +814,7 @@ internal static class LibrarySpeedDiceService
         {
             card.Owner.PlayerCombatState!.LoseStars(stars);
             await Hook.AfterStarsSpent(
-                card.Owner.Creature.CombatState,
+                card.Owner.Creature.CombatState!,
                 stars,
                 card.Owner);
         }
@@ -849,8 +856,8 @@ internal static class LibrarySpeedDiceService
         LibrarySpeedDiceTargetLine? targetLine = null;
         try
         {
-            NTargetManager targetManager = NTargetManager.Instance;
-            TargetMode targetMode =
+            var targetManager = NTargetManager.Instance;
+            var targetMode =
                 NControllerManager.Instance?.IsUsingController == true
                     ? TargetMode.Controller
                     : TargetMode.ClickMouseToTarget;
@@ -868,7 +875,7 @@ internal static class LibrarySpeedDiceService
                     || !ReferenceEquals(state.Slots[slotIndex].Card, card),
                 node =>
                 {
-                    Creature? target = GetCreatureFromTargetNode(node);
+                    var target = GetCreatureFromTargetNode(node);
                     return target != null && card.IsValidSpeedDiceTarget(target);
                 });
             targetLine = LibrarySpeedDiceTargetLine.Begin(
@@ -876,8 +883,8 @@ internal static class LibrarySpeedDiceService
                 targetingOrigin,
                 targetMode == TargetMode.Controller);
 
-            Node? selectedNode = await targetManager.SelectionFinished();
-            Creature? selectedTarget = GetCreatureFromTargetNode(selectedNode);
+            var selectedNode = await targetManager.SelectionFinished();
+            var selectedTarget = GetCreatureFromTargetNode(selectedNode);
             if (selectedTarget == null)
                 return;
 
@@ -888,7 +895,7 @@ internal static class LibrarySpeedDiceService
                     && state.HasRolled
                     && !state.IsLocked
                     && !state.IsResolving
-                    && slotIndex >= 0
+                    
                     && slotIndex < state.Slots.Count
                     && ReferenceEquals(state.Slots[slotIndex].Card, card)
                     && card.IsValidSpeedDiceTarget(selectedTarget))
@@ -956,11 +963,11 @@ internal static class LibrarySpeedDiceService
         if (cards.Count == 0)
             return;
 
-        IReadOnlyList<CardPileAddResult> results = await CardPileCmd.Add(
+        var results = await CardPileCmd.Add(
             cards,
             destination,
             skipVisuals: destination != PileType.Hand);
-        foreach (CardPileAddResult result in results)
+        foreach (var result in results)
         {
             if (!result.success)
             {
@@ -970,7 +977,7 @@ internal static class LibrarySpeedDiceService
                 continue;
             }
 
-            LibrarySpeedDiceSlot? slot = equippedSlots.FirstOrDefault(
+            var slot = equippedSlots.FirstOrDefault(
                 candidate => ReferenceEquals(
                     candidate.Card,
                     result.cardAdded));
@@ -1031,16 +1038,16 @@ internal static class LibrarySpeedDiceService
     private static async Task<bool> RepairInvalidTargetsBeforeResolutionAsync(
         LibrarySpeedDiceCombatState state)
     {
-        bool changed = false;
-        foreach (LibrarySpeedDiceSlot slot in state.Slots)
+        var changed = false;
+        foreach (var slot in state.Slots)
         {
-            CardModel? card = slot.Card;
+            var card = slot.Card;
             if (card == null || !slot.RequiresTarget || slot.HasValidTarget)
                 continue;
 
             if (!slot.IsSpent && card.Pile?.Type == PileType.Play)
             {
-                CardPileAddResult result = await CardPileCmd.Add(
+                var result = await CardPileCmd.Add(
                     card,
                     PileType.Hand);
                 if (result.success)
@@ -1051,7 +1058,7 @@ internal static class LibrarySpeedDiceService
                 }
             }
 
-            Creature? target = GetRandomValidTarget(state, card);
+            var target = GetRandomValidTarget(state, card);
             if (target != null)
             {
                 slot.Target = target;
@@ -1072,8 +1079,8 @@ internal static class LibrarySpeedDiceService
         if (combatState == null)
             return null;
 
-        Creature owner = state.Player.Creature;
-        IEnumerable<Creature> candidates =
+        var owner = state.Player.Creature;
+        var candidates =
             card.GetSpeedDiceTargetType() switch
             {
                 TargetType.AnyEnemy => combatState
@@ -1094,13 +1101,24 @@ internal static class LibrarySpeedDiceService
         return state.Player.RunState.Rng.CombatTargets.NextItem(candidates);
     }
 
+    /// <summary>
+    /// 计算一张卡在速度骰子系统中所需的能量和光芒，并返回当前资源是否足够
+    /// </summary>
+    /// <param name="state">当前速度骰子战斗状态</param>
+    /// <param name="card">要计算的卡牌</param>
+    /// <param name="energy">输出：实际需要的能量（可能被光芒补足后降低）</param>
+    /// <param name="stars">输出：实际需要的光芒（可能因补足能量而增加）</param>
+    /// <returns>当前可用资源是否足够</returns>
     private static bool TryCalculateReservation(
         LibrarySpeedDiceCombatState state,
         CardModel card,
         out int energy,
         out int stars)
     {
-        bool hasCustomCost = card is ILibrarySpeedDiceCard;
+        // ReSharper disable once SuspiciousTypeConversion.Global
+        var hasCustomCost = card is ILibrarySpeedDiceCard;
+        // ReSharper disable once SuspiciousTypeConversion.Global
+        // 获取卡的费用：如果实现了ILibrarySpeedDiceCard则用自定义速度骰子费用，否则用标准修饰符计算
         if (card is ILibrarySpeedDiceCard speedDiceCard)
         {
             energy = Math.Max(0, speedDiceCard.SpeedDiceResourceCost.Energy);
@@ -1112,13 +1130,16 @@ internal static class LibrarySpeedDiceService
             stars = Math.Max(0, card.GetStarCostWithModifiers());
         }
 
-        int energyAvailable = Math.Max(
+        // 当前可用资源 = 总资源 - 已被其他速度骰子预定的部分
+        var energyAvailable = Math.Max(
             0,
             state.Player.PlayerCombatState!.Energy - state.ReservedEnergy);
-        int starsAvailable = Math.Max(
+        var starsAvailable = Math.Max(
             0,
             state.Player.PlayerCombatState!.Stars - state.ReservedStars);
 
+        // 能量不足时，用星光补足缺口（仅非自定义费用卡，且钩子允许时）
+        // 兑换比率：1点能量缺口 = 2点额外消耗
         if (!hasCustomCost
             && energy > energyAvailable
             && card.CombatState != null
@@ -1139,16 +1160,16 @@ internal static class LibrarySpeedDiceService
         if (damage <= 0)
             return;
 
-        int threshold = Math.Max(
+        var threshold = Math.Max(
             1,
             (int)Math.Ceiling(
                 state.Player.Creature.MaxHp
                 * state.Participant.Emotion.DamageUnitFractionOfMaxHp));
-        int total = damage + (isDamageGiven
+        var total = damage + (isDamageGiven
             ? state.DamageGivenAccumulator
             : state.DamageReceivedAccumulator);
-        int units = total / threshold;
-        int remainder = total % threshold;
+        var units = total / threshold;
+        var remainder = total % threshold;
         if (isDamageGiven)
             state.DamageGivenAccumulator = remainder;
         else
@@ -1170,8 +1191,8 @@ internal static class LibrarySpeedDiceService
 
     private static int GetDiceCount(LibrarySpeedDiceCombatState state)
     {
-        int extra = state.Emotion.Level
-            >= state.Participant.Emotion.ExtraSpeedDieLevel
+        var extra = state.Emotion.Level
+                    >= state.Participant.Emotion.ExtraSpeedDieLevel
             ? state.Participant.Emotion.ExtraSpeedDice
             : 0;
         return Math.Max(0, state.Participant.BaseSpeedDiceCount + extra);
@@ -1197,7 +1218,7 @@ internal static class LibrarySpeedDiceService
         }
     }
 
-    private static bool IsSingleplayerEnabled()
+    private static bool IsSingleplayerEnabled() //暂时屏蔽了多人模式
     {
         try
         {

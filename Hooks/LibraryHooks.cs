@@ -44,7 +44,7 @@ public static class LibraryHooks
             CardPlay? cardPlay,
             LibraryDamageType type)
     {
-        decimal originalDamage = Math.Max(0m, amount);
+        var originalDamage = Math.Max(0m, amount);
         if (originalDamage <= 0m
             || LibraryIncomingDamageInterception.IsSuppressed)
         {
@@ -52,22 +52,23 @@ public static class LibraryHooks
                 originalDamage);
         }
 
-        decimal remainingDamage = originalDamage;
-        decimal interceptedDamage = 0m;
-        foreach (AbstractModel model in
+        var remainingDamage = originalDamage;
+        var interceptedDamage = 0m;
+        foreach (var model in
                  runState.IterateHookListeners(combatState))
         {
+            // ReSharper disable once SuspiciousTypeConversion.Global
             if (model is not ILibraryIncomingDamageInterceptor interceptor)
             {
                 continue;
             }
 
-            bool pushedModel = false;
+            var pushedModel = false;
             try
             {
                 choiceContext.PushModel(model);
                 pushedModel = true;
-                LibraryIncomingDamageResolution candidate =
+                var candidate =
                     await interceptor.InterceptIncomingDamageAsync(
                         new LibraryIncomingDamageContext(
                             choiceContext,
@@ -79,7 +80,7 @@ public static class LibraryHooks
                             cardSource,
                             cardPlay,
                             type));
-                decimal normalizedRemaining = Math.Clamp(
+                var normalizedRemaining = Math.Clamp(
                     candidate.RemainingDamage,
                     0m,
                     remainingDamage);
@@ -110,7 +111,7 @@ public static class LibraryHooks
 
     public static async Task BeforeSetPhysicalResistance(ICombatState combatState,PlayerChoiceContext choiceContext,LibraryCreature target, Creature? dealer,LibraryDamageType type,LibraryResistanceLevel resistanceValue)
     {
-        foreach (AbstractModel model in combatState.IterateHookListeners())
+        foreach (var model in combatState.IterateHookListeners())
         {
             if(model is ILibraryAbstractModel libraryAbstractModel)
             {
@@ -121,7 +122,7 @@ public static class LibraryHooks
     }
     public static bool TrySetPhysicalResistance(ICombatState combatState, PlayerChoiceContext choiceContext,LibraryCreature target, Creature? dealer,LibraryDamageType type,LibraryResistanceLevel resistanceValue)
     {
-        foreach (AbstractModel model in combatState.IterateHookListeners())
+        foreach (var model in combatState.IterateHookListeners())
         {
             if (model is ILibraryAbstractModel libraryModel)
             {
@@ -135,7 +136,7 @@ public static class LibraryHooks
     }
     public static async Task AfterSetPhysicalResistance(ICombatState combatState,PlayerChoiceContext choiceContext,LibraryCreature target, Creature? dealer,LibraryDamageType type)
     {
-        foreach (AbstractModel model in combatState.IterateHookListeners())
+        foreach (var model in combatState.IterateHookListeners())
         {
             if(model is ILibraryAbstractModel libraryAbstractModel)
             {
@@ -146,7 +147,7 @@ public static class LibraryHooks
     }
     public static async Task BeforeSetChaoResistance(ICombatState combatState,PlayerChoiceContext choiceContext,LibraryCreature target, Creature? dealer,LibraryDamageType type,LibraryResistanceLevel resistanceValue)
     {
-        foreach (AbstractModel model in combatState.IterateHookListeners())
+        foreach (var model in combatState.IterateHookListeners())
         {
             if(model is ILibraryAbstractModel libraryAbstractModel)
             {
@@ -157,7 +158,7 @@ public static class LibraryHooks
     }
     public static bool TrySetChaoResistance(ICombatState combatState, PlayerChoiceContext choiceContext,LibraryCreature target, Creature? dealer,LibraryDamageType type,LibraryResistanceLevel resistanceValue)
     {
-        foreach (AbstractModel model in combatState.IterateHookListeners())
+        foreach (var model in combatState.IterateHookListeners())
         {
             if (model is ILibraryAbstractModel libraryModel)
             {
@@ -171,7 +172,7 @@ public static class LibraryHooks
     }
     public static async Task AfterSetChaoResistance(ICombatState combatState,PlayerChoiceContext choiceContext,LibraryCreature target, Creature? dealer,LibraryDamageType type)
     {
-        foreach (AbstractModel model in combatState.IterateHookListeners())
+        foreach (var model in combatState.IterateHookListeners())
         {
             if(model is ILibraryAbstractModel libraryAbstractModel)
             {
@@ -184,7 +185,7 @@ public static class LibraryHooks
 
     public static async Task AfterAttack(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryAttackCommand command) 
     {
-        foreach (AbstractModel model in combatState.IterateHookListeners())
+        foreach (var model in combatState.IterateHookListeners())
         {
             await model.AfterAttack(choiceContext, command.ToAttackCommand);
             if(model is ILibraryAbstractModel libraryAbstractModel)
@@ -201,9 +202,9 @@ public static class LibraryHooks
         Creature? breaker,
         LibraryDamageType type)
     {
-        foreach (AbstractModel model in combatState.IterateHookListeners())
+        foreach (var model in combatState.IterateHookListeners())
         {
-            string hookPhase = "AbstractModel.AfterBlockBroken";
+            var hookPhase = "AbstractModel.AfterBlockBroken";
             try
             {
                 await model.AfterBlockBroken(choiceContext, target, breaker);
@@ -223,7 +224,7 @@ public static class LibraryHooks
     }
     public static async Task AfterChaoDamageGiven(PlayerChoiceContext choiceContext, ICombatState combatState, Creature dealer, LibraryChaoResult results, ValueProp props, Creature target, CardModel cardSource, LibraryDamageType type)
     {
-        foreach (AbstractModel model in combatState.IterateHookListeners())
+        foreach (var model in combatState.IterateHookListeners())
         {
             if(model is ILibraryAbstractModel libraryAbstractModel)
             {
@@ -236,7 +237,7 @@ public static class LibraryHooks
     }
     public static async Task AfterChaoDamageReceived(PlayerChoiceContext choiceContext, IRunState runState, ICombatState combatState, Creature target, LibraryChaoResult result, ValueProp props, Creature dealer, CardModel cardSource, LibraryDamageType type) 
     {
-        foreach (AbstractModel model in runState.IterateHookListeners(combatState))
+        foreach (var model in runState.IterateHookListeners(combatState))
         {
             if(model is ILibraryAbstractModel libraryAbstractModel)
             {
@@ -246,7 +247,7 @@ public static class LibraryHooks
                 model.InvokeExecutionFinished();
             }
         }
-        foreach (AbstractModel model in runState.IterateHookListeners(combatState))
+        foreach (var model in runState.IterateHookListeners(combatState))
         {
             if(model is ILibraryAbstractModel libraryAbstractModel)
             {
@@ -259,7 +260,7 @@ public static class LibraryHooks
     }
     public static async Task AfterCurrentChaoValueChanged(IRunState runState, ICombatState combatState, Creature target, decimal amount, LibraryDamageType type)
     {
-        foreach (AbstractModel model in runState.IterateHookListeners(combatState))
+        foreach (var model in runState.IterateHookListeners(combatState))
         {
             if(model is ILibraryAbstractModel libraryAbstractModel)
             {
@@ -270,7 +271,7 @@ public static class LibraryHooks
     }
     public static async Task AfterCurrentHpChanged(IRunState runState, ICombatState combatState, Creature creature, decimal delta,LibraryDamageType type)
     {
-        foreach (AbstractModel model in runState.IterateHookListeners(combatState))
+        foreach (var model in runState.IterateHookListeners(combatState))
         {
             await model.AfterCurrentHpChanged(creature, delta);
             if(model is ILibraryAbstractModel libraryAbstractModel)
@@ -283,7 +284,7 @@ public static class LibraryHooks
     public static async Task AfterDamageGiven(PlayerChoiceContext choiceContext, ICombatState combatState, Creature? dealer, DamageResult results, ValueProp props, Creature target, CardModel? cardSource,LibraryDamageType type)
     {
         LibrarySpeedDiceService.RecordDamageGiven(dealer, results, target);
-        foreach (AbstractModel model in combatState.IterateHookListeners())
+        foreach (var model in combatState.IterateHookListeners())
         {
             choiceContext.PushModel(model);
             await model.AfterDamageGiven(choiceContext, dealer, results, props, target, cardSource);
@@ -298,7 +299,7 @@ public static class LibraryHooks
     public static async Task AfterDamageReceived(PlayerChoiceContext choiceContext, IRunState runState, ICombatState combatState, Creature target, DamageResult result, ValueProp props, Creature? dealer, CardModel? cardSource,LibraryDamageType type) 
     {
         LibrarySpeedDiceService.RecordDamageReceived(target, result);
-        foreach (AbstractModel model in runState.IterateHookListeners(combatState))
+        foreach (var model in runState.IterateHookListeners(combatState))
         {
             choiceContext.PushModel(model);
             await model.AfterDamageReceived(choiceContext, target, result, props, dealer, cardSource);
@@ -309,7 +310,7 @@ public static class LibraryHooks
             choiceContext.PopModel(model);
             model.InvokeExecutionFinished();
         }
-        foreach (AbstractModel model in runState.IterateHookListeners(combatState))
+        foreach (var model in runState.IterateHookListeners(combatState))
         {
             choiceContext.PushModel(model);
             await model.AfterDamageReceivedLate(choiceContext, target, result, props, dealer, cardSource);
@@ -322,7 +323,7 @@ public static class LibraryHooks
         }
     }
     public static async Task BeforeDiceEffect(ICombatState combatState, PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, CardModel cardSource,LibraryDice dice){
-        foreach (AbstractModel model in combatState.IterateHookListeners())
+        foreach (var model in combatState.IterateHookListeners())
         {
             if (model is ILibraryAbstractModel libraryModel)
             {
@@ -332,7 +333,7 @@ public static class LibraryHooks
         }
     }
     public static async Task AfterDiceEffect(ICombatState combatState, PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, CardModel cardSource,LibraryDice dice){
-        foreach (AbstractModel model in combatState.IterateHookListeners())
+        foreach (var model in combatState.IterateHookListeners())
         {
             if (model is ILibraryAbstractModel libraryModel)
             {
@@ -343,7 +344,7 @@ public static class LibraryHooks
     }
     public static async Task AfterPowerEffect(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource)
     {
-        foreach (AbstractModel model in combatState.IterateHookListeners())
+        foreach (var model in combatState.IterateHookListeners())
         {
             if (model is ILibraryAbstractModel libraryModel)
             {
@@ -354,7 +355,7 @@ public static class LibraryHooks
     }
     public static async Task AfterModifyingDamageAmount(IRunState runState, ICombatState combatState, CardModel? cardSource, IEnumerable<AbstractModel> modifiers,LibraryDamageType type)
     {
-        foreach (AbstractModel modifier in runState.IterateHookListeners(combatState))
+        foreach (var modifier in runState.IterateHookListeners(combatState))
         {   
             if (modifiers.Contains(modifier))
             {
@@ -370,7 +371,7 @@ public static class LibraryHooks
 
     public static async Task AfterModifyingHpLostAfterOsty(IRunState runState, ICombatState combatState, IEnumerable<AbstractModel> modifiers,LibraryDamageType type)
     {
-        foreach (AbstractModel modifier in runState.IterateHookListeners(combatState))
+        foreach (var modifier in runState.IterateHookListeners(combatState))
         {
             if (modifiers.Contains(modifier))
             {
@@ -385,7 +386,7 @@ public static class LibraryHooks
     }
     public static async Task AfterModifyingHpLostBeforeOsty(IRunState runState, ICombatState combatState, IEnumerable<AbstractModel> modifiers,LibraryDamageType type)
     {
-        foreach (AbstractModel modifier in runState.IterateHookListeners(combatState))
+        foreach (var modifier in runState.IterateHookListeners(combatState))
         {
             if (modifiers.Contains(modifier))
             {
@@ -400,7 +401,7 @@ public static class LibraryHooks
     }
     public static async Task AfterModifyingChaoAmount(IRunState runState, ICombatState combatState, CardModel? cardSource, IEnumerable<AbstractModel> modifiers,LibraryDamageType type)
     {
-        foreach (AbstractModel modifier in runState.IterateHookListeners(combatState))
+        foreach (var modifier in runState.IterateHookListeners(combatState))
         {   
             if (modifiers.Contains(modifier))
             {
@@ -414,7 +415,7 @@ public static class LibraryHooks
     }
     public static async Task AfterPowerReduce(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource)
     {
-        foreach (AbstractModel model in combatState.IterateHookListeners())
+        foreach (var model in combatState.IterateHookListeners())
         {
             if (model is ILibraryAbstractModel libraryModel)    
             {
@@ -425,7 +426,7 @@ public static class LibraryHooks
     }
     public static async Task AfterSetPowerMode(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource, LibraryPowerMode mode)
     {
-        foreach (AbstractModel model in combatState.IterateHookListeners())
+        foreach (var model in combatState.IterateHookListeners())
         {
             if (model is ILibraryAbstractModel libraryModel)    
             {
@@ -441,7 +442,7 @@ public static class LibraryHooks
             return;
         }
 
-        foreach (AbstractModel model in combatState.IterateHookListeners())
+        foreach (var model in combatState.IterateHookListeners())
         {
             if(model is ILibraryAbstractModel libraryModel)    
             {
@@ -457,7 +458,7 @@ public static class LibraryHooks
             return;
         }
 
-        foreach (AbstractModel model in combatState.IterateHookListeners())
+        foreach (var model in combatState.IterateHookListeners())
         {
             if (model is ILibraryAbstractModel libraryModel)    
             {
@@ -468,7 +469,7 @@ public static class LibraryHooks
     }
     public static async Task BeforeAttack(ICombatState combatState, LibraryAttackCommand command)
     {
-        foreach (AbstractModel model in combatState.IterateHookListeners())
+        foreach (var model in combatState.IterateHookListeners())
         {
             await model.BeforeAttack(command.ToAttackCommand);
             if (model is ILibraryAbstractModel libraryModel)    
@@ -480,10 +481,10 @@ public static class LibraryHooks
     }
     public static async Task BeforeDamageReceived(PlayerChoiceContext choiceContext, IRunState runState, ICombatState combatState, Creature target, decimal amount, ValueProp props, Creature? dealer, CardModel? cardSource,LibraryDamageType type)
     {
-        foreach (AbstractModel model in runState.IterateHookListeners(combatState))
+        foreach (var model in runState.IterateHookListeners(combatState))
         {
-            bool pushedModel = false;
-            string hookPhase = "AbstractModel.BeforeDamageReceived";
+            var pushedModel = false;
+            var hookPhase = "AbstractModel.BeforeDamageReceived";
             try
             {
                 choiceContext.PushModel(model);
@@ -591,7 +592,7 @@ public static class LibraryHooks
     }
     public static async Task BeforeDiceRoll(ICombatState combatState,PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, LibraryDice dice)
     {
-        foreach (AbstractModel model in combatState.IterateHookListeners())
+        foreach (var model in combatState.IterateHookListeners())
         {
             if (model is ILibraryAbstractModel libraryModel)    
             {
@@ -602,7 +603,7 @@ public static class LibraryHooks
     }
     public static async Task AfterDiceRoll(ICombatState combatState,PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, LibraryDice dice)
     {
-        foreach (AbstractModel model in combatState.IterateHookListeners())
+        foreach (var model in combatState.IterateHookListeners())
         {
             if (model is ILibraryAbstractModel libraryModel)    
             {
@@ -613,7 +614,7 @@ public static class LibraryHooks
     }
     public static async Task BeforePowerEffect(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource)
     {
-        foreach (AbstractModel model in combatState.IterateHookListeners())
+        foreach (var model in combatState.IterateHookListeners())
         {
             if (model is ILibraryAbstractModel libraryModel)    
             {
@@ -624,7 +625,7 @@ public static class LibraryHooks
     }
     public static async Task BeforePowerReduce(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource)
     {
-        foreach (AbstractModel model in combatState.IterateHookListeners())
+        foreach (var model in combatState.IterateHookListeners())
         {
             if (model is ILibraryAbstractModel libraryModel)    
             {
@@ -635,7 +636,7 @@ public static class LibraryHooks
     }
     public static async Task BeforeSetPowerMode(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource, LibraryPowerMode mode)
     {
-        foreach (AbstractModel model in combatState.IterateHookListeners())
+        foreach (var model in combatState.IterateHookListeners())
         {
             if (model is ILibraryAbstractModel libraryModel)    
             {
@@ -646,7 +647,7 @@ public static class LibraryHooks
     }
     public static async Task BeforeChaoDamageReceived(PlayerChoiceContext choiceContext, IRunState runState, ICombatState combatState, Creature target, decimal amount, ValueProp props, Creature? dealer, CardModel? cardSource,LibraryDamageType type)
     {
-        foreach (AbstractModel model in runState.IterateHookListeners(combatState))
+        foreach (var model in runState.IterateHookListeners(combatState))
         {
             if (model is ILibraryAbstractModel libraryModel)    
             {
@@ -659,8 +660,8 @@ public static class LibraryHooks
     }    
     public static decimal ModifyAttackHitCount(ICombatState combatState, LibraryAttackCommand attackCommand, int originalHitCount)
     {
-        int num = originalHitCount;
-        foreach (AbstractModel item in combatState.IterateHookListeners())
+        var num = originalHitCount;
+        foreach (var item in combatState.IterateHookListeners())
         {
             num = item.ModifyAttackHitCount(attackCommand.ToAttackCommand, num);
             if(item is ILibraryAbstractModel libraryAbstractModel)    
@@ -670,12 +671,12 @@ public static class LibraryHooks
     }
     public static decimal ModifyEffectiveAmount( ICombatState combatState, LibraryBasePowerModel power, Creature? dealer, decimal amount, CardModel? cardSource, out IEnumerable<AbstractModel> modifiers)
     {
-        decimal num = amount;
+        var num = amount;
         List<AbstractModel> list = new();
-        foreach (AbstractModel item in combatState.IterateHookListeners())
+        foreach (var item in combatState.IterateHookListeners())
         {
             if(item is ILibraryAbstractModel lm){
-                decimal num2 = lm.ModifyEffectiveAmountAdditive(power, num, dealer,cardSource);
+                var num2 = lm.ModifyEffectiveAmountAdditive(power, num, dealer,cardSource);
                 num += num2;
                 if (num2 != 0m)
                 {
@@ -683,10 +684,10 @@ public static class LibraryHooks
                 }
             }
         }
-        foreach (AbstractModel item in combatState.IterateHookListeners())
+        foreach (var item in combatState.IterateHookListeners())
         {
             if(item is ILibraryAbstractModel lm){
-                decimal num3 = lm.ModifyEffectiveAmountMultiplicative(power, num, dealer,cardSource);
+                var num3 = lm.ModifyEffectiveAmountMultiplicative(power, num, dealer,cardSource);
                 num *= num3;
                 if (num3 != 1m)
                 {
@@ -699,7 +700,7 @@ public static class LibraryHooks
     }
     public static async Task AfterModifyingEffectiveAmount(ICombatState combatState, LibraryBasePowerModel power, CardModel? cardSource, IEnumerable<AbstractModel> modifiers)
     {
-        foreach (AbstractModel modifier in combatState.IterateHookListeners())
+        foreach (var modifier in combatState.IterateHookListeners())
         {   
             if (modifiers.Contains(modifier))
             {
@@ -713,8 +714,8 @@ public static class LibraryHooks
     }
     public static decimal ModifyDamage(IRunState runState, ICombatState combatState, Creature? target, Creature? dealer, decimal damage, ValueProp props, CardModel? cardSource, CardPlay? cardPlay, ModifyDamageHookType modifyDamageHookType, CardPreviewMode previewMode, out IEnumerable<AbstractModel> modifiers,LibraryDamageType type)
     {
-        List<AbstractModel> modifiers2 = new List<AbstractModel>();
-        decimal num = damage;
+        var modifiers2 = new List<AbstractModel>();
+        var num = damage;
         if (cardSource != null && cardSource.Enchantment != null)
         {
             if (modifyDamageHookType.HasFlag(ModifyDamageHookType.Additive))
@@ -726,20 +727,20 @@ public static class LibraryHooks
                 num *= cardSource.Enchantment.EnchantDamageMultiplicative(num, props);
             }
         }
-        bool flag = target == null && previewMode == CardPreviewMode.MultiCreatureTargeting;
-        bool flag2 = flag;
+        var flag = target == null && previewMode == CardPreviewMode.MultiCreatureTargeting;
+        var flag2 = flag;
         bool flag3;
         if (flag2)
         {
             if (cardSource != null)
             {
-                TargetType targetType = cardSource.TargetType;
+                var targetType = cardSource.TargetType;
                 if ((uint)(targetType - 3) <= 1u)
                 {
-                    CardPile pile = cardSource.Pile;
+                    var pile = cardSource.Pile;
                     if (pile != null)
                     {
-                        PileType pileType = pile.Type;
+                        var pileType = pile.Type;
                         if (pileType == PileType.Hand || pileType == PileType.Play)
                         {
                             flag3 = true;
@@ -753,16 +754,16 @@ public static class LibraryHooks
         }
         goto IL_00bf;
         IL_00bf:
-        bool flag4 = flag2;
-        bool flag5 = false;
+        var flag4 = flag2;
+        var flag5 = false;
         if (flag4)
         {
-            bool flag6 = true;
+            var flag6 = true;
             decimal? num2 = null;
-            foreach (Creature item in combatState?.HittableEnemies ?? Array.Empty<Creature>())
+            foreach (var item in combatState?.HittableEnemies ?? Array.Empty<Creature>())
             {
                 List<AbstractModel> modifiers3;
-                decimal num3 = ModifyDamageInternal(runState, combatState, item, dealer, num, props, cardSource, cardPlay, modifyDamageHookType, out modifiers3,type);
+                var num3 = ModifyDamageInternal(runState, combatState, item, dealer, num, props, cardSource, cardPlay, modifyDamageHookType, out modifiers3,type);
                 if (!num2.HasValue)
                 {
                     num2 = num3;
@@ -797,13 +798,13 @@ public static class LibraryHooks
     }
     private static decimal ModifyDamageInternal(IRunState runState, ICombatState? combatState, Creature? target, Creature? dealer, decimal damage, ValueProp props, CardModel? cardSource, CardPlay? cardPlay, ModifyDamageHookType modifyDamageHookType, out List<AbstractModel> modifiers,LibraryDamageType type)
     {
-        decimal num = damage;
-        List<AbstractModel> list = new List<AbstractModel>();
+        var num = damage;
+        var list = new List<AbstractModel>();
         if (modifyDamageHookType.HasFlag(ModifyDamageHookType.Additive))
         {
-            foreach (AbstractModel item in runState.IterateHookListeners(combatState))
+            foreach (var item in runState.IterateHookListeners(combatState))
             {
-                decimal num2 = item.ModifyDamageAdditive(target, num, props, dealer, cardSource, cardPlay);
+                var num2 = item.ModifyDamageAdditive(target, num, props, dealer, cardSource, cardPlay);
                 if(item is ILibraryAbstractModel libraryAbstractModel)    
                     num2 += libraryAbstractModel.ModifyDamageAdditive(target, num, props, dealer, cardSource,type);
                 num += num2;
@@ -815,9 +816,9 @@ public static class LibraryHooks
         }
         if (modifyDamageHookType.HasFlag(ModifyDamageHookType.Multiplicative))
         {
-            foreach (AbstractModel item2 in runState.IterateHookListeners(combatState))
+            foreach (var item2 in runState.IterateHookListeners(combatState))
             {
-                decimal num3 = item2.ModifyDamageMultiplicative(target, num, props, dealer, cardSource, cardPlay);
+                var num3 = item2.ModifyDamageMultiplicative(target, num, props, dealer, cardSource, cardPlay);
                 if(item2 is ILibraryAbstractModel libraryAbstractModel)    
                     num3 *= libraryAbstractModel.ModifyDamageMultiplicative(target, num, props, dealer, cardSource,type);
                 num *= num3;
@@ -827,10 +828,10 @@ public static class LibraryHooks
                 }
             }
         }
-        decimal num4 = decimal.MaxValue;
-        foreach (AbstractModel item3 in runState.IterateHookListeners(combatState))
+        var num4 = decimal.MaxValue;
+        foreach (var item3 in runState.IterateHookListeners(combatState))
         {
-            decimal num5 = item3.ModifyDamageCap(target, props, dealer, cardSource, cardPlay);
+            var num5 = item3.ModifyDamageCap(target, props, dealer, cardSource, cardPlay);
             if(item3 is ILibraryAbstractModel libraryAbstractModel)    
                 num5 = Math.Min(num5, libraryAbstractModel.ModifyDamageCap(target, props, dealer, cardSource,type));
             if (num5 < num4)
@@ -848,11 +849,11 @@ public static class LibraryHooks
     }
     public static decimal ModifyHpLostAfterOsty(IRunState runState, ICombatState combatState, Creature target, decimal amount, ValueProp props, Creature? dealer, CardModel? cardSource, out IEnumerable<AbstractModel> modifiers,LibraryDamageType type)
     {
-        decimal num = amount;
-        List<AbstractModel> list = new List<AbstractModel>();
-        foreach (AbstractModel item in runState.IterateHookListeners(combatState))
+        var num = amount;
+        var list = new List<AbstractModel>();
+        foreach (var item in runState.IterateHookListeners(combatState))
         {
-            decimal d = num;
+            var d = num;
             num = item.ModifyHpLostAfterOsty(target, num, props, dealer, cardSource);
             if(item is ILibraryAbstractModel libraryAbstractModel)    
                 num = libraryAbstractModel.ModifyHpLostAfterOsty(target, num, props, dealer, cardSource,type);
@@ -861,9 +862,9 @@ public static class LibraryHooks
                 list.Add(item);
             }
         }
-        foreach (AbstractModel item2 in runState.IterateHookListeners(combatState))
+        foreach (var item2 in runState.IterateHookListeners(combatState))
         {
-            decimal d2 = num;
+            var d2 = num;
             num = item2.ModifyHpLostAfterOstyLate(target, num, props, dealer, cardSource);
             if(item2 is ILibraryAbstractModel libraryAbstractModel)    
                 num = libraryAbstractModel.ModifyHpLostAfterOstyLate(target, num, props, dealer, cardSource,type);
@@ -877,10 +878,10 @@ public static class LibraryHooks
     }
     public static decimal ModifyHpLostBeforeOsty(IRunState runState, ICombatState combatState, Creature target, decimal amount, ValueProp props, Creature? dealer, CardModel? cardSource, out IEnumerable<AbstractModel> modifiers,LibraryDamageType type)
     {
-        decimal num = amount;
-		decimal d = num;
-        List<AbstractModel> list = new List<AbstractModel>();
-        foreach (AbstractModel item in runState.IterateHookListeners(combatState))
+        var num = amount;
+		var d = num;
+        var list = new List<AbstractModel>();
+        foreach (var item in runState.IterateHookListeners(combatState))
         {
             num = item.ModifyHpLostBeforeOsty(target, num, props, dealer, cardSource);
             if(item is ILibraryAbstractModel libraryAbstractModel)    
@@ -890,9 +891,9 @@ public static class LibraryHooks
                 list.Add(item);
             }
         }
-        foreach (AbstractModel item2 in runState.IterateHookListeners(combatState))
+        foreach (var item2 in runState.IterateHookListeners(combatState))
         {
-            decimal d2 = num;
+            var d2 = num;
             num = item2.ModifyHpLostBeforeOstyLate(target, num, props, dealer, cardSource);
             if(item2 is ILibraryAbstractModel libraryAbstractModel)     
                 num = libraryAbstractModel.ModifyHpLostBeforeOstyLate(target, num, props, dealer, cardSource,type);
@@ -911,8 +912,8 @@ public static class LibraryHooks
             modifiers = Array.Empty<AbstractModel>();
             return 0m;
         }
-        List<AbstractModel> modifiers2 = new List<AbstractModel>();
-        decimal num = chaoDamage;
+        var modifiers2 = new List<AbstractModel>();
+        var num = chaoDamage;
         if (cardSource != null && cardSource.Enchantment != null && cardSource.Enchantment is LibraryEnchantmentModel libraryEnchantment)
         {
             if (modifyChaoDamageHookType.HasFlag(ModifyChaoDamageHookType.Additive))
@@ -924,20 +925,20 @@ public static class LibraryHooks
                 num *= libraryEnchantment.EnchantChaoDamageMultiplicative(num, props);
             }
         }
-        bool flag = target == null && previewMode == CardPreviewMode.MultiCreatureTargeting;
-        bool flag2 = flag;
+        var flag = target == null && previewMode == CardPreviewMode.MultiCreatureTargeting;
+        var flag2 = flag;
         bool flag3;
         if (flag2)
         {
             if (cardSource != null)
             {
-                TargetType targetType = cardSource.TargetType;
+                var targetType = cardSource.TargetType;
                 if ((uint)(targetType - 3) <= 1u)
                 {
-                    CardPile pile = cardSource.Pile;
+                    var pile = cardSource.Pile;
                     if (pile != null)
                     {
-                        PileType pileType = pile.Type;
+                        var pileType = pile.Type;
                         if (pileType == PileType.Hand || pileType == PileType.Play)
                         {
                             flag3 = true;
@@ -951,16 +952,16 @@ public static class LibraryHooks
         }
         goto IL_00bf;
         IL_00bf:
-        bool flag4 = flag2;
-        bool flag5 = false;
+        var flag4 = flag2;
+        var flag5 = false;
         if (flag4)
         {
-            bool flag6 = true;
+            var flag6 = true;
             decimal? num2 = null;
-            foreach (Creature item in combatState?.HittableEnemies ?? Array.Empty<Creature>())
+            foreach (var item in combatState?.HittableEnemies ?? Array.Empty<Creature>())
             {
                 List<AbstractModel> modifiers3;
-                decimal num3 = ModifyChaoDamageInternal(runState, combatState, item, dealer, num, props, cardSource, modifyChaoDamageHookType, out modifiers3,type);
+                var num3 = ModifyChaoDamageInternal(runState, combatState, item, dealer, num, props, cardSource, modifyChaoDamageHookType, out modifiers3,type);
                 if (!num2.HasValue)
                 {
                     num2 = num3;
@@ -995,15 +996,15 @@ public static class LibraryHooks
     }    
     private static decimal ModifyChaoDamageInternal(IRunState runState, ICombatState? combatState, Creature? target, Creature? dealer, decimal damage, ValueProp props, CardModel? cardSource, ModifyChaoDamageHookType modifyChaoDamageHookType, out List<AbstractModel> modifiers,LibraryDamageType type)
     {
-        decimal num = damage;
-        List<AbstractModel> list = new List<AbstractModel>();
+        var num = damage;
+        var list = new List<AbstractModel>();
         if (modifyChaoDamageHookType.HasFlag(ModifyChaoDamageHookType.Additive))
         {
-            foreach (AbstractModel item in runState.IterateHookListeners(combatState))
+            foreach (var item in runState.IterateHookListeners(combatState))
             {
                 if(item is not ILibraryAbstractModel libraryAbstractModel)
                     continue;
-                decimal num2 = libraryAbstractModel.ModifyChaoDamageAdditive(target, num, props, dealer, cardSource,type);
+                var num2 = libraryAbstractModel.ModifyChaoDamageAdditive(target, num, props, dealer, cardSource,type);
                 num += num2;
                 if (num2 != 0m)
                 {
@@ -1013,11 +1014,11 @@ public static class LibraryHooks
         }
         if (modifyChaoDamageHookType.HasFlag(ModifyChaoDamageHookType.Multiplicative))
         {
-            foreach (AbstractModel item2 in runState.IterateHookListeners(combatState))
+            foreach (var item2 in runState.IterateHookListeners(combatState))
             {
                 if(item2 is not ILibraryAbstractModel libraryAbstractModel)
                     continue;
-                decimal num3 = libraryAbstractModel.ModifyChaoDamageMultiplicative(target, num, props, dealer, cardSource,type);
+                var num3 = libraryAbstractModel.ModifyChaoDamageMultiplicative(target, num, props, dealer, cardSource,type);
                 num *= num3;
                 if (num3 != 1m)
                 {
@@ -1025,12 +1026,12 @@ public static class LibraryHooks
                 }
             }
         }
-        decimal num4 = decimal.MaxValue;
-        foreach (AbstractModel item3 in runState.IterateHookListeners(combatState))
+        var num4 = decimal.MaxValue;
+        foreach (var item3 in runState.IterateHookListeners(combatState))
         {
             if(item3 is not ILibraryAbstractModel libraryAbstractModel)
                 continue;
-            decimal num5 = libraryAbstractModel.ModifyChaoDamageCap(target, props, dealer, cardSource,type);
+            var num5 = libraryAbstractModel.ModifyChaoDamageCap(target, props, dealer, cardSource,type);
             if (num5 < num4)
             {
                 num4 = num5;
@@ -1046,8 +1047,8 @@ public static class LibraryHooks
     }
     public static Creature ModifyUnblockedDamageTarget(ICombatState combatState, Creature originalTarget, decimal amount, ValueProp props, Creature? dealer,LibraryDamageType type)
     {
-        Creature creature = originalTarget;
-        foreach (AbstractModel item in combatState.IterateHookListeners())
+        var creature = originalTarget;
+        foreach (var item in combatState.IterateHookListeners())
         {
             creature = item.ModifyUnblockedDamageTarget(creature, amount, props, dealer);
             if(item is ILibraryAbstractModel libraryAbstractModel)
@@ -1057,7 +1058,7 @@ public static class LibraryHooks
     }
     public static bool ShouldReroll(ICombatState combatState,IEnumerable<Creature>? targets,LibraryDice dice,out ILibraryAbstractModel? trigger)
     {
-        foreach (AbstractModel item in combatState.IterateHookListeners())
+        foreach (var item in combatState.IterateHookListeners())
         {
             if (item is ILibraryAbstractModel libraryAbstractModel 
                 && libraryAbstractModel.ShouldReroll(targets,dice)){
@@ -1070,7 +1071,7 @@ public static class LibraryHooks
     }
     public static bool ShouldReuse(ICombatState combatState,IEnumerable<Creature>? targets,LibraryDice dice,out ILibraryAbstractModel? trigger)
     {
-        foreach (AbstractModel item in combatState.IterateHookListeners())
+        foreach (var item in combatState.IterateHookListeners())
         {
             if (item is ILibraryAbstractModel libraryAbstractModel 
                 && libraryAbstractModel.ShouldReuse(targets,dice)){
@@ -1083,7 +1084,7 @@ public static class LibraryHooks
     }
     public static bool TryDiceEffect(ICombatState combatState,PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, CardModel cardSource,LibraryDice dice)
     {
-        foreach (AbstractModel model in combatState.IterateHookListeners())
+        foreach (var model in combatState.IterateHookListeners())
         {
             if (model is ILibraryAbstractModel libraryModel)
             {
@@ -1097,7 +1098,7 @@ public static class LibraryHooks
     }
     public static bool TryPowerEffect(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource)
     {
-        foreach (AbstractModel model in combatState.IterateHookListeners())
+        foreach (var model in combatState.IterateHookListeners())
         {
             if (model is ILibraryAbstractModel libraryModel)
             {
@@ -1111,7 +1112,7 @@ public static class LibraryHooks
     }
     public static bool TryPowerReduce(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource)
     {
-        foreach (AbstractModel model in combatState.IterateHookListeners())
+        foreach (var model in combatState.IterateHookListeners())
         {
             if (model is ILibraryAbstractModel libraryModel)
             {

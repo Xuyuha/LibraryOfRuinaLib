@@ -12,9 +12,10 @@ public sealed class LibrarySpeedDiceParticipant
     public Func<CardModel, bool> CanEquipCard { get; init; } = static _ => true;
 
     public int BaseSpeedDiceCount { get; init; } = 1;
-
+    // 骰子默认最小值，可以自己new的时候改
     public int MinSpeed { get; init; } = 1;
 
+    // 骰子默认最大值，可以自己new的时候改
     public int MaxSpeed { get; init; } = 4;
 
     public LibraryEmotionConfig Emotion { get; init; } = new();
