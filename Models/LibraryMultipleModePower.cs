@@ -235,44 +235,44 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
         num = ModifyAttackHitCount(attackCommand, num , null);
         return num;
     }
-    public sealed override decimal ModifyChaoDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, LibraryDamageType type)
+    public sealed override decimal ModifyChaoDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay, LibraryDamageType type)
     {
 		decimal n = 0;
-        n += Mode.ModifyChaoDamageAdditive(target, num+n, props, dealer, cardSource, type);
-        n += ModifyChaoDamageAdditive(target, num+n, props, dealer, cardSource, type , null);
+        n += Mode.ModifyChaoDamageAdditive(target, num+n, props, dealer, cardSource, cardPlay, type);
+        n += ModifyChaoDamageAdditive(target, num+n, props, dealer, cardSource, cardPlay,type, null);
         return n;
     }
-    public sealed override decimal ModifyChaoDamageCap(Creature? target, ValueProp props, Creature? dealer, CardModel? cardSource, LibraryDamageType type)
+    public sealed override decimal ModifyChaoDamageCap(Creature? target, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay, LibraryDamageType type)
     {
-        decimal num= Mode.ModifyChaoDamageCap(target, props, dealer, cardSource, type);
-        num = Math.Min(num,ModifyChaoDamageCap(target, props, dealer, cardSource, type , null));
+        decimal num= Mode.ModifyChaoDamageCap(target, props, dealer, cardSource, cardPlay, type);
+        num = Math.Min(num,ModifyChaoDamageCap(target, props, dealer, cardSource, cardPlay,type, null));
         return num;
     }
-    public sealed override decimal ModifyChaoDamageMultiplicative(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, LibraryDamageType type)
+    public sealed override decimal ModifyChaoDamageMultiplicative(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay, LibraryDamageType type)
     {
 		decimal n = 1;
-        n *= Mode.ModifyChaoDamageMultiplicative(target, num*n, props, dealer, cardSource, type);
-        n *= ModifyChaoDamageMultiplicative(target, num*n, props, dealer, cardSource, type , null);
+        n *= Mode.ModifyChaoDamageMultiplicative(target, num*n, props, dealer, cardSource, cardPlay, type);
+        n *= ModifyChaoDamageMultiplicative(target, num*n, props, dealer, cardSource, cardPlay,type, null);
         return n;
     }
-    public sealed override decimal ModifyDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, LibraryDamageType type)
+    public sealed override decimal ModifyDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay, LibraryDamageType type)
     {
 		decimal n = 0;
-        n += Mode.ModifyDamageAdditive(target, num+n, props, dealer, cardSource, type);
-        n += ModifyDamageAdditive(target, num+n, props, dealer, cardSource, type , null);
+        n += Mode.ModifyDamageAdditive(target, num+n, props, dealer, cardSource, cardPlay, type);
+        n += ModifyDamageAdditive(target, num+n, props, dealer, cardSource, cardPlay,type, null);
         return n;
     }
-    public sealed override decimal ModifyDamageCap(Creature? target, ValueProp props, Creature? dealer, CardModel? cardSource, LibraryDamageType type)
+    public sealed override decimal ModifyDamageCap(Creature? target, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay, LibraryDamageType type)
     {
-        decimal num= Mode.ModifyDamageCap(target, props, dealer, cardSource, type);
-        num = Math.Min(num,ModifyDamageCap(target, props, dealer, cardSource, type , null));
+        decimal num= Mode.ModifyDamageCap(target, props, dealer, cardSource, cardPlay, type);
+        num = Math.Min(num,ModifyDamageCap(target, props, dealer, cardSource, cardPlay,type, null));
         return num;
     }
-    public sealed override decimal ModifyDamageMultiplicative(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, LibraryDamageType type)
+    public sealed override decimal ModifyDamageMultiplicative(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay, LibraryDamageType type)
     {
 		decimal n = 1m;
-        n *= Mode.ModifyDamageMultiplicative(target, num*n, props, dealer, cardSource, type);
-        n *= ModifyDamageMultiplicative(target, num*n, props, dealer, cardSource, type , null);
+        n *= Mode.ModifyDamageMultiplicative(target, num*n, props, dealer, cardSource, cardPlay, type);
+        n *= ModifyDamageMultiplicative(target, num*n, props, dealer, cardSource, cardPlay,type, null);
         return n;
     }
     public sealed override decimal ModifyHpLostAfterOsty(Creature target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, LibraryDamageType type)
@@ -1509,19 +1509,19 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
     {
         return num;
     }
-    public virtual decimal ModifyChaoDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, LibraryDamageType type, object? _ = null)
+    public virtual decimal ModifyChaoDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay, LibraryDamageType type, object? _ = null)
     {
         return 0m;
     }
-    public virtual decimal ModifyChaoDamageCap(Creature? target, ValueProp props, Creature? dealer, CardModel? cardSource, LibraryDamageType type, object? _ = null)
+    public virtual decimal ModifyChaoDamageCap(Creature? target, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay, LibraryDamageType type, object? _ = null)
     {
         return decimal.MaxValue;
     }
-    public virtual decimal ModifyChaoDamageMultiplicative(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, LibraryDamageType type, object? _ = null)
+    public virtual decimal ModifyChaoDamageMultiplicative(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay, LibraryDamageType type, object? _ = null)
     {
         return 1m;
     }
-    public virtual decimal ModifyDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, LibraryDamageType type, object? _ = null)
+    public virtual decimal ModifyDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay, LibraryDamageType type, object? _ = null)
     {
         return 0m;
     }
@@ -1533,11 +1533,11 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
     {
         return 1m;
     }
-    public virtual decimal ModifyDamageCap(Creature? target, ValueProp props, Creature? dealer, CardModel? cardSource, LibraryDamageType type, object? _ = null)
+    public virtual decimal ModifyDamageCap(Creature? target, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay, LibraryDamageType type, object? _ = null)
     {
         return decimal.MaxValue;
     }
-    public virtual decimal ModifyDamageMultiplicative(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, LibraryDamageType type, object? _ = null)
+    public virtual decimal ModifyDamageMultiplicative(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay, LibraryDamageType type, object? _ = null)
     {
         return 1m;
     }

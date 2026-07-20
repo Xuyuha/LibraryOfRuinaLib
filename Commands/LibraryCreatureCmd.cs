@@ -343,11 +343,11 @@ public static class LibraryCreatureCmd
 		await Cmd.CustomScaledWait(0.1f, 0.2f);
 		return results;
 	}
-	public static async Task<IEnumerable<LibraryChaoResult>?> ChaoDamage(PlayerChoiceContext choiceContext, Creature target, decimal damageAmount, ValueProp props, Creature? dealer, CardModel? cardSource ,LibraryDamageType type = LibraryDamageType.None, IEnumerable<DamageResult>? damageResults = null)
+	public static async Task<IEnumerable<LibraryChaoResult>?> ChaoDamage(PlayerChoiceContext choiceContext, Creature target, decimal damageAmount, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay,LibraryDamageType type = LibraryDamageType.None, IEnumerable<DamageResult>? damageResults = null)
 	{
-		return await ChaoDamage(choiceContext, new List<Creature> { target }, damageAmount, props, cardSource.Owner.Creature as Creature, cardSource,type);
+		return await ChaoDamage(choiceContext, new List<Creature> { target }, damageAmount, props, dealer, cardSource, cardPlay,type);
 	}
-	public static async Task<IEnumerable<LibraryChaoResult>?> ChaoDamage(PlayerChoiceContext choiceContext, IEnumerable<Creature> targets, decimal damageAmount, ValueProp props, Creature? dealer, CardModel? cardSource ,LibraryDamageType type = LibraryDamageType.None, IEnumerable<DamageResult>? damageResults = null)
+	public static async Task<IEnumerable<LibraryChaoResult>?> ChaoDamage(PlayerChoiceContext choiceContext, IEnumerable<Creature> targets, decimal damageAmount, ValueProp props, Creature? dealer, CardModel? cardSource , CardPlay? cardPlay,LibraryDamageType type = LibraryDamageType.None, IEnumerable<DamageResult>? damageResults = null)
 	//我暂时没用这个方法，走的是我当时自己用的简易混乱值判定，根据原始伤害对原版attack commmand进行patch，因此也没有检测攻击类型，后续选择一个统一的方法来用。
 	{
 		List<LibraryChaoResult> results = [];
@@ -379,7 +379,7 @@ public static class LibraryCreatureCmd
 			}
 			IEnumerable<AbstractModel> modifiers;
 			Log.Info("LibraryChaoDamage");
-			decimal modifiedAmountbefore = LibraryHooks.ModifyChaoDamage(runState, combatState, Target, dealer,damageAmount, props, cardSource, ModifyChaoDamageHookType.All, CardPreviewMode.None, out modifiers,type);
+			decimal modifiedAmountbefore = LibraryHooks.ModifyChaoDamage(runState, combatState, Target, dealer,damageAmount, props, cardSource, cardPlay, ModifyChaoDamageHookType.All, CardPreviewMode.None, out modifiers,type);
 			decimal modifiedAmount = LibraryDamageCalculate.CalculateChaoAmount(modifiedAmountbefore,Target as LibraryCreature, props, type);
 			await LibraryHooks.AfterModifyingChaoAmount(runState, combatState, cardSource, modifiers,type);
 			await LibraryHooks.BeforeChaoDamageReceived(choiceContext, runState, combatState, Target, modifiedAmount, props, dealer, cardSource,type);  
@@ -544,7 +544,7 @@ public static class LibraryCreatureCmd
 		}
 		if (newMaxChaoValue < (decimal)creature.CurrentChaoValue)
 		{
-			await ChaoDamage(choiceContext, new List<LibraryCreature>() { creature }, (decimal)creature.CurrentChaoValue - newMaxChaoValue, isFromCard ? (ValueProp.Unblockable | ValueProp.Unpowered | ValueProp.Move) : (ValueProp.Unblockable | ValueProp.Unpowered), null, null);
+			await ChaoDamage(choiceContext, new List<LibraryCreature>() { creature }, (decimal)creature.CurrentChaoValue - newMaxChaoValue, isFromCard ? (ValueProp.Unblockable | ValueProp.Unpowered | ValueProp.Move) : (ValueProp.Unblockable | ValueProp.Unpowered), null,null, null);
 		}
 		await SetMaxChaoValue(creature, Math.Max(1.0m, newMaxChaoValue));
 	}

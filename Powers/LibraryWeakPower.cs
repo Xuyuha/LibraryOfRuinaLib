@@ -11,7 +11,7 @@ public sealed class LibraryWeakPower : LibraryDurationPowerModel//虚弱，造�
 {
     public override PowerType Type => PowerType.Debuff;
     public override PowerStackType StackType => PowerStackType.Counter;
-    public override decimal ModifyDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay){
+    public override decimal ModifyDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay, LibraryDamageType type){
 		if (base.Owner != dealer)
 		{
 			return 0m;
@@ -22,7 +22,7 @@ public sealed class LibraryWeakPower : LibraryDurationPowerModel//虚弱，造�
 		}
 		return -base.Amount;
 	}
-    public override decimal ModifyChaoDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, LibraryDamageType type)
+    public override decimal ModifyChaoDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay, LibraryDamageType type)
     {
 		if (base.Owner != dealer)
 		{

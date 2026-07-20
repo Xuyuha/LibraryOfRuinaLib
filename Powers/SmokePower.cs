@@ -35,7 +35,7 @@ public sealed class LibrarySmokePower : LibraryPowerModel
         modifiedAmount = amount;
         return false;
     }
-    public override decimal ModifyDamageMultiplicative(Creature? target, decimal amount, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay)
+    public override decimal ModifyDamageMultiplicative(Creature? target, decimal amount, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay, LibraryDamageType type)
     {
         if(target != Owner && dealer != Owner)return 1m;
         if(target != null && target.Side == Owner.Side)return 1m;

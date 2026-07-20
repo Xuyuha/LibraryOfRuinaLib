@@ -3,6 +3,7 @@ using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Powers;
 using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.ValueProps;
 
 namespace Library.Powers;
@@ -27,7 +28,7 @@ public sealed class LibraryStrongBluntPower : LibraryDurationPowerModel//打击�
 		}
 		return base.Amount;
 	}
-    public override decimal ModifyChaoDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, LibraryDamageType type)
+    public override decimal ModifyChaoDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay, LibraryDamageType type)
     {
 		if (base.Owner != dealer)
 		{

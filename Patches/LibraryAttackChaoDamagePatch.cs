@@ -279,7 +279,7 @@ internal static class LibraryAttackChaoDamagePatch
         if (!dealer.IsPlayer && !dealer.IsMonster)
             return;
 
-        __result = WrapWithChaoDamage(__result, choiceContext, targets, amount, props, dealer, cardSource);
+        __result = WrapWithChaoDamage(__result, choiceContext, targets, amount, props, dealer, cardSource, cardPlay);
     }
 
     private static async Task<IEnumerable<DamageResult>> WrapWithChaoDamage(
@@ -289,7 +289,8 @@ internal static class LibraryAttackChaoDamagePatch
         decimal amount,
         ValueProp props,
         Creature? dealer,
-        CardModel? cardSource)
+        CardModel? cardSource,
+        CardPlay? cardPlay)
     {
         IEnumerable<DamageResult> results = await prior;
 
@@ -310,6 +311,7 @@ internal static class LibraryAttackChaoDamagePatch
                 props: props,
                 dealer: dealer,
                 cardSource: cardSource,
+                cardPlay: cardPlay,
                 damageResults: results,
                 type: AttackExecuteContext.CurrentDamageType);
         }
