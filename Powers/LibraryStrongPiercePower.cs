@@ -17,7 +17,7 @@ public sealed class LibraryStrongPiercePower : LibraryDurationPowerModel//穿透
         return owner.IsPlayer ? OppositeSideOf(owner) : owner.Side;
     }
 
-    public override decimal ModifyDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, LibraryDamageType type){
+    public override decimal ModifyDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay,LibraryDamageType type){
 		if (base.Owner != dealer)
 		{
 			return 0m;
