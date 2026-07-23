@@ -201,12 +201,6 @@ public static class LibraryHooks
         Creature target,
         Creature? breaker,
         LibraryDamageType type)
-    public static async Task AfterBlockBroken(
-        ICombatState combatState,
-        PlayerChoiceContext choiceContext,
-        Creature target,
-        Creature? breaker,
-        LibraryDamageType type)
     {
         foreach (var model in combatState.IterateHookListeners())
         {
@@ -968,7 +962,7 @@ public static class LibraryHooks
             foreach (var item in combatState?.HittableEnemies ?? Array.Empty<Creature>())
             {
                 List<AbstractModel> modifiers3;
-                var num3 = ModifyChaoDamageInternal(runState, combatState, item, dealer, num, props, cardSource, modifyChaoDamageHookType, out modifiers3,type);
+                var num3 = ModifyChaoDamageInternal(runState, combatState, item, dealer, num, props, cardSource, cardPlay, modifyChaoDamageHookType, out modifiers3,type);
                 if (!num2.HasValue)
                 {
                     num2 = num3;
@@ -1011,7 +1005,7 @@ public static class LibraryHooks
             {
                 if(item is not ILibraryAbstractModel libraryAbstractModel)
                     continue;
-                var num2 = libraryAbstractModel.ModifyChaoDamageAdditive(target, num, props, dealer, cardSource,type);
+                var num2 = libraryAbstractModel.ModifyChaoDamageAdditive(target, num, props, dealer, cardSource, cardPlay, type);
                 num += num2;
                 if (num2 != 0m)
                 {
@@ -1025,7 +1019,7 @@ public static class LibraryHooks
             {
                 if(item2 is not ILibraryAbstractModel libraryAbstractModel)
                     continue;
-                var num3 = libraryAbstractModel.ModifyChaoDamageMultiplicative(target, num, props, dealer, cardSource,type);
+                var num3 = libraryAbstractModel.ModifyChaoDamageMultiplicative(target, num, props, dealer, cardSource, cardPlay, type);
                 num *= num3;
                 if (num3 != 1m)
                 {
@@ -1038,7 +1032,7 @@ public static class LibraryHooks
         {
             if(item3 is not ILibraryAbstractModel libraryAbstractModel)
                 continue;
-            var num5 = libraryAbstractModel.ModifyChaoDamageCap(target, props, dealer, cardSource,type);
+            var num5 = libraryAbstractModel.ModifyChaoDamageCap(target, props, dealer, cardSource, cardPlay, type);
             if (num5 < num4)
             {
                 num4 = num5;
