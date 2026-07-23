@@ -32,7 +32,7 @@ public class LibraryDice : DynamicVar
         SourceCard = sourceCard;
         FloatValue = floatValue;
     }
-    public override string ToString()=>$"[img]{DescriptionIconPath}[/img]{PreviewValue} - {PreviewValue + FloatValue}{DamageAdditive}{DamageResistance}{ChaoAdditive}{ChaoResistance}\n";
+    public override string ToString()=>$"[img]{DescriptionIconPath}[/img]{checked((int)PreviewValue)} - {checked((int)PreviewValue + FloatValue)}{DamageAdditive}{DamageResistance}{ChaoAdditive}{ChaoResistance}\n";
     public  bool ShouldUseDefaultTip {get;set;} = true;
     public decimal DamageResistanceValue = 1m;
     public decimal ChaoResistanceValue = 0m;

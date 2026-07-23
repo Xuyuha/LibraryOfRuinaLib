@@ -1005,7 +1005,7 @@ public static class LibraryHooks
             {
                 if(item is not ILibraryAbstractModel libraryAbstractModel)
                     continue;
-                var num2 = libraryAbstractModel.ModifyChaoDamageAdditive(target, num, props, dealer, cardSource, cardPlay, type);
+                var num2 = libraryAbstractModel.ModifyChaoDamageAdditive(target, num, props, dealer, cardSource, cardPlay,type);
                 num += num2;
                 if (num2 != 0m)
                 {
@@ -1019,7 +1019,7 @@ public static class LibraryHooks
             {
                 if(item2 is not ILibraryAbstractModel libraryAbstractModel)
                     continue;
-                var num3 = libraryAbstractModel.ModifyChaoDamageMultiplicative(target, num, props, dealer, cardSource, cardPlay, type);
+                var num3 = libraryAbstractModel.ModifyChaoDamageMultiplicative(target, num, props, dealer, cardSource, cardPlay,type);
                 num *= num3;
                 if (num3 != 1m)
                 {
@@ -1032,7 +1032,7 @@ public static class LibraryHooks
         {
             if(item3 is not ILibraryAbstractModel libraryAbstractModel)
                 continue;
-            var num5 = libraryAbstractModel.ModifyChaoDamageCap(target, props, dealer, cardSource, cardPlay, type);
+            var num5 = libraryAbstractModel.ModifyChaoDamageCap(target, props, dealer, cardSource, cardPlay,type);
             if (num5 < num4)
             {
                 num4 = num5;

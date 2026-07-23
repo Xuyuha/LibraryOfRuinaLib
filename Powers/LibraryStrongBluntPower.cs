@@ -17,7 +17,7 @@ public sealed class LibraryStrongBluntPower : LibraryDurationPowerModel//打击�
         return owner.IsPlayer ? OppositeSideOf(owner) : owner.Side;
     }
 
-    public override decimal ModifyDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay, LibraryDamageType type){
+    public override decimal ModifyDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay,LibraryDamageType type){
 		if (base.Owner != dealer)
 		{
 			return 0m;
