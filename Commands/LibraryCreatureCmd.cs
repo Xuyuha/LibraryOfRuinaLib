@@ -34,7 +34,7 @@ public static class LibraryCreatureCmd
 	private const int MaxAdditionalDiceRolls = 32;
 	private const int MaxAdditionalDiceUses = 32;
 
-	public static async Task GainBlock(Creature creature, CardPlay? cardPlay, LibraryDice dice, bool fast = false)
+	public static async Task GainBlock(Creature creature, CardPlay cardPlay, LibraryDice dice, bool fast = false)
 	{
 		ArgumentNullException.ThrowIfNull(cardPlay);
 		int blockTimes = dice.EnableCustomUseTimes? dice.UseTimes : 1;
@@ -92,24 +92,24 @@ public static class LibraryCreatureCmd
 		return await Damage(choiceContext, new List<Creature> { target }, amount, props, cardSource.Owner.Creature as Creature, cardSource, type, cardPlay);
 	}
 
-	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, IEnumerable<Creature> targets, DamageVar damageVar, Creature dealer ,LibraryDamageType type = LibraryDamageType.None)
+	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, IEnumerable<Creature> targets, DamageVar damageVar, Creature dealer ,LibraryDamageType type = LibraryDamageType.None, CardPlay? cardPlay = null)
 	{
-		return await Damage(choiceContext, targets, damageVar.BaseValue, damageVar.Props, dealer,type);
+		return await Damage(choiceContext, targets, damageVar.BaseValue, damageVar.Props, dealer,type, cardPlay);
 	}
 
-	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, IEnumerable<Creature> targets, decimal amount, ValueProp props, Creature dealer ,LibraryDamageType type = LibraryDamageType.None)
+	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, IEnumerable<Creature> targets, decimal amount, ValueProp props, Creature dealer ,LibraryDamageType type = LibraryDamageType.None, CardPlay? cardPlay = null)
 	{
-		return await Damage(choiceContext, targets, amount, props, dealer, null, type);
+		return await Damage(choiceContext, targets, amount, props, dealer, null, type, cardPlay);
 	}
 
-	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, Creature target, DamageVar damageVar, Creature dealer ,LibraryDamageType type = LibraryDamageType.None)
+	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, Creature target, DamageVar damageVar, Creature dealer ,LibraryDamageType type = LibraryDamageType.None, CardPlay? cardPlay = null)
 	{
-		return await Damage(choiceContext, target, damageVar.BaseValue, damageVar.Props, dealer,type);
+		return await Damage(choiceContext, target, damageVar.BaseValue, damageVar.Props, dealer,type, cardPlay);
 	}
 
-	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, Creature target, decimal amount, ValueProp props, Creature dealer ,LibraryDamageType type = LibraryDamageType.None)
+	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, Creature target, decimal amount, ValueProp props, Creature dealer ,LibraryDamageType type = LibraryDamageType.None, CardPlay? cardPlay = null)
 	{
-		return await Damage(choiceContext, new List<Creature> { target }, amount, props, dealer, null, type);
+		return await Damage(choiceContext, new List<Creature> { target }, amount, props, dealer, null, type, cardPlay);
 	}
 
 	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, Creature target, DamageVar damageVar, Creature? dealer, CardModel? cardSource, LibraryDamageType type = LibraryDamageType.None, CardPlay? cardPlay = null)
@@ -347,7 +347,7 @@ public static class LibraryCreatureCmd
 	{
 		return await ChaoDamage(choiceContext, new List<Creature> { target }, damageAmount, props, dealer, cardSource, cardPlay,type);
 	}
-	public static async Task<IEnumerable<LibraryChaoResult>?> ChaoDamage(PlayerChoiceContext choiceContext, IEnumerable<Creature> targets, decimal damageAmount, ValueProp props, Creature? dealer, CardModel? cardSource , CardPlay? cardPlay,LibraryDamageType type = LibraryDamageType.None, IEnumerable<DamageResult>? damageResults = null)
+	public static async Task<IEnumerable<LibraryChaoResult>?> ChaoDamage(PlayerChoiceContext choiceContext, IEnumerable<Creature> targets, decimal damageAmount, ValueProp props, Creature? dealer, CardModel? cardSource , CardPlay? cardPlay = null,LibraryDamageType type = LibraryDamageType.None, IEnumerable<DamageResult>? damageResults = null)
 	//我暂时没用这个方法，走的是我当时自己用的简易混乱值判定，根据原始伤害对原版attack commmand进行patch，因此也没有检测攻击类型，后续选择一个统一的方法来用。
 	{
 		List<LibraryChaoResult> results = [];

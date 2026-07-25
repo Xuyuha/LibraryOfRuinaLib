@@ -268,7 +268,7 @@ public abstract class LibraryCardModel : CardModel,ILibraryAbstractModel//加入
 
     public Task AfterSetPowerMode(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource, LibraryPowerMode mode)
     {
-        throw new NotImplementedException();
+        return Task.CompletedTask;
     }
 }
 

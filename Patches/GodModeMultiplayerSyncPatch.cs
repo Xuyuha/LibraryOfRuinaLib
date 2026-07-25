@@ -21,17 +21,17 @@ internal static class GodModeMultiplayerSyncPatch
         AccessTools.Method(typeof(GodModeConsoleCmd), "EnableGodMode");
 
     [HarmonyPrefix]
-    private static void Prefix(CombatState combatState, Player? ___godModePlayer)
+    private static void Prefix(CombatState combatState, Player? ____godModePlayer)
     {
-        if (___godModePlayer == null || !RunManager.Instance.IsInProgress)
+        if (____godModePlayer == null || !RunManager.Instance.IsInProgress)
             return;
 
-        if (LocalContext.GetMe(combatState.RunState) == ___godModePlayer)
+        if (LocalContext.GetMe(combatState.RunState) == ____godModePlayer)
             return;
 
         try
         {
-            if (EnableGodModeMethod?.Invoke(null, [___godModePlayer]) is Task enableTask)
+            if (EnableGodModeMethod?.Invoke(null, [____godModePlayer]) is Task enableTask)
                 TaskHelper.RunSafely(enableTask);
         }
         catch (Exception e)

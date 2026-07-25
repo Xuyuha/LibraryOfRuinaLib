@@ -32,8 +32,12 @@ public class LibraryDice : DynamicVar
         SourceCard = sourceCard;
         FloatValue = floatValue;
     }
-    public override string ToString()=>$"[img]{DescriptionIconPath}[/img]{checked((int)PreviewValue)} - {checked((int)PreviewValue + FloatValue)}{DamageAdditive}{DamageResistance}{ChaoAdditive}{ChaoResistance}\n";
+    public override string ToString()=>$"[img]{DescriptionIconPath}[/img]{Value}{DamageAdditive}{DamageResistance}{ChaoAdditive}{ChaoResistance}\n";
     public  bool ShouldUseDefaultTip {get;set;} = true;
+    public string Value => $"{Colour1}{checked((int)PreviewValue)} - {checked((int)PreviewValue + FloatValue)}{Colour2}";
+    public string Colour1 => _colour == "" ? "" : $"[{_colour}]";
+    public string Colour2 => _colour == "" ? "" : $"[/{_colour}]";
+    public string _colour = "";
     public decimal DamageResistanceValue = 1m;
     public decimal ChaoResistanceValue = 0m;
     private int DamageAdditiveValue = 0;
@@ -224,6 +228,12 @@ public class LibraryDice : DynamicVar
             {
                 num = Hook.ModifyBlock(card.CombatState, card.Owner.Creature, base.BaseValue, Props, card, null, out IEnumerable<AbstractModel> _);
             }
+            if(num - BaseValue > 0)
+                _colour = "green";
+            else if(num - BaseValue < 0)
+                _colour = "red";
+            else
+                _colour = "";
             base.PreviewValue = num;
         }
         ResistancePreview.ApplyPhysicalResistancePreview(
