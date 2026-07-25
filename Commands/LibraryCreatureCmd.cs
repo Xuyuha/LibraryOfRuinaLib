@@ -343,11 +343,19 @@ public static class LibraryCreatureCmd
 		await Cmd.CustomScaledWait(0.1f, 0.2f);
 		return results;
 	}
+	public static async Task<IEnumerable<LibraryChaoResult>?> ChaoDamage(PlayerChoiceContext choiceContext, IEnumerable<Creature> targets, decimal damageAmount, ValueProp props, Creature? dealer, CardModel? cardSource,LibraryDamageType type = LibraryDamageType.None, IEnumerable<DamageResult>? damageResults = null)
+	{
+		return await ChaoDamage(choiceContext, targets, damageAmount, props, dealer, cardSource,null,type);
+	}
+	public static async Task<IEnumerable<LibraryChaoResult>?> ChaoDamage(PlayerChoiceContext choiceContext, Creature target, decimal damageAmount, ValueProp props, Creature? dealer, CardModel? cardSource,LibraryDamageType type = LibraryDamageType.None, IEnumerable<DamageResult>? damageResults = null)
+	{
+		return await ChaoDamage(choiceContext, new List<Creature> { target }, damageAmount, props, dealer, cardSource,null,type);
+	}
 	public static async Task<IEnumerable<LibraryChaoResult>?> ChaoDamage(PlayerChoiceContext choiceContext, Creature target, decimal damageAmount, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay,LibraryDamageType type = LibraryDamageType.None, IEnumerable<DamageResult>? damageResults = null)
 	{
 		return await ChaoDamage(choiceContext, new List<Creature> { target }, damageAmount, props, dealer, cardSource, cardPlay,type);
 	}
-	public static async Task<IEnumerable<LibraryChaoResult>?> ChaoDamage(PlayerChoiceContext choiceContext, IEnumerable<Creature> targets, decimal damageAmount, ValueProp props, Creature? dealer, CardModel? cardSource , CardPlay? cardPlay = null,LibraryDamageType type = LibraryDamageType.None, IEnumerable<DamageResult>? damageResults = null)
+	public static async Task<IEnumerable<LibraryChaoResult>?> ChaoDamage(PlayerChoiceContext choiceContext, IEnumerable<Creature> targets, decimal damageAmount, ValueProp props, Creature? dealer, CardModel? cardSource , CardPlay? cardPlay,LibraryDamageType type = LibraryDamageType.None, IEnumerable<DamageResult>? damageResults = null)
 	//我暂时没用这个方法，走的是我当时自己用的简易混乱值判定，根据原始伤害对原版attack commmand进行patch，因此也没有检测攻击类型，后续选择一个统一的方法来用。
 	{
 		List<LibraryChaoResult> results = [];
