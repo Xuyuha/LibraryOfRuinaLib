@@ -18,13 +18,6 @@ public sealed class LibraryWeakPower : LibraryDurationPowerModel//虚弱，造�
 		}
 		return GetDamageReduction(props, dealer);
 	}
-    public override decimal ModifyDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay, LibraryDamageType type){
-		if (target is { IsPlayer: true })
-		{
-			return 0m;
-		}
-		return GetDamageReduction(props, dealer);
-	}
     private decimal GetDamageReduction(ValueProp props, Creature? dealer)
     {
 		if (base.Owner != dealer)
