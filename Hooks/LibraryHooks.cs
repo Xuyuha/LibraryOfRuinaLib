@@ -208,7 +208,6 @@ public static class LibraryHooks
             try
             {
                 await model.AfterBlockBroken(choiceContext, target, breaker);
-                await model.AfterBlockBroken(choiceContext, target, breaker);
                 if(model is ILibraryAbstractModel libraryAbstractModel)
                 {
                     hookPhase = "ILibraryAbstractModel.AfterBlockBroken";
