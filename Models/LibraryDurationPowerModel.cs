@@ -219,7 +219,7 @@ public abstract class LibraryDurationPowerModel : LibraryPowerModel, ISecondaryD
         return PowerCmd.Remove(this);
     }
 
-    private static void CorrectDurationSkipFlag(LibraryDurationPowerModel power, Creature target)
+    internal static void CorrectDurationSkipFlag(LibraryDurationPowerModel power, Creature target)
     {
         if (power.IsPermanent)
         {
@@ -255,7 +255,7 @@ public abstract class LibraryDurationPowerModel : LibraryPowerModel, ISecondaryD
         description.Add("IsPermanent", IsPermanentByDesign);
     }
 
-    private static T? FindStackablePower<T>(Creature target, int incomingTurns)
+    public static T? FindStackablePower<T>(Creature target, int incomingTurns)
         where T : LibraryDurationPowerModel
     {
         bool incomingIsPermanent = ModelDb.Power<T>().IsPermanentByDesign || incomingTurns <= 0;
