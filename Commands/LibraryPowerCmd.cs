@@ -73,7 +73,7 @@ public static class LibraryPowerCmd
     }
 
     /// <summary>
-    ///     施加持续 power；已有同类实例时沿用持续 power 的合并规则。
+    ///     施加持续 power；已有同类实例时叠加层数，并把剩余回合刷新为 <paramref name="turns"/>。
     /// </summary>
     public static async Task<T?> Apply<T>(
         Creature target,
@@ -83,7 +83,23 @@ public static class LibraryPowerCmd
         CardModel? cardSource,
         bool silent = false) where T : LibraryDurationPowerModel
     {
-        return await LibraryDurationPowerModel.ApplyWithDuration<T>(target, amount, turns, applier, cardSource, silent);
+        T? existingPower = LibraryDurationPowerModel.FindStackablePower<T>(target, turns);
+        if (existingPower == null)
+            return await LibraryDurationPowerModel.ApplyWithDuration<T>(target, amount, turns, applier, cardSource, silent);
+
+        existingPower.SetTurnsRemaining(turns, notifyDisplay: amount == 0m);
+        LibraryDurationPowerModel.CorrectDurationSkipFlag(existingPower, target);
+        if (amount == 0m)
+            return existingPower;
+
+        int newAmount = await PowerCmd.ModifyAmount(
+            new ThrowingPlayerChoiceContext(),
+            existingPower,
+            amount,
+            applier,
+            cardSource,
+            silent);
+        return newAmount == 0 ? null : existingPower;
     }
 
     /// <summary>
