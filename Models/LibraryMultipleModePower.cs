@@ -30,6 +30,15 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
 		}
 	}
     public override string Suffix => Mode.Name;
+    public async Task SetPowerMode<T>(PlayerChoiceContext choiceContext, Creature? dealer, CardModel? cardSource)
+    where T:LibraryPowerMode,new()
+	{
+        T mode = new()
+        {
+            SourcePower = this
+        };
+        await SetPowerMode(choiceContext, mode, dealer, cardSource);
+    }	
     public async Task SetPowerMode(PlayerChoiceContext choiceContext, LibraryPowerMode mode, Creature? dealer, CardModel? cardSource)
     {
         ICombatState? combatState = Owner?.CombatState;

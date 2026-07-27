@@ -18,10 +18,13 @@ using MegaCrit.Sts2.Core.Runs;
 namespace Library.Powers.Mode;
 public abstract class LibraryPowerMode
 {
-	public LibraryMultipleModePowerModel SourcePower ;
+	public LibraryMultipleModePowerModel? SourcePower ;
 	public LibraryPowerMode(LibraryMultipleModePowerModel sourcePower)
 	{
 		SourcePower = sourcePower;
+	}
+	public LibraryPowerMode()
+	{
 	}
     public abstract string Name {get;}
     public virtual Task BeforeDiceRoll(PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, LibraryDice dice)
