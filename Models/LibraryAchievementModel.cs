@@ -11,7 +11,14 @@ namespace Library.Models;
 
 public abstract class LibraryAchievementModel : AchievementModel, ILibraryAbstractModel
 {
-    
+    public virtual Creature ModifyDamageTarget(Creature creature, decimal amount, ValueProp props, Creature? dealer,LibraryDamageType type)
+    {
+        return creature;
+    }
+    public virtual Creature ModifyChaoDamageTarget(Creature creature, decimal amount, ValueProp props, Creature? dealer,LibraryDamageType type)
+    {
+        return creature;
+    }
     public virtual bool ShouldReroll(IEnumerable<Creature>? target, LibraryDice dice)
     {
         return false;

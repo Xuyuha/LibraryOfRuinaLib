@@ -147,6 +147,14 @@ public abstract class LibraryPowerModel : PowerModel,ILibraryAbstractModel
         if (_powerFlashAccessor != null)
             _powerFlashAccessor(_boundNPower).Texture = BigIcon;
     }    
+    public virtual Creature ModifyDamageTarget(Creature creature, decimal amount, ValueProp props, Creature? dealer,LibraryDamageType type)
+    {
+        return creature;
+    }
+    public virtual Creature ModifyChaoDamageTarget(Creature creature, decimal amount, ValueProp props, Creature? dealer,LibraryDamageType type)
+    {
+        return creature;    
+    }
     public virtual bool ShouldReroll(IEnumerable<Creature>? target, LibraryDice dice)
     {
         return false;

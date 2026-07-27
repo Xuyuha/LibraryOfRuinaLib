@@ -12,6 +12,14 @@ using MegaCrit.Sts2.Core.Entities.Cards;
 namespace Library.Models;
 public abstract class LibraryMonsterModel : MonsterModel,ILibraryAbstractModel
 {
+    public virtual Creature ModifyDamageTarget(Creature creature, decimal amount, ValueProp props, Creature? dealer,LibraryDamageType type)
+    {
+        return creature;
+    }
+    public virtual Creature ModifyChaoDamageTarget(Creature creature, decimal amount, ValueProp props, Creature? dealer,LibraryDamageType type)
+    {
+        return creature;        
+    }
     public virtual bool ShowResistanceUi => true;
 
     public virtual LibraryCreatureResistanceData.Resistance? DefaultPhysicalResistanceData => null;

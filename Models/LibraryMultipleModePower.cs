@@ -29,7 +29,9 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
             RefreshIcon();
 		}
 	}
-    public override string Suffix => Mode.Name;
+    public override string Suffix{
+		get => Mode.Name;
+	}
     public async Task SetPowerMode<T>(PlayerChoiceContext choiceContext, Creature? dealer, CardModel? cardSource)
     where T:LibraryPowerMode,new()
 	{
@@ -54,6 +56,16 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
 		flag |= ShouldReuse(targets,dice,null);
 		return flag;
     }
+    public override Creature ModifyDamageTarget(Creature creature, decimal amount, ValueProp props, Creature? dealer,LibraryDamageType type){
+		creature = Mode.ModifyDamageTarget(creature, amount, props, dealer, type);
+		creature = ModifyDamageTarget(creature, amount, props, dealer, type, null);
+		return creature;
+	}
+    public override Creature ModifyChaoDamageTarget(Creature creature, decimal amount, ValueProp props, Creature? dealer,LibraryDamageType type){
+		creature = Mode.ModifyChaoDamageTarget(creature, amount, props, dealer, type);
+		creature = ModifyChaoDamageTarget(creature, amount, props, dealer, type, null);
+		return creature;
+	}
     public sealed override async Task AfterReusing(PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, LibraryDice dice)
     {
         await Mode.AfterReusing(choiceContext, targets, dice);
@@ -2404,4 +2416,6 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
     {
         return Task.CompletedTask;
     }
+    public virtual Creature ModifyDamageTarget(Creature creature, decimal amount, ValueProp props, Creature? dealer,LibraryDamageType type,object? _ = null)=>creature;
+    public virtual Creature ModifyChaoDamageTarget(Creature creature, decimal amount, ValueProp props, Creature? dealer,LibraryDamageType type,object? _ = null)=>creature;
 }

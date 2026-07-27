@@ -9,6 +9,9 @@ public abstract class LibraryChargeMode : LibraryPowerMode
     public LibraryChargeMode(LibraryMultipleModePowerModel sourcePower) : base(sourcePower)
     {
     }
+    public LibraryChargeMode()
+    {
+    }
     public virtual Task Effect(PlayerChoiceContext choiceContext, decimal effectiveAmount)
     {
         return Task.CompletedTask;

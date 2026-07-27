@@ -108,6 +108,34 @@ public static class LibraryHooks
             interceptedDamage,
             interceptedDamage > 0m && remainingDamage <= 0m);
     }
+    public static List<Creature> ModifyDamageTarget(ICombatState combatState, List<Creature> originalTargets, decimal amount, ValueProp props, Creature? dealer,LibraryDamageType type = LibraryDamageType.None)
+    {
+        return originalTargets.Select(t => ModifyDamageTarget(combatState,t,amount,props,dealer,type)).ToList();
+    }
+    public static Creature ModifyDamageTarget(ICombatState combatState, Creature originalTarget, decimal amount, ValueProp props, Creature? dealer,LibraryDamageType type = LibraryDamageType.None)
+    {
+        Creature creature = originalTarget;
+        foreach (AbstractModel item in combatState.IterateHookListeners())
+        {
+            if(item is ILibraryAbstractModel lm)
+            {
+                creature = lm.ModifyDamageTarget(creature, amount, props, dealer,type);
+            }
+        }
+        return creature;
+    }
+    public static Creature ModifyChaoDamageTarget(ICombatState combatState, Creature originalTarget, decimal amount, ValueProp props, Creature? dealer,LibraryDamageType type = LibraryDamageType.None)
+    {
+        Creature creature = originalTarget;
+        foreach (AbstractModel item in combatState.IterateHookListeners())
+        {
+            if(item is ILibraryAbstractModel lm)
+            {
+                creature = lm.ModifyChaoDamageTarget(creature, amount, props, dealer,type);
+            }
+        }
+        return creature;
+    }
 
     public static async Task BeforeSetPhysicalResistance(ICombatState combatState,PlayerChoiceContext choiceContext,LibraryCreature target, Creature? dealer,LibraryDamageType type,LibraryResistanceLevel resistanceValue)
     {
