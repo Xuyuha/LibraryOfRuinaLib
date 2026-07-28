@@ -277,6 +277,11 @@ internal static class LibrarySpeedDiceService
             return;
         }
 
+        int turnNumber =
+            state.Player.PlayerCombatState?.TurnNumber ?? -1;
+        if (state.PreparedTurnNumber == turnNumber)
+            return;
+
         state.Registration.Dispatcher.BeforePlayerTurn(state);
 
         state.DeferEmotionLevelChangedLifecycle = true;
@@ -310,6 +315,7 @@ internal static class LibrarySpeedDiceService
                 state.Player.RunState.Rng.Seed ^ turnMixin,
                 "library_speed_target_repair");
         state.ReplaceSlots(GetDiceCount(state));
+        state.PreparedTurnNumber = turnNumber;
     }
 
     public static async Task FinishPlayerTurnAsync(
@@ -460,7 +466,6 @@ internal static class LibrarySpeedDiceService
                         previousLevel,
                         currentLevel);
                 }
-
                 await state.Registration.Dispatcher.AfterRollAsync(
                     choiceContext,
                     state);
@@ -1672,11 +1677,25 @@ internal static class LibrarySpeedDiceService
         }
         finally
         {
-            foreach (LibrarySpeedDiceResolutionBatchContext batchContext
-                     in startedBatches)
+            try
             {
-                await batchContext.State.Registration.Dispatcher
-                    .AfterResolutionBatchAsync(batchContext);
+                foreach (LibrarySpeedDiceResolutionBatchContext batchContext
+                         in startedBatches)
+                {
+                    await batchContext.State.Registration.Dispatcher
+                        .AfterResolutionBatchAsync(batchContext);
+                }
+            }
+            finally
+            {
+                foreach (LibrarySpeedDiceCombatState state in states)
+                {
+                    foreach (LibrarySpeedDiceSlot slot in state.Slots)
+                        slot.IsLocked = false;
+
+                    state.IsLocked = false;
+                    state.NotifyGameplayChanged();
+                }
             }
         }
 
@@ -3059,10 +3078,19 @@ internal static class LibrarySpeedDiceService
             || state == null
             || state.IsResolving)
         {
+            Log.Info(
+                "[LibraryOfRuinaLib] [DEBUG-speed-ui-v3] refresh-skipped "
+                + $"hasState={state != null} "
+                + $"resolving={state?.IsResolving ?? false}");
             return;
         }
 
-        state.EnsureSlotCount(GetDiceCount(state), rollNewSlots);
+        int requested = GetDiceCount(state);
+        Log.Info(
+            "[LibraryOfRuinaLib] [DEBUG-speed-ui-v3] refresh "
+            + $"requested={requested} before={state.Slots.Count} "
+            + $"rollNew={rollNewSlots}");
+        state.EnsureSlotCount(requested, rollNewSlots);
     }
 
     private static LibrarySpeedDiceRegistration? FindRegistration(

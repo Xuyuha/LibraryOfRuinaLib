@@ -1358,10 +1358,16 @@ if (LibraryLight.TryGetState(player, out LibraryLightState? light)
     await light.Set(3, source);
     await light.Reset(source);
 
+    // 只增加上限。
     await light.ModifyMaximum(
         amount: 1,
         temporary: false,
-        gainCurrent: true,
+        source: source);
+
+    // 增加上限，并恢复实际增加的等量 Light。
+    await light.ModifyMaximumAndGain(
+        amount: 1,
+        temporary: false,
         source: source);
 
     await light.ClearTemporaryMaximum(source);
@@ -1448,22 +1454,34 @@ internal sealed class RolandLightState
 ```csharp
 public Task GainMaxLightAsync(
     int amount,
-    bool gainCurrent = false,
     AbstractModel? source = null) =>
     _inner.ModifyMaximum(
         Math.Max(0, amount),
         temporary: false,
-        gainCurrent: gainCurrent,
+        source: source);
+
+public Task GainMaxLightAndCurrentAsync(
+    int amount,
+    AbstractModel? source = null) =>
+    _inner.ModifyMaximumAndGain(
+        Math.Max(0, amount),
+        temporary: false,
         source: source);
 
 public Task GainTemporaryMaxLightAsync(
     int amount,
-    bool gainCurrent = false,
     AbstractModel? source = null) =>
     _inner.ModifyMaximum(
         Math.Max(0, amount),
         temporary: true,
-        gainCurrent: gainCurrent,
+        source: source);
+
+public Task GainTemporaryMaxLightAndCurrentAsync(
+    int amount,
+    AbstractModel? source = null) =>
+    _inner.ModifyMaximumAndGain(
+        Math.Max(0, amount),
+        temporary: true,
         source: source);
 
 public Task ClearTemporaryMaxLightBonusAsync(
@@ -1471,8 +1489,8 @@ public Task ClearTemporaryMaxLightBonusAsync(
     _inner.ClearTemporaryMaximum(source);
 ```
 
-`gainCurrent` 只决定“上限增加时是否同时增加 Current”。它不会改变情感升级
-时的补满策略。
+`ModifyMaximum` 只修改上限；`ModifyMaximumAndGain` 会在上限实际增加时恢复
+等量 Current。两者都不会改变情感升级时的补满策略。
 
 ### 7.3 Roland 如何保护已预留 Light
 

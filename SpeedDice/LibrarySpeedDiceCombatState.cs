@@ -99,6 +99,8 @@ public sealed class LibrarySpeedDiceCombatState
 
     internal bool DeferEmotionLevelChangedLifecycle { get; set; }
 
+    internal int PreparedTurnNumber { get; set; } = -1;
+
     internal SemaphoreSlim Gate { get; } = new(1, 1);
 
     internal void ReplaceSlots(int count)
@@ -151,6 +153,7 @@ public sealed class LibrarySpeedDiceCombatState
         }
 
         HasRolled = snapshot.HasRolled;
+        PreparedTurnNumber = snapshot.TurnNumber;
         IsLocked = snapshot.IsLocked;
         IsResolving = false;
         IsSelectingTarget = false;
@@ -213,6 +216,7 @@ public sealed class LibrarySpeedDiceCombatState
     public void EnsureSlotCount(int count, bool rollNewSlots)
     {
         count = Math.Max(0, count);
+        int before = _slots.Count;
         bool changed = false;
         while (_slots.Count < count)
         {
@@ -234,6 +238,10 @@ public sealed class LibrarySpeedDiceCombatState
 
         if (changed)
             NotifyGameplayChanged();
+        Log.Info(
+            "[LibraryOfRuinaLib] [DEBUG-speed-ui-v3] ensure "
+            + $"requested={count} before={before} after={_slots.Count} "
+            + $"changed={changed} rolled={HasRolled}");
     }
 
     public void SetBonusDrawPending(bool value)

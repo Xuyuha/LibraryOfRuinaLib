@@ -2,6 +2,7 @@ using Godot;
 using LibraryLib.SpeedDice;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.HoverTips;
+using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
@@ -99,7 +100,15 @@ internal sealed partial class LibrarySpeedDiceUi : Control
 
         SyncPosition();
         _rouletteTimer += delta;
-        RefreshViews();
+        if (_slotViews.Count != _state.Slots.Count)
+        {
+            Log.Info(
+                "[LibraryOfRuinaLib] [DEBUG-speed-ui-v3] process-mismatch "
+                + $"views={_slotViews.Count} slots={_state.Slots.Count}");
+            RebuildSlots();
+        }
+        else
+            RefreshViews();
     }
 
     private void OnStateChanged()
@@ -109,7 +118,13 @@ internal sealed partial class LibrarySpeedDiceUi : Control
             if (!GodotObject.IsInstanceValid(this) || _state == null)
                 return;
             if (_slotViews.Count != _state.Slots.Count)
+            {
+                Log.Info(
+                    "[LibraryOfRuinaLib] [DEBUG-speed-ui-v3] "
+                    + $"changed-mismatch views={_slotViews.Count} "
+                    + $"slots={_state.Slots.Count}");
                 RebuildSlots();
+            }
             RefreshViews();
         }).CallDeferred();
     }
@@ -258,6 +273,10 @@ internal sealed partial class LibrarySpeedDiceUi : Control
             SlotHeight);
         SyncPosition();
         RefreshViews();
+        Log.Info(
+            "[LibraryOfRuinaLib] [DEBUG-speed-ui-v3] rebuilt "
+            + $"views={_slotViews.Count} slots={_state.Slots.Count} "
+            + $"size={Size} visible={Visible}");
     }
 
     private static TextureRect CreateFrameTexture(

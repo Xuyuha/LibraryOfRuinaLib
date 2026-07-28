@@ -48,6 +48,9 @@ internal static class LibrarySpeedDiceAutoRollPatch
         Player player)
     {
         await original;
+        LibrarySpeedDiceService.BeginPlayerTurn(
+            player.Creature,
+            CombatSide.Player);
         await LibrarySpeedDiceService.RollForPlayerAsync(
             choiceContext,
             player);
