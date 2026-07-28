@@ -1,4 +1,5 @@
 using Library.Light;
+using LibraryLib.SpeedDice;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models;
 

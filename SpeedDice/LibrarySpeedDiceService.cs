@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using Godot;
 using Library.Light;
+using Library.SpeedDice;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Context;
@@ -18,7 +19,7 @@ using MegaCrit.Sts2.Core.Nodes.Multiplayer;
 using MegaCrit.Sts2.Core.Random;
 using MegaCrit.Sts2.Core.Runs;
 
-namespace Library.SpeedDice;
+namespace LibraryLib.SpeedDice;
 
 internal static class LibrarySpeedDiceService
 {

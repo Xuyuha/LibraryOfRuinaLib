@@ -5,6 +5,7 @@ using Library.Models;
 using Library.Powers.Mode;
 using Library.SpeedDice;
 using Library.Resistance;
+using LibraryLib.SpeedDice;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
