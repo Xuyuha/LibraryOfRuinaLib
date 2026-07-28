@@ -6,5 +6,9 @@ public sealed class LibraryBleedingModeDefault : LibraryBleedingMode
     public LibraryBleedingModeDefault(LibraryMultipleModePowerModel sourcePower) : base(sourcePower)
     {
     }
-    public override string Name => "default";
+    public LibraryBleedingModeDefault()
+    {
+    }
+    public const string name = "default";
+    public override string Name => name;
 }

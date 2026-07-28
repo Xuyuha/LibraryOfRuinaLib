@@ -12,7 +12,14 @@ namespace Library.Models;
 
 public abstract class LibraryActModel : ActModel,ILibraryAbstractModel
 {
-    
+    public virtual Creature ModifyDamageTarget(Creature creature, decimal amount, ValueProp props, Creature? dealer,LibraryDamageType type)
+    {
+        return creature;
+    }
+    public virtual Creature ModifyChaoDamageTarget(Creature creature, decimal amount, ValueProp props, Creature? dealer,LibraryDamageType type)
+    {
+        return creature;
+    }
     public virtual Task BeforeDiceRoll(PlayerChoiceContext choiceContext, IEnumerable<Creature>? target, LibraryDice dice)
     {
         return Task.CompletedTask;

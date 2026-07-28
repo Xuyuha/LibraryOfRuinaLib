@@ -6,6 +6,10 @@ public sealed class LibraryChargeModeRCorp : LibraryChargeMode
     public LibraryChargeModeRCorp(LibraryMultipleModePowerModel sourcePower) : base(sourcePower)
     {
     }
+    public LibraryChargeModeRCorp()
+    {
+    }
     public override int MaxAmount => 20;
-    public override string Name => "r_corp";
+    public const string name = "r_corp";
+    public override string Name => name;
 }

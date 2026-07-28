@@ -13,6 +13,14 @@ namespace Library.Models;
 public abstract class LibraryRelicModel : RelicModel,ILibraryAbstractModel
 {
     public virtual bool HasRightClick => false;
+    public virtual Creature ModifyDamageTarget(Creature creature, decimal amount, ValueProp props, Creature? dealer,LibraryDamageType type)
+    {
+        return creature;
+    }
+    public virtual Creature ModifyChaoDamageTarget(Creature creature, decimal amount, ValueProp props, Creature? dealer,LibraryDamageType type)
+    {
+        return creature;
+    }
 
     public virtual bool CanHandleRightClickLocal(LibraryRightClickContext context)
     {

@@ -6,5 +6,9 @@ public sealed class LibraryBurnModeDefault : LibraryBurnMode
     public LibraryBurnModeDefault(LibraryMultipleModePowerModel sourcePower) : base(sourcePower)
     {
     }
-    public override string Name => "default";
+    public LibraryBurnModeDefault()
+    {
+    }
+    public const string name = "default";
+    public override string Name => name;
 }

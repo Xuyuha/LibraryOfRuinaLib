@@ -11,6 +11,14 @@ using MegaCrit.Sts2.Core.ValueProps;
 namespace Library.Models;
 public abstract class LibraryCardModel : CardModel,ILibraryAbstractModel//加入了使用前/中/后的方法，调用时更灵活，不过一般卡牌类不继承这个类影响也不大
 {
+    public virtual Creature ModifyDamageTarget(Creature creature, decimal amount, ValueProp props, Creature? dealer,LibraryDamageType type)
+    {
+        return creature;
+    }
+    public virtual Creature ModifyChaoDamageTarget(Creature creature, decimal amount, ValueProp props, Creature? dealer,LibraryDamageType type)
+    {
+        return creature;
+    }
     public virtual Task BeforeDiceRoll(PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, LibraryDice dice)
     {
         return Task.CompletedTask;

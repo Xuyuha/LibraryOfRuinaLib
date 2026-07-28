@@ -6,5 +6,9 @@ public sealed class LibraryChargeModeDefault : LibraryChargeMode
     public LibraryChargeModeDefault(LibraryMultipleModePowerModel sourcePower) : base(sourcePower)
     {
     }
-    public override string Name => "default";
+    public LibraryChargeModeDefault()
+    {
+    }
+    public const string name = "default";
+    public override string Name => name;
 }

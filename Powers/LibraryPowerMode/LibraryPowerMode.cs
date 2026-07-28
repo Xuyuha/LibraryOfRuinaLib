@@ -26,7 +26,9 @@ public abstract class LibraryPowerMode
 	public LibraryPowerMode()
 	{
 	}
-    public abstract string Name {get;}
+    public abstract string Name { get; }
+    public virtual Creature ModifyDamageTarget(Creature creature, decimal amount, ValueProp props, Creature? dealer,LibraryDamageType type)=>creature;
+    public virtual Creature ModifyChaoDamageTarget(Creature creature, decimal amount, ValueProp props, Creature? dealer,LibraryDamageType type)=>creature;
     public virtual Task BeforeDiceRoll(PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, LibraryDice dice)
     {
         return Task.CompletedTask;

@@ -21,3 +21,4 @@ build/
 .claude*
 CLAUDE.md
 LibraryOfRuinaLib.sln.DotSettings.user
+libs/sts2.dll

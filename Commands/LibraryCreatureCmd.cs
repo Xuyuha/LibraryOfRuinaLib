@@ -150,21 +150,21 @@ public static class LibraryCreatureCmd
 				continue;
 			}
 			IEnumerable<AbstractModel> modifiers;
-			Log.Info("LibraryDamage");
-			decimal modifiedAmount = LibraryHooks.ModifyDamage(runState, combatState, originalTarget, dealer, damageAmount, props, cardSource, cardPlay, ModifyDamageHookType.All, CardPreviewMode.None, out modifiers,type);
+			Creature modifiedTarget = LibraryHooks.ModifyDamageTarget(combatState, originalTarget, damageAmount, props, dealer,type);
+			decimal modifiedAmount = LibraryHooks.ModifyDamage(runState, combatState, modifiedTarget, dealer, damageAmount, props, cardSource, cardPlay, ModifyDamageHookType.All, CardPreviewMode.None, out modifiers,type);
 			await LibraryHooks.AfterModifyingDamageAmount(runState, combatState, cardSource, modifiers,type);
 			if (!ranBeforeApplyingDamage && beforeApplyingDamage != null)
 			{
 				ranBeforeApplyingDamage = true;
 				await beforeApplyingDamage();
 			}
-			await LibraryHooks.BeforeDamageReceived(choiceContext, runState, combatState, originalTarget, modifiedAmount, props, dealer, cardSource,type);  
+			await LibraryHooks.BeforeDamageReceived(choiceContext, runState, combatState, modifiedTarget, modifiedAmount, props, dealer, cardSource,type);  
 			LibraryIncomingDamageResolution interception =
 				await LibraryHooks.InterceptIncomingDamage(
 					choiceContext,
 					runState,
 					combatState,
-					originalTarget,
+					modifiedTarget,
 					modifiedAmount,
 					props,
 					dealer,
@@ -172,24 +172,24 @@ public static class LibraryCreatureCmd
 					cardPlay,
 					type);
 			decimal remainingDamage = interception.RemainingDamage;
-			Creature creature = originalTarget.PetOwner?.Creature ?? originalTarget;
+			Creature creature = modifiedTarget.PetOwner?.Creature ?? modifiedTarget;
 			decimal blockedDamage = creature.DamageBlockInternal(remainingDamage, props);
 			decimal unblockedDamageBeforeResistance = Math.Max(remainingDamage - blockedDamage, 0m);
-			decimal unblockedDamageAfterResistance = LibraryDamageCalculate.CalculateHpLoss(unblockedDamageBeforeResistance, originalTarget as LibraryCreature, props, type);
-			decimal unblockedDamage = LibraryHooks.ModifyHpLostBeforeOsty(runState, combatState, originalTarget, unblockedDamageAfterResistance, props, dealer, cardSource, out modifiers,type);
+			decimal unblockedDamageAfterResistance = LibraryDamageCalculate.CalculateHpLoss(unblockedDamageBeforeResistance, modifiedTarget as LibraryCreature, props, type);
+			decimal unblockedDamage = LibraryHooks.ModifyHpLostBeforeOsty(runState, combatState, modifiedTarget, unblockedDamageAfterResistance, props, dealer, cardSource, out modifiers,type);
 			await LibraryHooks.AfterModifyingHpLostBeforeOsty(runState, combatState, modifiers,type);
-			Creature unblockedDamageTarget = ((combatState == null) ? originalTarget : LibraryHooks.ModifyUnblockedDamageTarget(combatState, originalTarget, unblockedDamage, props, dealer,type));
+			Creature unblockedDamageTarget = ((combatState == null) ? modifiedTarget : LibraryHooks.ModifyUnblockedDamageTarget(combatState, modifiedTarget, unblockedDamage, props, dealer,type));
 			unblockedDamage = LibraryHooks.ModifyHpLostAfterOsty(runState, combatState, unblockedDamageTarget, unblockedDamage, props, dealer, cardSource, out modifiers,type);
 			await LibraryHooks.AfterModifyingHpLostAfterOsty(runState, combatState, modifiers,type);
 			DamageResult unblockedDamageResult = unblockedDamageTarget.LoseHpInternal(unblockedDamage, props);
 			List<DamageResult> damageResults = new List<DamageResult>(1) { unblockedDamageResult };
-			bool wasBlockBroken = originalTarget.Block <= 0 && blockedDamage > 0m;
+			bool wasBlockBroken = modifiedTarget.Block <= 0 && blockedDamage > 0m;
 			bool wasFullyBlocked =
 				interception.WasFullyIntercepted
 				|| (!props.HasFlag(ValueProp.Unblockable)
-				    && (blockedDamage > 0m || originalTarget.Block > 0)
-				    && (int)unblockedDamage == 0);
-			if (originalTarget == unblockedDamageTarget)
+					&& (blockedDamage > 0m || modifiedTarget.Block > 0)
+					&& (int)unblockedDamage == 0);
+			if (modifiedTarget == unblockedDamageTarget)
 			{
 				unblockedDamageResult.BlockedDamage = (int)blockedDamage;
 				unblockedDamageResult.WasBlockBroken = wasBlockBroken;
@@ -197,9 +197,9 @@ public static class LibraryCreatureCmd
 			}
 			else
 			{
-				decimal originalTargetDamage = LibraryHooks.ModifyHpLostAfterOsty(runState, combatState, originalTarget, unblockedDamageResult.OverkillDamage, props, dealer, cardSource, out modifiers,type);
+				decimal originalTargetDamage = LibraryHooks.ModifyHpLostAfterOsty(runState, combatState, modifiedTarget, unblockedDamageResult.OverkillDamage, props, dealer, cardSource, out modifiers,type);
 				await LibraryHooks.AfterModifyingHpLostAfterOsty(runState, combatState, modifiers,type);
-				DamageResult damageResult = ((!(originalTargetDamage > 0m)) ? new DamageResult(originalTarget, props) : originalTarget.LoseHpInternal(originalTargetDamage, props));
+				DamageResult damageResult = ((!(originalTargetDamage > 0m)) ? new DamageResult(modifiedTarget, props) : modifiedTarget.LoseHpInternal(originalTargetDamage, props));
 				damageResult.BlockedDamage = (int)blockedDamage;
 				damageResult.WasBlockBroken = wasBlockBroken;
 				damageResult.WasFullyBlocked = wasFullyBlocked;
@@ -265,13 +265,13 @@ public static class LibraryCreatureCmd
 				{
 					SfxCmd.Play("event:/sfx/block_break");
 				}
-				if (LocalContext.IsMe(originalTarget) && (!CombatManager.Instance.IsInProgress || originalTarget.GetHpPercentRemaining() <= 0.25))
+				if (LocalContext.IsMe(modifiedTarget) && (!CombatManager.Instance.IsInProgress || modifiedTarget.GetHpPercentRemaining() <= 0.25))
 				{
 					PlayerHurtVignetteHelper.Play();
 				}
-				if (originalTarget.Side == CombatSide.Enemy)
+				if (modifiedTarget.Side == CombatSide.Enemy)
 				{
-					SfxCmd.PlayDamage(originalTarget.Monster, unblockedDamageResult.UnblockedDamage);
+					SfxCmd.PlayDamage(modifiedTarget.Monster, unblockedDamageResult.UnblockedDamage);
 				}
 				if (CombatManager.Instance.IsInProgress || LocalContext.ContainsMe(targetList))
 				{
@@ -294,35 +294,35 @@ public static class LibraryCreatureCmd
 		List<Creature> killedCreatures = new List<Creature>();
 		foreach (DamageResult unblockedDamageResult in results)
 		{
-			Creature originalTarget = unblockedDamageResult.Receiver;
+			Creature target = unblockedDamageResult.Receiver;
 			if (unblockedDamageResult.WasBlockBroken)
 			{
 				await LibraryHooks.AfterBlockBroken(
-					originalTarget.CombatState,
+					target.CombatState,
 					choiceContext,
-					originalTarget,
+					target,
 					dealer,
 					type);
 			}
 			if (unblockedDamageResult.UnblockedDamage > 0)
 			{
-				await LibraryHooks.AfterCurrentHpChanged(runState, combatState, originalTarget, -unblockedDamageResult.UnblockedDamage,type);
+				await LibraryHooks.AfterCurrentHpChanged(runState, combatState, target, -unblockedDamageResult.UnblockedDamage,type);
 			}
-			if (dealer != null && dealer.Player != null && originalTarget.Player == null)
+			if (dealer != null && dealer.Player != null && target.Player == null)
 			{
 				dealer.Player.ExtraFields.DamageDealt += unblockedDamageResult.UnblockedDamage;
 			}
 			if (combatState != null)
 			{
-				await LibraryHooks.AfterDamageGiven(choiceContext, combatState, dealer, unblockedDamageResult, props, originalTarget, cardSource,type);
+				await LibraryHooks.AfterDamageGiven(choiceContext, combatState, dealer, unblockedDamageResult, props, target, cardSource,type);
 			}
-			if (!unblockedDamageResult.WasTargetKilled || !originalTarget.IsDead)
+			if (!unblockedDamageResult.WasTargetKilled || !target.IsDead)
 			{
-				await LibraryHooks.AfterDamageReceived(choiceContext, runState, combatState, originalTarget, unblockedDamageResult, props, dealer, cardSource,type);
+				await LibraryHooks.AfterDamageReceived(choiceContext, runState, combatState, target, unblockedDamageResult, props, dealer, cardSource,type);
 			}
 			else
 			{
-				killedCreatures.Add(originalTarget);
+				killedCreatures.Add(target);
 			}
 			if (unblockedDamageResult.WasFullyBlocked && CombatManager.Instance.IsInProgress)
 			{
@@ -351,7 +351,6 @@ public static class LibraryCreatureCmd
 		return await ChaoDamage(choiceContext, new List<Creature> { target }, damageAmount, props, dealer, cardSource, cardPlay,type);
 	}
 	public static async Task<IEnumerable<LibraryChaoResult>?> ChaoDamage(PlayerChoiceContext choiceContext, IEnumerable<Creature> targets, decimal damageAmount, ValueProp props, Creature? dealer, CardModel? cardSource , CardPlay? cardPlay,LibraryDamageType type = LibraryDamageType.None, IEnumerable<DamageResult>? damageResults = null)
-		//我暂时没用这个方法，走的是我当时自己用的简易混乱值判定，根据原始伤害对原版attack commmand进行patch，因此也没有检测攻击类型，后续选择一个统一的方法来用。
 	{
 		List<LibraryChaoResult> results = [];
 		targets = targets.Where((Creature c) => c is LibraryCreature lc && lc.HasChaoResistance);
@@ -382,11 +381,12 @@ public static class LibraryCreatureCmd
 			}
 			IEnumerable<AbstractModel> modifiers;
 			Log.Info("LibraryChaoDamage");
-			decimal modifiedAmountbefore = LibraryHooks.ModifyChaoDamage(runState, combatState, Target, dealer,damageAmount, props, cardSource, cardPlay, ModifyChaoDamageHookType.All, CardPreviewMode.None, out modifiers,type);
-			decimal modifiedAmount = LibraryDamageCalculate.CalculateChaoAmount(modifiedAmountbefore,Target as LibraryCreature, props, type);
+			Creature modifiedTarget = LibraryHooks.ModifyChaoDamageTarget(combatState, Target, damageAmount, props, dealer,type);
+			decimal modifiedAmountbefore = LibraryHooks.ModifyChaoDamage(runState, combatState, modifiedTarget, dealer,damageAmount, props, cardSource, cardPlay, ModifyChaoDamageHookType.All, CardPreviewMode.None, out modifiers,type);
+			decimal modifiedAmount = LibraryDamageCalculate.CalculateChaoAmount(modifiedAmountbefore,modifiedTarget as LibraryCreature, props, type);
 			await LibraryHooks.AfterModifyingChaoAmount(runState, combatState, cardSource, modifiers,type);
-			await LibraryHooks.BeforeChaoDamageReceived(choiceContext, runState, combatState, Target, modifiedAmount, props, dealer, cardSource,type);  
-			LibraryChaoResult ChaoResult = (Target as LibraryCreature).LoseChaoValueInternal(modifiedAmount, props);
+			await LibraryHooks.BeforeChaoDamageReceived(choiceContext, runState, combatState, modifiedTarget, modifiedAmount, props, dealer, cardSource,type);  
+			LibraryChaoResult ChaoResult = (modifiedTarget as LibraryCreature).LoseChaoValueInternal(modifiedAmount, props);
 			List<Task> hitTriggers = [];
 			// 混乱伤害反馈
 			// foreach (DamageResult item in damageResults) 
@@ -420,8 +420,8 @@ public static class LibraryCreatureCmd
 			// }
 			if (ChaoResult != null && (ChaoResult.ChaoValueAmount > 0 || modifiedAmount == 0m))
 			{
-				Node vfxContainer = Target.GetVfxContainer();
-				LibraryRuinaDamageNumberVfx? chaoVfx = LibraryRuinaDamageNumberVfx.CreateChaos(Target, ChaoResult, type);
+				Node vfxContainer = modifiedTarget.GetVfxContainer();
+				LibraryRuinaDamageNumberVfx? chaoVfx = LibraryRuinaDamageNumberVfx.CreateChaos(modifiedTarget, ChaoResult, type);
 				if (chaoVfx != null)
 				{
 					if (vfxContainer != null)
@@ -439,20 +439,19 @@ public static class LibraryCreatureCmd
 		List<LibraryCreature> StunedCreatures = new List<LibraryCreature>();
 		foreach (LibraryChaoResult Result in results)
 		{
-			if (Result.Receiver is not LibraryCreature Target || Target.CombatState == null)
+			if (Result.Receiver is not LibraryCreature target || target.CombatState == null)
 			{
 				continue;
 			}
-
 			if (combatState != null)
 			{
-				await LibraryHooks.AfterCurrentChaoValueChanged(runState, combatState, Target, -Result.ChaoValueAmount,type);
-				await LibraryHooks.AfterChaoDamageGiven(choiceContext, combatState, dealer, Result, props, Target, cardSource,type);
-				await LibraryHooks.AfterChaoDamageReceived(choiceContext, runState, combatState, Target, Result, props, dealer, cardSource,type);
+				await LibraryHooks.AfterCurrentChaoValueChanged(runState, combatState, target, -Result.ChaoValueAmount,type);
+				await LibraryHooks.AfterChaoDamageGiven(choiceContext, combatState, dealer, Result, props, target, cardSource,type);	
+				await LibraryHooks.AfterChaoDamageReceived(choiceContext, runState, combatState, target, Result, props, dealer, cardSource,type);
 			}
 			if(Result.WasStun)
 			{
-				StunedCreatures.Add(Target);
+				StunedCreatures.Add(target);
 			}	
 		}
 		foreach (var c in StunedCreatures)
