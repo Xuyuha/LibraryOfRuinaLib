@@ -1,7 +1,5 @@
-using System;
-using System.Collections.Generic;
 using Library.Hooks;
-using Library.Patches;
+using Library.Resistance;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
@@ -12,11 +10,11 @@ using MegaCrit.Sts2.Core.ValueProps;
 
 public class LibraryCalculatedDamageVar : CalculatedDamageVar
 {
-    public LibraryDamageType DamageType { get; set; }
+	public LibraryDamageType DamageType { get; set; }
 	public LibraryCalculatedDamageVar(ValueProp props, LibraryDamageType damageType)
 		: base(props)
 	{
-        DamageType = damageType;
+		DamageType = damageType;
 	}
 
 	public override void UpdateCardPreview(CardModel card, CardPreviewMode previewMode, Creature? target, bool runGlobalHooks)

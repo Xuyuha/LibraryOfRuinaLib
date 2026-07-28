@@ -5,7 +5,6 @@ using MegaCrit.Sts2.Core.Entities.Powers;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.ValueProps;
 
-
 namespace Library.Powers;
 public sealed class LibraryVulnerablePower : LibraryDurationPowerModel//易损，受到生命值伤害+1
 {

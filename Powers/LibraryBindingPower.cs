@@ -1,9 +1,9 @@
+using Library.Models;
+using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Powers;
 using MegaCrit.Sts2.Core.Models;
-using Library.Models;
 using MegaCrit.Sts2.Core.ValueProps;
-using MegaCrit.Sts2.Core.Combat;
 
 namespace Library.Powers;
 public sealed class LibraryBindingPower : LibraryDurationPowerModel

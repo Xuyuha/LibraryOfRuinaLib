@@ -1,20 +1,17 @@
-using MegaCrit.Sts2.Core.Entities.Creatures;
-using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using MegaCrit.Sts2.Core.Combat;
-using MegaCrit.Sts2.Core.Entities.Players;
 using Library.Models;
+using Library.Patches;
 using Library.Resistance;
-using MegaCrit.Sts2.Core.ValueProps;
+using Library.Resistance.Patches;
+using MegaCrit.Sts2.Core.Combat;
+using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Singleton;
-using MegaCrit.Sts2.Core.Random;
-using MegaCrit.Sts2.Core.MonsterMoves.MonsterMoveStateMachine;
 using MegaCrit.Sts2.Core.MonsterMoves.Intents;
+using MegaCrit.Sts2.Core.MonsterMoves.MonsterMoveStateMachine;
 using MegaCrit.Sts2.Core.Nodes.Combat;
-using Library.Resistance.Patches;
-using Library.Hooks;
-using Library.Patches;
+using MegaCrit.Sts2.Core.Random;
+using MegaCrit.Sts2.Core.ValueProps;
 
 namespace Library.Entities.Creatures;
 public class LibraryCreature : Creature//扩展Creature，添加Chao值属性

@@ -1,7 +1,5 @@
 #nullable enable
-using System;
 using System.Reflection;
-using System.Threading.Tasks;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Context;

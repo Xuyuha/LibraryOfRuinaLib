@@ -1,11 +1,11 @@
 #nullable enable
-using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Godot;
 using HarmonyLib;
 using Library.Entities.Creatures;
 using Library.Models;
+using Library.Resistance;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization;

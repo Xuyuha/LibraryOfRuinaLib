@@ -1,22 +1,20 @@
+using Library.Combat;
+using Library.Utils;
+using Library.Entities.Creatures;
+using Library.Models;
+using Library.Powers.Mode;
+using Library.SpeedDice;
+using Library.Resistance;
 using MegaCrit.Sts2.Core.Combat;
+using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Hooks;
+using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.ValueProps;
-using Library.Models;
-using MegaCrit.Sts2.Core.Entities.Cards;
-using Library.Entities.Creatures;
-using Library.Utils;
-using Library.Resistance;
-using Library.Powers.Mode;
-using MegaCrit.Sts2.Core.Logging;
-using System.Text.RegularExpressions;
-using System.Runtime;
-using System.Threading.Tasks;
-using Library.Combat;
-using Library.SpeedDice;
+
 namespace Library.Hooks;
 
 public static class LibraryHooks

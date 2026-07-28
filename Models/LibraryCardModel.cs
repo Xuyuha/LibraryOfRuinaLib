@@ -1,13 +1,12 @@
-using MegaCrit.Sts2.Core.Models;
-using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using MegaCrit.Sts2.Core.Entities.Cards;
-using MegaCrit.Sts2.Core.Localization;
-using MegaCrit.Sts2.Core.Entities.Creatures;
-using MegaCrit.Sts2.Core.ValueProps;
-using Library.Entities.Creatures;
-using Library.Resistance;
 using Library.Utils;
+using Library.Entities.Creatures;
 using Library.Powers.Mode;
+using Library.Resistance;
+using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.Entities.Creatures;
+using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.ValueProps;
 
 namespace Library.Models;
 public abstract class LibraryCardModel : CardModel,ILibraryAbstractModel//加入了使用前/中/后的方法，调用时更灵活，不过一般卡牌类不继承这个类影响也不大

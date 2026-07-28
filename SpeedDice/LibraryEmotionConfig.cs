@@ -7,7 +7,7 @@ public sealed class LibraryEmotionConfig
 {
     /// <summary>
     /// 每级情感升级所需的情感单位数，按等级索引
-    /// 默认：[3, 3, 5, 7, 9] 即 1→2级需3单位，2→3级需3单位，可自定
+    /// 默认：[3, 3, 5, 7, 9] 即 1→2级需 3 单位，2→3级需 3 单位，可自定
     /// </summary>
     public IReadOnlyList<int> UnitThresholds { get; init; } = [3, 3, 5, 7, 9];
 
@@ -23,7 +23,7 @@ public sealed class LibraryEmotionConfig
     public decimal DamageUnitFractionOfMaxHp { get; init; } = 0.10m;
 
     /// <summary>
-    /// 掷出极端值（最大/最小）时获得的情感单位数（目前我采用最大）
+    /// 掷出极端值（最大/最小）时获得的情感单位数
     /// </summary>
     public int ExtremeRollEmotionUnits { get; init; }
 
@@ -38,7 +38,8 @@ public sealed class LibraryEmotionConfig
     public int AllyDeathEmotionUnits { get; init; }
 
     /// <summary>
-    /// 每级情感等级提升时获得的额外光芒上限
+    /// 每级情感等级提升时获得的原版最大能量上限。
+    /// 独立 Light 上限由 LibraryLightOptions 配置，不读取此字段。
     /// </summary>
     public int MaxEnergyPerLevel { get; init; } = 1;
 

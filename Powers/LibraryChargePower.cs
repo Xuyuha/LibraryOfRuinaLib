@@ -1,9 +1,9 @@
 using Library.Models;
-using MegaCrit.Sts2.Core.Entities.Powers;
 using Library.Powers.Mode;
+using MegaCrit.Sts2.Core.Entities.Creatures;
+using MegaCrit.Sts2.Core.Entities.Powers;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models;
-using MegaCrit.Sts2.Core.Entities.Creatures;
 
 namespace Library.Powers;
 public sealed class LibraryChargePower : LibraryBasePowerModel

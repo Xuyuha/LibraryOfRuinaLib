@@ -1,20 +1,18 @@
-using MegaCrit.Sts2.Core.Models;
-using MegaCrit.Sts2.Core.Combat;
-using HarmonyLib;
 using Godot;
+using HarmonyLib;
+using Library.Utils;
+using Library.Entities.Creatures;
+using Library.Powers.Mode;
+using Library.Resistance;
 using MegaCrit.Sts2.Core.Assets;
+using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Localization;
+using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Nodes.Combat;
-using Library.Utils;
-using Library.Hooks;
 using MegaCrit.Sts2.Core.ValueProps;
-using Library.Entities.Creatures;
-using Library.Resistance;
-using MegaCrit.Sts2.Core.Entities.Cards;
-using Library.Powers.Mode;
 
 namespace Library.Models;
 

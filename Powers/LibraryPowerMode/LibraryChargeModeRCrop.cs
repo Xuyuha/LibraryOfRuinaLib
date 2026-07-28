@@ -1,4 +1,5 @@
 using Library.Models;
+
 namespace Library.Powers.Mode;
 public sealed class LibraryChargeModeRCorp : LibraryChargeMode
 {

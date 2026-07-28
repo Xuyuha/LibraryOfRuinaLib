@@ -1,4 +1,3 @@
-using System.Threading;
 using Library.Resistance;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;

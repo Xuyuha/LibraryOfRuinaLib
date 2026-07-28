@@ -1,4 +1,6 @@
 using Library.Entities.Creatures;
+using Library.Patches;
+using Library.Resistance;
 using Library.Resistance.Patches;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
@@ -15,8 +17,8 @@ public static class ResistancePreview
     public static bool ShouldApplyResistance(ValueProp props, LibraryDamageType damageType)
     {
         return damageType != LibraryDamageType.None
-            && props.HasFlag(ValueProp.Move)
-            && !props.HasFlag(ValueProp.Unpowered);
+               && props.HasFlag(ValueProp.Move)
+               && !props.HasFlag(ValueProp.Unpowered);
     }
     public static decimal ApplyPhysicalResistancePreview(
         CardModel card,

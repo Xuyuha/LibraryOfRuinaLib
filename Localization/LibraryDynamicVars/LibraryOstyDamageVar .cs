@@ -1,6 +1,5 @@
-using System.Collections.Generic;
 using Library.Hooks;
-using Library.Patches;
+using Library.Resistance;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
@@ -11,18 +10,18 @@ using MegaCrit.Sts2.Core.ValueProps;
 
 public class LibraryOstyDamageVar : OstyDamageVar
 {
-    public LibraryDamageType DamageType { get; set; }
+	public LibraryDamageType DamageType { get; set; }
 
 	public LibraryOstyDamageVar(decimal damage, ValueProp props, LibraryDamageType damageType)
-    : base(damage, props)
+		: base(damage, props)
 	{
-        DamageType = damageType;
+		DamageType = damageType;
 	}
 
 	public LibraryOstyDamageVar(string name, decimal damage, ValueProp props, LibraryDamageType damageType)
-    : base(name, damage, props)
+		: base(name, damage, props)
 	{
-        DamageType = damageType;
+		DamageType = damageType;
 	}
 
 	public override void UpdateCardPreview(CardModel card, CardPreviewMode previewMode, Creature? target, bool runGlobalHooks)

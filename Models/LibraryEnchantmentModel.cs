@@ -1,13 +1,13 @@
+using Library.Utils;
 using Library.Entities.Creatures;
-using Library.Models;
 using Library.Powers.Mode;
 using Library.Resistance;
-using Library.Utils;
+using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.ValueProps;
-using MegaCrit.Sts2.Core.Entities.Cards;
+
 namespace Library.Models;
 
 public class LibraryEnchantmentModel : EnchantmentModel,ILibraryAbstractModel

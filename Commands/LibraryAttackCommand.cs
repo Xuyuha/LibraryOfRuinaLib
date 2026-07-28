@@ -1,24 +1,25 @@
 #nullable enable
 using Godot;
-using MegaCrit.Sts2.Core.Audio.Debug;
-using MegaCrit.Sts2.Core.Combat;
-using MegaCrit.Sts2.Core.Entities.Creatures;
-using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using MegaCrit.Sts2.Core.Helpers;
-using MegaCrit.Sts2.Core.Models;
-using MegaCrit.Sts2.Core.Random;
-using MegaCrit.Sts2.Core.Commands;
-using MegaCrit.Sts2.Core.Commands.Builders;
-using MegaCrit.Sts2.Core.Localization.DynamicVars;
-using Library.Utils;
-using MegaCrit.Sts2.Core.ValueProps;
-using MegaCrit.Sts2.Core.Entities.Players;
-using MegaCrit.Sts2.Core.Models.Monsters;
 using Library.Entities.Creatures;
 using Library.Hooks;
-using MegaCrit.Sts2.Core.Entities.Cards;
+using Library.Utils;
 using Library.Models;
+using Library.Resistance;
+using MegaCrit.Sts2.Core.Audio.Debug;
+using MegaCrit.Sts2.Core.Combat;
+using MegaCrit.Sts2.Core.Commands;
+using MegaCrit.Sts2.Core.Commands.Builders;
+using MegaCrit.Sts2.Core.Entities.Cards;
+using MegaCrit.Sts2.Core.Entities.Creatures;
+using MegaCrit.Sts2.Core.Entities.Players;
+using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+using MegaCrit.Sts2.Core.Helpers;
+using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Logging;
+using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.Models.Monsters;
+using MegaCrit.Sts2.Core.Random;
+using MegaCrit.Sts2.Core.ValueProps;
 
 public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究，AttackCommand几乎没有与任何其他类交互，可以放心重置
 //todo：骰子相关的方法
@@ -32,7 +33,7 @@ public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究�
 		Card,
 		Monster
 	}
-    private LibraryDamageType _damageType = LibraryDamageType.None;
+	private LibraryDamageType _damageType = LibraryDamageType.None;
 	private decimal _damagePerHit;
 	private readonly CalculatedDamageVar? _calculatedDamageVar;
 
@@ -616,7 +617,7 @@ public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究�
 				decimal chaoDamage = DamageProps.HasFlag(ValueProp.Unblockable)
 					? damage
 					: Math.Max(0, damage - Blocks[j]);
-                IEnumerable<LibraryChaoResult>? results = await LibraryCreatureCmd.ChaoDamage(damageAmount: chaoDamage, choiceContext: choiceContext ?? new BlockingPlayerChoiceContext(), target: targets[j], props: DamageProps, dealer: Attacker, cardSource: ModelSource as CardModel, cardPlay: cardPlay, type: _damageType, damageResults: damageResults);
+				IEnumerable<LibraryChaoResult>? results = await LibraryCreatureCmd.ChaoDamage(damageAmount: chaoDamage, choiceContext: choiceContext ?? new BlockingPlayerChoiceContext(), target: targets[j], props: DamageProps, dealer: Attacker, cardSource: ModelSource as CardModel, cardPlay: cardPlay, type: _damageType, damageResults: damageResults);
 				if(results != null)
 					chaoResults.AddRange(results);
 			}

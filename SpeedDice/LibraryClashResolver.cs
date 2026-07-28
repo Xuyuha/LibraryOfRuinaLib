@@ -1,5 +1,6 @@
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Players;
+using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 
 namespace Library.SpeedDice;
 
@@ -8,11 +9,13 @@ public sealed class LibraryClashContext
     internal LibraryClashContext(
         Player player,
         LibrarySpeedDiceSlot slot,
-        Creature? target)
+        Creature? target,
+        PlayerChoiceContext choiceContext)
     {
         Player = player;
         Slot = slot;
         Target = target;
+        ChoiceContext = choiceContext;
     }
 
     public Player Player { get; }
@@ -20,6 +23,8 @@ public sealed class LibraryClashContext
     public LibrarySpeedDiceSlot Slot { get; }
 
     public Creature? Target { get; set; }
+
+    public PlayerChoiceContext ChoiceContext { get; }
 
     public bool CancelCard { get; set; }
 }

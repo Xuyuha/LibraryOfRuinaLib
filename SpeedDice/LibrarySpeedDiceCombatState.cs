@@ -1,4 +1,6 @@
+using Library.Light;
 using MegaCrit.Sts2.Core.Entities.Players;
+using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Random;
 
 namespace Library.SpeedDice;
@@ -6,19 +8,45 @@ namespace Library.SpeedDice;
 public sealed class LibrarySpeedDiceCombatState
 {
     private readonly List<LibrarySpeedDiceSlot> _slots = [];
+    private int _lifecycleBusy;
 
-    internal LibrarySpeedDiceCombatState(Player player, LibrarySpeedDiceParticipant participant)
+    internal LibrarySpeedDiceCombatState(
+        Player player,
+        LibrarySpeedDiceRegistration registration)
     {
         Player = player;
-        Participant = participant;
-        GameplayRng = new Rng(player.RunState.Rng.Seed, "library_speed_dice");
+        Registration = registration;
+        Participant = registration.CompatibilityParticipant;
+        GameplayRng = registration.Dispatcher.CreateGameplayRng(player)
+            ?? new Rng(player.RunState.Rng.Seed, "library_speed_dice");
+        TargetRepairRng =
+            registration.Dispatcher.CreateTargetRepairRng(player)
+            ?? new Rng(player.RunState.Rng.Seed, "library_speed_target_repair");
+        Emotion.LevelChanged += HandleEmotionLevelChanged;
+        if (registration.Light != null)
+        {
+            ILibraryLightStore store =
+                registration.LightStoreFactory?.Invoke(
+                    player,
+                    registration.Light)
+                ?? new LibraryInMemoryLightStore(
+                    registration.Light.Starting);
+            Light = new LibraryLightState(
+                this,
+                registration.Light,
+                store);
+        }
     }
 
     public Player Player { get; }
 
     public LibrarySpeedDiceParticipant Participant { get; }
 
+    internal LibrarySpeedDiceRegistration Registration { get; }
+
     public LibraryEmotionState Emotion { get; } = new();
+
+    public LibraryLightState? Light { get; }
 
     public IReadOnlyList<LibrarySpeedDiceSlot> Slots => _slots;
 
@@ -30,11 +58,18 @@ public sealed class LibrarySpeedDiceCombatState
 
     public bool IsSelectingTarget { get; internal set; }
 
+    public bool IsLifecycleBusy => Volatile.Read(ref _lifecycleBusy) != 0;
+
     public LibrarySpeedDiceSlot? ResolvingSlot { get; internal set; }
 
     public int CurrentTurnTriggeredCards { get; internal set; }
 
     public int PreviousTurnTriggeredCards { get; internal set; }
+
+    /// <summary>
+    /// 仅在确定性战斗状态发生变化时递增；本地 hover/目标选择等表现状态不影响该值。
+    /// </summary>
+    public int Revision { get; internal set; }
 
     public int ReservedEnergy => _slots.Sum(x => x.ReservedEnergy);
 
@@ -44,29 +79,291 @@ public sealed class LibrarySpeedDiceCombatState
 
     internal Rng GameplayRng { get; set; }
 
+    internal Rng TargetRepairRng { get; set; }
+
     internal int DamageGivenAccumulator { get; set; }
+
+    internal int DamageGivenAccumulatorThreshold { get; set; }
 
     internal int DamageReceivedAccumulator { get; set; }
 
-    internal bool BonusDrawPending { get; set; }
+    internal int DamageReceivedAccumulatorThreshold { get; set; }
+
+    public bool BonusDrawPending { get; internal set; }
+
+    internal int LeaseSequence { get; set; }
+
+    internal int PendingEmotionPreviousLevel { get; private set; } = -1;
+
+    internal int PendingEmotionCurrentLevel { get; private set; } = -1;
+
+    internal bool DeferEmotionLevelChangedLifecycle { get; set; }
 
     internal SemaphoreSlim Gate { get; } = new(1, 1);
 
     internal void ReplaceSlots(int count)
     {
+        foreach (LibrarySpeedDiceSlot slot in _slots)
+            ReleaseSlotForReplacement(slot);
         _slots.Clear();
         for (int i = 0; i < count; i++)
-            _slots.Add(new LibrarySpeedDiceSlot(i, Participant.MinSpeed));
+        {
+            _slots.Add(
+                new LibrarySpeedDiceSlot(
+                    i,
+                    Registration.Options.MinRoll));
+        }
         HasRolled = false;
         IsLocked = false;
         IsResolving = false;
         IsSelectingTarget = false;
+        Volatile.Write(ref _lifecycleBusy, 0);
         ResolvingSlot = null;
+        NotifyGameplayChanged();
+    }
+
+    internal void Restore(LibrarySpeedDiceStateSnapshot snapshot)
+    {
+        foreach (LibrarySpeedDiceSlot slot in _slots)
+            ReleaseSlotForReplacement(slot);
+        _slots.Clear();
+        foreach (LibrarySpeedDiceSlotSnapshot savedSlot in
+                 snapshot.Slots.OrderBy(slot => slot.Index))
+        {
+            var slot = new LibrarySpeedDiceSlot(
+                savedSlot.Index,
+                savedSlot.DisplayValue)
+            {
+                DisplayValue = savedSlot.DisplayValue,
+                FinalValue = savedSlot.FinalValue,
+                IsLocked = savedSlot.IsLocked,
+                IsSpent = savedSlot.IsSpent,
+                Card = savedSlot.Card,
+                Target = savedSlot.Target,
+            };
+            foreach ((string resourceId, int amount) in
+                     savedSlot.ReservedSecondaryResources)
+            {
+                slot.SetSecondaryResourceReservation(resourceId, amount);
+            }
+
+            _slots.Add(slot);
+        }
+
+        HasRolled = snapshot.HasRolled;
+        IsLocked = snapshot.IsLocked;
+        IsResolving = false;
+        IsSelectingTarget = false;
+        Volatile.Write(ref _lifecycleBusy, 0);
+        ResolvingSlot = null;
+        CurrentTurnTriggeredCards = Math.Max(
+            0,
+            snapshot.CurrentTurnTriggeredCards);
+        PreviousTurnTriggeredCards = Math.Max(
+            0,
+            snapshot.PreviousTurnTriggeredCards);
+        BonusDrawPending = snapshot.BonusDrawPending;
+        DamageGivenAccumulator = Math.Max(
+            0,
+            snapshot.DamageGivenAccumulator);
+        DamageReceivedAccumulator = Math.Max(
+            0,
+            snapshot.DamageReceivedAccumulator);
+        DamageGivenAccumulatorThreshold = Math.Max(
+            0,
+            snapshot.Extension?.DamageGivenAccumulatorThreshold ?? 0);
+        DamageReceivedAccumulatorThreshold = Math.Max(
+            0,
+            snapshot.Extension?.DamageReceivedAccumulatorThreshold ?? 0);
+        Emotion.Restore(
+            snapshot.EmotionLevel,
+            snapshot.EmotionUnits,
+            Registration.Emotion);
+        LeaseSequence = Math.Max(
+            0,
+            snapshot.Extension?.LeaseSequence ?? 0);
+        int pendingPrevious =
+            snapshot.Extension?.PendingEmotionPreviousLevel ?? -1;
+        int pendingCurrent =
+            snapshot.Extension?.PendingEmotionCurrentLevel ?? -1;
+        if (pendingPrevious >= 0 && pendingCurrent >= pendingPrevious)
+        {
+            PendingEmotionPreviousLevel = pendingPrevious;
+            PendingEmotionCurrentLevel = pendingCurrent;
+        }
+        else
+        {
+            PendingEmotionPreviousLevel = -1;
+            PendingEmotionCurrentLevel = -1;
+        }
+        Revision = Math.Max(0, snapshot.Revision);
+    }
+
+    public void SetSlotRollValue(int slotIndex, int value)
+    {
+        if (slotIndex < 0 || slotIndex >= _slots.Count)
+            throw new ArgumentOutOfRangeException(nameof(slotIndex));
+
+        LibrarySpeedDiceSlot slot = _slots[slotIndex];
+        slot.FinalValue = value;
+        slot.DisplayValue = value;
+        NotifyGameplayChanged();
+    }
+
+    public void EnsureSlotCount(int count, bool rollNewSlots)
+    {
+        count = Math.Max(0, count);
+        bool changed = false;
+        while (_slots.Count < count)
+        {
+            var slot = new LibrarySpeedDiceSlot(
+                _slots.Count,
+                Registration.Options.MinRoll);
+            if (rollNewSlots && HasRolled)
+            {
+                int value = GameplayRng.NextInt(
+                    Registration.Options.MinRoll,
+                    Registration.Options.MaxRoll + 1);
+                slot.FinalValue = value;
+                slot.DisplayValue = value;
+            }
+
+            _slots.Add(slot);
+            changed = true;
+        }
+
+        if (changed)
+            NotifyGameplayChanged();
+    }
+
+    public void SetBonusDrawPending(bool value)
+    {
+        if (BonusDrawPending == value)
+            return;
+
+        BonusDrawPending = value;
+        NotifyGameplayChanged();
+    }
+
+    public void MarkAllSlotsSpent()
+    {
+        bool changed = false;
+        foreach (LibrarySpeedDiceSlot slot in _slots)
+        {
+            if (slot.IsSpent)
+                continue;
+
+            slot.IsSpent = true;
+            changed = true;
+        }
+
+        if (changed)
+            NotifyGameplayChanged();
+    }
+
+    internal void NotifyGameplayChanged()
+    {
+        Revision = Revision == int.MaxValue ? 1 : Revision + 1;
         NotifyChanged();
     }
 
     internal void NotifyChanged()
     {
-        Changed?.Invoke();
+        foreach (Delegate handler in Changed?.GetInvocationList() ?? [])
+        {
+            try
+            {
+                ((Action)handler)();
+            }
+            catch (Exception exception)
+            {
+                Log.Error(
+                    "[LibraryOfRuinaLib] Speed-dice state listener failed: "
+                    + exception);
+            }
+        }
+    }
+
+    internal bool TryBeginLifecycle()
+    {
+        if (Interlocked.CompareExchange(ref _lifecycleBusy, 1, 0) != 0)
+            return false;
+
+        NotifyChanged();
+        return true;
+    }
+
+    internal void EndLifecycle()
+    {
+        if (Interlocked.Exchange(ref _lifecycleBusy, 0) != 0)
+            NotifyChanged();
+    }
+
+    internal string CreateLeaseId(int slotIndex)
+    {
+        int sequence = checked(++LeaseSequence);
+        int turn = Player.PlayerCombatState?.TurnNumber ?? -1;
+        return string.Create(
+            System.Globalization.CultureInfo.InvariantCulture,
+            $"{Registration.Id}:{Player.NetId}:{turn}:{slotIndex}:{sequence}");
+    }
+
+    internal bool ConsumePendingEmotionChange(
+        out int previousLevel,
+        out int currentLevel)
+    {
+        previousLevel = PendingEmotionPreviousLevel;
+        currentLevel = PendingEmotionCurrentLevel;
+        PendingEmotionPreviousLevel = -1;
+        PendingEmotionCurrentLevel = -1;
+        return previousLevel >= 0 && currentLevel >= previousLevel;
+    }
+
+    private void HandleEmotionLevelChanged(
+        int previousLevel,
+        int currentLevel)
+    {
+        if (DeferEmotionLevelChangedLifecycle)
+        {
+            if (PendingEmotionPreviousLevel < 0)
+                PendingEmotionPreviousLevel = previousLevel;
+            PendingEmotionCurrentLevel = currentLevel;
+        }
+        else
+        {
+            DispatchEmotionLevelChanged(
+                previousLevel,
+                currentLevel);
+        }
+
+        NotifyGameplayChanged();
+    }
+
+    internal void DispatchEmotionLevelChanged(
+        int previousLevel,
+        int currentLevel)
+    {
+        Registration.Dispatcher.OnEmotionLevelChanged(
+            new LibraryEmotionLevelChanged(
+                this,
+                previousLevel,
+                currentLevel));
+        Light?.RefreshMaximum();
+    }
+
+    private void ReleaseSlotForReplacement(
+        LibrarySpeedDiceSlot slot)
+    {
+        var card = slot.Card;
+        LibrarySpeedDiceCardLease? lease = slot.Lease;
+        slot.ClearReservation();
+        if (card != null)
+        {
+            Registration.Dispatcher.OnCardReleased(
+                this,
+                slot,
+                card,
+                lease);
+        }
     }
 }

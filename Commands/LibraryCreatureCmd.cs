@@ -1,34 +1,29 @@
-using System.Runtime.CompilerServices;
-using System.Text.Json.Serialization;
 using Godot;
 using Library.Combat;
 using Library.Entities.Creatures;
 using Library.Hooks;
+using Library.Utils;
 using Library.Models;
 using Library.Patches;
 using Library.Resistance;
-using Library.Resistance.Patches;
-using Library.Utils;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Context;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
-using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Hooks;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Models;
-using MegaCrit.Sts2.Core.Models.Cards;
 using MegaCrit.Sts2.Core.Nodes;
-using MegaCrit.Sts2.Core.Nodes.Rooms;
 using MegaCrit.Sts2.Core.Nodes.Vfx;
 using MegaCrit.Sts2.Core.Nodes.Vfx.Utilities;
 using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Runs.History;
 using MegaCrit.Sts2.Core.ValueProps;
+
 public static class LibraryCreatureCmd
 {
 	private const int MaxAdditionalDiceRolls = 32;
@@ -192,8 +187,8 @@ public static class LibraryCreatureCmd
 			bool wasFullyBlocked =
 				interception.WasFullyIntercepted
 				|| (!props.HasFlag(ValueProp.Unblockable)
-					&& (blockedDamage > 0m || originalTarget.Block > 0)
-					&& (int)unblockedDamage == 0);
+				    && (blockedDamage > 0m || originalTarget.Block > 0)
+				    && (int)unblockedDamage == 0);
 			if (originalTarget == unblockedDamageTarget)
 			{
 				unblockedDamageResult.BlockedDamage = (int)blockedDamage;
@@ -356,7 +351,7 @@ public static class LibraryCreatureCmd
 		return await ChaoDamage(choiceContext, new List<Creature> { target }, damageAmount, props, dealer, cardSource, cardPlay,type);
 	}
 	public static async Task<IEnumerable<LibraryChaoResult>?> ChaoDamage(PlayerChoiceContext choiceContext, IEnumerable<Creature> targets, decimal damageAmount, ValueProp props, Creature? dealer, CardModel? cardSource , CardPlay? cardPlay,LibraryDamageType type = LibraryDamageType.None, IEnumerable<DamageResult>? damageResults = null)
-	//我暂时没用这个方法，走的是我当时自己用的简易混乱值判定，根据原始伤害对原版attack commmand进行patch，因此也没有检测攻击类型，后续选择一个统一的方法来用。
+		//我暂时没用这个方法，走的是我当时自己用的简易混乱值判定，根据原始伤害对原版attack commmand进行patch，因此也没有检测攻击类型，后续选择一个统一的方法来用。
 	{
 		List<LibraryChaoResult> results = [];
 		targets = targets.Where((Creature c) => c is LibraryCreature lc && lc.HasChaoResistance);

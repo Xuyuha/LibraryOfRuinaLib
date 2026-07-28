@@ -171,7 +171,7 @@ internal sealed partial class LibrarySpeedDiceUi : Control
                 "Range",
                 font,
                 17,
-                $"{_state.Participant.MinSpeed}~{_state.Participant.MaxSpeed}");
+                $"{_state.Registration.Options.MinRoll}~{_state.Registration.Options.MaxRoll}");
             rangeLabel.OffsetTop = 47f;
             rangeLabel.OffsetBottom = 72f;
             root.AddChild(rangeLabel);
@@ -180,7 +180,7 @@ internal sealed partial class LibrarySpeedDiceUi : Control
                 "Value",
                 font,
                 32,
-                _state.Participant.MinSpeed.ToString());
+                _state.Registration.Options.MinRoll.ToString());
             valueLabel.OffsetTop = 4f;
             valueLabel.OffsetBottom = 68f;
             valueLabel.Visible = false;
@@ -242,6 +242,10 @@ internal sealed partial class LibrarySpeedDiceUi : Control
                     OnSlotUnfocused(view)));
 
             _slotViews.Add(view);
+            _state.Registration.Dispatcher.ConfigureSlotUi(
+                root,
+                _state,
+                _state.Slots[slotIndex]);
         }
 
         ConfigureFocusNeighbors();

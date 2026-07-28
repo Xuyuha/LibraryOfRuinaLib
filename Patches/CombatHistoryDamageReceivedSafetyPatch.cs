@@ -1,5 +1,4 @@
 #nullable enable
-using System;
 using HarmonyLib;
 using Library.Entities.Creatures;
 using MegaCrit.Sts2.Core.Combat.History;

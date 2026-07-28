@@ -1,10 +1,6 @@
 #nullable enable
-using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Reflection;
 using System.Text.Json;
-using Godot;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Localization;

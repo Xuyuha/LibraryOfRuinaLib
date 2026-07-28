@@ -266,7 +266,7 @@ internal static class LibraryEmotionBarUi
         LibrarySpeedDiceCombatState combatState)
     {
         IReadOnlyList<int> thresholds =
-            combatState.Participant.Emotion.UnitThresholds;
+            combatState.Registration.Emotion.UnitThresholds;
         int level = Math.Clamp(
             combatState.Emotion.Level,
             0,

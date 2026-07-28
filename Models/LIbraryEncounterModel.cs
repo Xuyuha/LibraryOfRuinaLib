@@ -1,12 +1,13 @@
-using MegaCrit.Sts2.Core.Models;
-using MegaCrit.Sts2.Core.Entities.Creatures;
-using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using Library.Utils;
-using MegaCrit.Sts2.Core.ValueProps;
 using Library.Entities.Creatures;
+using Library.Powers.Mode;
 using Library.Resistance;
 using MegaCrit.Sts2.Core.Entities.Cards;
-using Library.Powers.Mode;
+using MegaCrit.Sts2.Core.Entities.Creatures;
+using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+using MegaCrit.Sts2.Core.Models;
+using MegaCrit.Sts2.Core.ValueProps;
+
 namespace Library.Models;
 
 public abstract class LibraryEncounterModel : EncounterModel,ILibraryAbstractModel

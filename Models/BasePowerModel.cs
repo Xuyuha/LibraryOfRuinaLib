@@ -1,10 +1,9 @@
+using Library.Hooks;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Models;
-using Library.Utils;
-using Library.Hooks;
 
 namespace Library.Models;
 

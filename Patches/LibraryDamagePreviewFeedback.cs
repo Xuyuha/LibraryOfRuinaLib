@@ -1,8 +1,9 @@
 #nullable enable
 
-using Library.Entities.Creatures;
-using Library.Resistance.Patches;
 using HarmonyLib;
+using Library.Entities.Creatures;
+using Library.Localization;
+using Library.Resistance;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;

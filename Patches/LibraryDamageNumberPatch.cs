@@ -1,9 +1,8 @@
 #nullable enable
 
+using Godot;
 using HarmonyLib;
 using Library.Entities.Creatures;
-using Godot;
-using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Nodes;

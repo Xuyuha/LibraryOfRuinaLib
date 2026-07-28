@@ -1,12 +1,13 @@
-using MegaCrit.Sts2.Core.Models;
+using Library.Utils;
+using Library.Entities.Creatures;
+using Library.Powers.Mode;
+using Library.Resistance;
+using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using Library.Utils;
+using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.ValueProps;
-using Library.Entities.Creatures;
-using MegaCrit.Sts2.Core.Entities.Cards;
-using Library.Resistance;
-using Library.Powers.Mode;
+
 namespace Library.Models;
 
 public abstract class LibraryRelicPoolModel : RelicPoolModel,ILibraryAbstractModel

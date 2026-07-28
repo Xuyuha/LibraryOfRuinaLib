@@ -1,12 +1,10 @@
 #nullable enable
-using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
-using System.Threading;
-using System.Threading.Tasks;
 using HarmonyLib;
 using Library.Combat;
+using Library.Utils;
 using Library.Entities.Creatures;
 using Library.Hooks;
 using Library.Models;
@@ -17,7 +15,6 @@ using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models;
-using MegaCrit.Sts2.Core.Models.Cards;
 using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.ValueProps;
 

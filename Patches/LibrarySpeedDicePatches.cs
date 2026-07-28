@@ -27,6 +27,58 @@ internal static class LibrarySpeedDiceTurnStartPatch
     }
 }
 
+[HarmonyPatch(typeof(CombatManager), "RunAutoPrePlayPhase")]
+internal static class LibrarySpeedDiceAutoRollPatch
+{
+    private static void Postfix(
+        HookPlayerChoiceContext playerChoiceContext,
+        Player player,
+        ref Task __result)
+    {
+        __result = RollAfterAutoPrePlayAsync(
+            __result,
+            playerChoiceContext,
+            player);
+    }
+
+    private static async Task RollAfterAutoPrePlayAsync(
+        Task original,
+        PlayerChoiceContext choiceContext,
+        Player player)
+    {
+        await original;
+        await LibrarySpeedDiceService.RollForPlayerAsync(
+            choiceContext,
+            player);
+    }
+}
+
+[HarmonyPatch(typeof(Hook), nameof(Hook.AfterAutoPostPlayPhaseEntered))]
+internal static class LibrarySpeedDiceAutoResolvePatch
+{
+    private static void Postfix(
+        HookPlayerChoiceContext playerChoiceContext,
+        Player player,
+        ref Task __result)
+    {
+        __result = ResolveAfterAutoPostPlayAsync(
+            __result,
+            playerChoiceContext,
+            player);
+    }
+
+    private static async Task ResolveAfterAutoPostPlayAsync(
+        Task original,
+        PlayerChoiceContext choiceContext,
+        Player player)
+    {
+        await original;
+        await LibrarySpeedDice.ResolveForPlayerAsync(
+            choiceContext,
+            player);
+    }
+}
+
 [HarmonyPatch(typeof(CombatManager), "FlushPlayerHand")]
 internal static class LibrarySpeedDiceTurnEndCleanupPatch
 {
@@ -81,21 +133,12 @@ internal static class LibrarySpeedDiceTurnEndCleanupPatch
     }
 }
 
-[HarmonyPatch(typeof(PlayerCombatState), "get_MaxEnergy")]
+[HarmonyPatch(typeof(Hook), nameof(Hook.ModifyMaxEnergy))]
 internal static class LibraryEmotionMaxEnergyPatch
 {
-    private static void Postfix(PlayerCombatState __instance, ref int __result)
+    private static void Postfix(Player player, ref decimal __result)
     {
-        CardModel? anyCard = __instance.AllCards.FirstOrDefault();
-        Player? player = anyCard?.Owner;
-        if (player == null)
-        {
-            var playerField = AccessTools.Field(typeof(PlayerCombatState), "_player");
-            player = playerField?.GetValue(__instance) as Player;
-        }
-
-        if (player != null)
-            __result += LibrarySpeedDiceService.GetMaxEnergyBonus(player);
+        __result += LibrarySpeedDiceService.GetMaxEnergyBonus(player);
     }
 }
 
