@@ -594,14 +594,17 @@ internal sealed partial class LibrarySpeedDiceUi : Control
 
         Control hitbox = _creatureNode.Hitbox;
         Vector2 viewportSize = GetViewportRect().Size;
+        Vector2 scaledSize = new(
+            Size.X * Mathf.Abs(Scale.X),
+            Size.Y * Mathf.Abs(Scale.Y));
         float x = hitbox.GlobalPosition.X
             + hitbox.Size.X * 0.5f
-            - Size.X * 0.5f;
-        float y = hitbox.GlobalPosition.Y - SlotHeight - TopGap;
+            - scaledSize.X * 0.5f;
+        float y = hitbox.GlobalPosition.Y - scaledSize.Y - TopGap;
         x = Mathf.Clamp(
             x,
             12f,
-            Math.Max(12f, viewportSize.X - Size.X - 12f));
+            Math.Max(12f, viewportSize.X - scaledSize.X - 12f));
         y = Math.Max(12f, y);
         GlobalPosition = new Vector2(x, y);
     }
