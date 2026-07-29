@@ -121,6 +121,20 @@ public interface ILibrarySpeedDicePresentation : ILibrarySpeedDiceModule
         LibrarySpeedDiceSlot slot)
     {
     }
+
+    void OnEquipSelectionChanged(
+        LibrarySpeedDiceCombatState state,
+        CardModel card,
+        bool isSelecting)
+    {
+    }
+
+    /// <summary>
+    /// 覆盖速度骰子悬停线的目标集合。返回 null 时使用槽位主目标。
+    /// </summary>
+    IReadOnlyList<Creature>? GetTargetLineTargets(
+        LibrarySpeedDiceCombatState state,
+        LibrarySpeedDiceSlot slot) => null;
 }
 
 public interface ILibraryLightPolicy : ILibrarySpeedDiceModule

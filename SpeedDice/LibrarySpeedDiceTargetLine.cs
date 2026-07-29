@@ -1,6 +1,7 @@
 using Godot;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Nodes.Combat;
+using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 
 namespace Library.SpeedDice;
 
@@ -8,9 +9,9 @@ internal sealed partial class LibrarySpeedDiceTargetLine : Node2D
 {
     private const int SegmentCount = 50;
     private const string ArrowTexturePath =
-        "res://images/vfx/targeted_intent/arrow.png";
+        "res://LibraryOfRuinaLib/images/vfx/targeted_intent/arrow.png";
     private const string ArrowStartTexturePath =
-        "res://images/vfx/targeted_intent/arrowstart.png";
+        "res://LibraryOfRuinaLib/images/vfx/targeted_intent/arrowstart.png";
 
     private static readonly Color AllySoftColor =
         new(0.35f, 0.72f, 1f, 0.78f);
@@ -52,7 +53,9 @@ internal sealed partial class LibrarySpeedDiceTargetLine : Node2D
     {
         TopLevel = true;
         ZIndex = 120;
+        ZAsRelative = false;
         GlobalPosition = Vector2.Zero;
+        ProcessMode = ProcessModeEnum.Always;
     }
 
     public static LibrarySpeedDiceTargetLine Begin(
@@ -61,7 +64,7 @@ internal sealed partial class LibrarySpeedDiceTargetLine : Node2D
         bool usingController)
     {
         var line = new LibrarySpeedDiceTargetLine();
-        targetManager.AddChild(line);
+        targetManager.AddChildSafely(line);
         line.Initialize(targetManager, source, usingController);
         return line;
     }
@@ -268,6 +271,11 @@ internal sealed partial class LibrarySpeedDiceTargetDashLine : Node2D
     private readonly float[] _cumulativeLengths = new float[PointCount];
     private Color _lineColor = Colors.White;
     private float _phase;
+
+    public override void _Ready()
+    {
+        SetProcess(true);
+    }
 
     public override void _Process(double delta)
     {

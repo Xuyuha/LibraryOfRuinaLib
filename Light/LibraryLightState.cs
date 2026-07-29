@@ -203,11 +203,31 @@ public sealed class LibraryLightState
             await Gain(plan.RecoveryAmount, source);
     }
 
-    public async Task ModifyMaximum(
+    public Task ModifyMaximum(
         int amount,
         bool temporary = false,
-        bool gainCurrent = false,
-        AbstractModel? source = null)
+        AbstractModel? source = null) =>
+        ModifyMaximumCore(
+            amount,
+            temporary,
+            gainCurrent: false,
+            source: source);
+
+    public Task ModifyMaximumAndGain(
+        int amount,
+        bool temporary = false,
+        AbstractModel? source = null) =>
+        ModifyMaximumCore(
+            amount,
+            temporary,
+            gainCurrent: true,
+            source: source);
+
+    private async Task ModifyMaximumCore(
+        int amount,
+        bool temporary,
+        bool gainCurrent,
+        AbstractModel? source)
     {
         if (amount == 0)
             return;
@@ -234,8 +254,11 @@ public sealed class LibraryLightState
         InvokeSafely(Changed, nameof(Changed));
         _speedState.NotifyGameplayChanged();
 
-        if (gainCurrent && amount > 0)
-            await Gain(amount, source);
+        int maximumIncrease = Math.Max(
+            0,
+            currentMaximum - previousMaximum);
+        if (gainCurrent && maximumIncrease > 0)
+            await Gain(maximumIncrease, source);
         else if (Current > currentMaximum && Reserved <= currentMaximum)
             await SetCore(currentMaximum, source);
     }

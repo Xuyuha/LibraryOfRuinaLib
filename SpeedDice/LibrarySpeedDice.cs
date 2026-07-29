@@ -51,9 +51,30 @@ public static class LibrarySpeedDice
         return LibrarySpeedDiceService.CanEquipCard(card);
     }
 
+    public static bool IsValidTarget(
+        CardModel card,
+        Creature? target)
+    {
+        ArgumentNullException.ThrowIfNull(card);
+        return card.IsValidSpeedDiceTarget(target);
+    }
+
     public static bool TryBeginEquipSelection(CardModel card)
     {
         return LibrarySpeedDiceService.TryBeginEquipSelection(card);
+    }
+
+    /// <summary>
+    /// 处理速度骰子卡牌的右键装备入口。基础库会自动处理鼠标右键；
+    /// 下游控制器/交互框架可将等价右键事件转发到此方法。
+    /// </summary>
+    public static bool TryHandleRightClickSelection(
+        CardModel card,
+        bool usingController = false)
+    {
+        return LibrarySpeedDiceRightClickService.TryHandle(
+            card,
+            usingController);
     }
 
     public static void EndEquipSelection(CardModel card)

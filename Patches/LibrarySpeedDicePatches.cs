@@ -4,6 +4,7 @@ using Library.SpeedDice;
 using LibraryLib.SpeedDice;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
+using MegaCrit.Sts2.Core.Context;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Players;
@@ -12,6 +13,7 @@ using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Hooks;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Nodes;
+using MegaCrit.Sts2.Core.Nodes.Cards.Holders;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.CommonUi;
 using MegaCrit.Sts2.Core.Nodes.Debug;
@@ -48,6 +50,9 @@ internal static class LibrarySpeedDiceAutoRollPatch
         Player player)
     {
         await original;
+        LibrarySpeedDiceService.BeginPlayerTurn(
+            player.Creature,
+            CombatSide.Player);
         await LibrarySpeedDiceService.RollForPlayerAsync(
             choiceContext,
             player);
@@ -256,6 +261,82 @@ internal static class LibrarySpeedDiceHandInputPatch
         {
             __result = false;
         }
+    }
+}
+
+[HarmonyPatch(
+    typeof(NPlayerHand),
+    "AddCardHolder",
+    [typeof(NHandCardHolder), typeof(int)])]
+internal static class LibrarySpeedDiceRightClickCardPatch
+{
+    private const string ConnectedMeta =
+        "library_speed_dice_right_click_connected";
+
+    private static void Postfix(NHandCardHolder holder)
+    {
+        if (holder.Hitbox.HasMeta(ConnectedMeta))
+            return;
+
+        holder.Hitbox.SetMeta(ConnectedMeta, true);
+        holder.Hitbox.Connect(
+            Control.SignalName.GuiInput,
+            Callable.From<InputEvent>(input =>
+                OnHitboxGuiInput(holder, input)));
+    }
+
+    private static void OnHitboxGuiInput(
+        NHandCardHolder holder,
+        InputEvent input)
+    {
+        if (input is not InputEventMouseButton
+            {
+                ButtonIndex: MouseButton.Right,
+                Pressed: true,
+            })
+        {
+            return;
+        }
+
+        Viewport viewport = holder.GetViewport();
+        if (viewport.IsInputHandled())
+            return;
+
+        NPlayerHand? hand = NPlayerHand.Instance;
+        if (hand == null
+            || hand.InCardPlay
+            || holder.CardModel is not { } card
+            || LocalContext.GetMe(card.CombatState) is not { } player
+            || !ReferenceEquals(player, card.Owner))
+        {
+            return;
+        }
+
+        if (LibrarySpeedDice.TryHandleRightClickSelection(card))
+            viewport.SetInputAsHandled();
+    }
+}
+
+[HarmonyPatch(
+    typeof(NPlayerHand),
+    "StartCardPlay",
+    [typeof(NHandCardHolder), typeof(bool)])]
+internal static class LibrarySpeedDiceCardPlaySelectionCleanupPatch
+{
+    private static void Prefix()
+    {
+        LibrarySpeedDiceRightClickService.CancelActiveSelection();
+    }
+}
+
+[HarmonyPatch(
+    typeof(NEndTurnButton),
+    nameof(NEndTurnButton.CallReleaseLogic))]
+internal static class LibrarySpeedDiceEndTurnSelectionCleanupPatch
+{
+    private static void Prefix()
+    {
+        LibrarySpeedDiceRightClickService.CancelActiveSelection();
     }
 }
 
