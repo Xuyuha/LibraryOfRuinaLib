@@ -203,6 +203,42 @@ internal sealed class LibrarySpeedDiceModuleDispatcher
             presentation.ConfigureSlotUi(control, state, slot);
     }
 
+    public void OnEquipSelectionChanged(
+        LibrarySpeedDiceCombatState state,
+        CardModel card,
+        bool isSelecting)
+    {
+        foreach (ILibrarySpeedDicePresentation presentation in _presentation)
+        {
+            presentation.OnEquipSelectionChanged(
+                state,
+                card,
+                isSelecting);
+        }
+    }
+
+    public IReadOnlyList<Creature> GetTargetLineTargets(
+        LibrarySpeedDiceCombatState state,
+        LibrarySpeedDiceSlot slot)
+    {
+        foreach (ILibrarySpeedDicePresentation presentation in _presentation)
+        {
+            IReadOnlyList<Creature>? targets =
+                presentation.GetTargetLineTargets(state, slot);
+            if (targets != null)
+            {
+                return targets
+                    .Where(target => target is { IsAlive: true })
+                    .Distinct()
+                    .ToArray();
+            }
+        }
+
+        return slot.Target is { IsAlive: true } target
+            ? [target]
+            : [];
+    }
+
     public void OnStateCreated(LibrarySpeedDiceCombatState state)
     {
         foreach (ILibrarySpeedDiceLifecycle lifecycle in _lifecycles)

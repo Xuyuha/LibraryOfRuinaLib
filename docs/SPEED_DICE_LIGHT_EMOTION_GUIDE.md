@@ -6,7 +6,7 @@
 - Slay the Spire 2 Steam Beta `0.109.0`
 
 本文说明下游 Mod 如何为自己的角色注册一套速度骰子、情感等级和独立
-Light（光芒）系统。RolandMod 使用的也是同一入口。
+Light（光芒）系统。YourMod 使用的也是同一入口。
 
 ## 1. 依赖边界
 
@@ -48,18 +48,18 @@ using Library.Light;
 using Library.SpeedDice;
 ```
 
-### 1.1 Roland 的依赖写法
+### 1.1 YourMod 的依赖写法
 
-RolandMod 的 manifest 同时依赖 RitsuLib、LibraryOfRuinaLib 和内容库。
+YourMod 的 manifest 同时依赖 RitsuLib、LibraryOfRuinaLib 和内容库。
 其中只有 `LibraryOfRuinaLib` 是本指南这套机制的必需依赖：
 
 ```jsonc
 {
-  "id": "RolandMod",
+  "id": "YourMod",
   "min_game_version": "0.109.0",
   "dependencies": [
     {
-      // Roland 用 RitsuLib 显示和保存 Light。
+      // YourMod 用 RitsuLib 显示和保存 Light。
       // 你的 Mod 如果只用默认内存 Light，可以不依赖它。
       "id": "STS2-RitsuLib",
       "version": "0.4.58"
@@ -73,12 +73,12 @@ RolandMod 的 manifest 同时依赖 RitsuLib、LibraryOfRuinaLib 和内容库。
 }
 ```
 
-RolandMod 的工程引用：
+YourMod 的工程引用：
 
 ```xml
 <!--
   Private=False 很重要：
-  编译时引用基础库，但不把 LibraryOfRuinaLib.dll 复制进 RolandMod 包。
+  编译时引用基础库，但不把 LibraryOfRuinaLib.dll 复制进 YourMod 包。
   游戏运行时按 manifest 依赖加载唯一的一份基础库。
 -->
 <Reference Include="LibraryOfRuinaLib"
@@ -86,7 +86,7 @@ RolandMod 的工程引用：
            Private="False" />
 ```
 
-Roland 的初始化顺序也体现了依赖边界：
+YourMod 的初始化顺序也体现了依赖边界：
 
 ```csharp
 public static void Initialize()
@@ -95,17 +95,17 @@ public static void Initialize()
 
     // 下游自己的内容注册、网络、资源 UI 先初始化。
     RitsuLibFramework.EnsureGodotScriptsRegistered(assembly, Logger);
-    RolandSpeedDiceNetwork.Initialize();
-    RolandLightService.Initialize();
+    YourModSpeedDiceNetwork.Initialize();
+    YourModLightService.Initialize();
     ModTypeDiscoveryHub.RegisterModAssembly(ModId, assembly);
 
     // 最后把已经准备好的角色类型、Store 和模块交给基础库。
-    RegisterRolandLibrarySystems();
+    RegisterYourModLibrarySystems();
 }
 ```
 
-这里的 `RolandLightService`、Ritsu 注册和 UI 都属于下游。基础库只接收
-`RolandRitsuLightStore.Factory`，并不知道 RitsuLib 的存在。
+这里的 `YourModLightService`、Ritsu 注册和 UI 都属于下游。基础库只接收
+`YourModRitsuLightStore.Factory`，并不知道 RitsuLib 的存在。
 
 ## 2. 最小角色注册
 
@@ -166,17 +166,17 @@ Light，可以不调用 `.WithLight(...)`。情感配置未显式提供时使用
   `MaxRoll` 不能小于 `MinRoll`。
 - 不要同时用 Builder 和旧 `RegisterParticipant` 注册同一个 ID。
 
-RolandMod 的实际入口位于 `RolandModCode/Entry.cs`。
+YourMod 的实际入口位于 `YourModCode/Entry.cs`。
 
-### 2.1 Roland 的完整 Builder 注册
+### 2.1 YourMod 的完整 Builder 注册
 
-下面是 RolandMod 当前入口的等价代码，注释解释每个参数：
+下面是 YourMod 当前入口的等价代码，注释解释每个参数：
 
 ```csharp
 LibrarySpeedDice
-    .ForCharacter<RolandModCharacter>(
+    .ForCharacter<YourModCharacter>(
         // Registration.Id：全局唯一、跨客户端一致。
-        // Roland 直接复用 manifest 的 ModId。
+        // YourMod 直接复用 manifest 的 ModId。
         ModId,
 
         new LibrarySpeedDiceOptions(
@@ -188,15 +188,15 @@ LibrarySpeedDice
             MaxRoll: 7))
 
     // 情感和 Light 是两个独立配置。
-    .WithEmotion(CreateRolandEmotionConfig())
+    .WithEmotion(CreateYourModEmotionConfig())
 
     .WithLight(
         new LibraryLightOptions(
-            // Roland 每场战斗从 4 Light 开始。
-            starting: RolandLightState.StartingLight,
+            // YourMod 每场战斗从 4 Light 开始。
+            starting: YourModLightState.StartingLight,
 
             // 0 级情感时的基础上限。
-            baseMaximum: RolandLightState.StartingLight,
+            baseMaximum: YourModLightState.StartingLight,
 
             // 每升 1 级情感，Light 上限增加 1。
             maximumPerEmotionLevel: 1,
@@ -207,47 +207,47 @@ LibrarySpeedDice
             // 本回合情感升级时直接补满，而不是只回复 1。
             refillOnLevelIncrease: true),
 
-        // 把基础库 Light 当前值接到 Roland 的 Ritsu 次级资源。
+        // 把基础库 Light 当前值接到 YourMod 的 Ritsu 次级资源。
         // 省略此参数时会改用基础库的战斗期内存 Store。
-        RolandRitsuLightStore.Factory)
+        YourModRitsuLightStore.Factory)
 
     // 这不是基础库提供的现成实例。
-    // RolandSpeedDiceModule 是 RolandMod 自己实现的下游适配模块；
-    // Instance 只是 Roland 为这个无状态模块提供的单例对象。
+    // YourModSpeedDiceModule 是 YourMod 自己实现的下游适配模块；
+    // Instance 只是 YourMod 为这个无状态模块提供的单例对象。
     // 基础库会读取它实现的接口并在对应时机回调。
-    .UseModule(RolandSpeedDiceModule.Instance)
+    .UseModule(YourModSpeedDiceModule.Instance)
 
     // 初始化期间只调用一次。
     .Register();
 ```
 
-`ForCharacter<RolandModCharacter>` 最终生成的启用条件就是：
+`ForCharacter<YourModCharacter>` 最终生成的启用条件就是：
 
 ```csharp
-player => player.Character is RolandModCharacter
+player => player.Character is YourModCharacter
 ```
 
 因此不要在同一个具体角色类上注册两套不同 ID，除非你明确希望两套系统
 同时匹配。正常角色只保留一个主注册。
 
-### 2.2 `RolandSpeedDiceModule.Instance` 到底是什么
+### 2.2 `YourModSpeedDiceModule.Instance` 到底是什么
 
 它由两部分组成：
 
 ```csharp
-// 类型：RolandMod 自己实现，基础库中不存在这个类。
-internal sealed class RolandSpeedDiceModule : ILibrarySpeedDiceModule
+// 类型：YourMod 自己实现，基础库中不存在这个类。
+internal sealed class YourModSpeedDiceModule : ILibrarySpeedDiceModule
 {
 }
 
-// 实例：RolandMod 自己创建，传给 Builder。
-public static RolandSpeedDiceModule Instance { get; } = new();
+// 实例：YourMod 自己创建，传给 Builder。
+public static YourModSpeedDiceModule Instance { get; } = new();
 ```
 
 `.UseModule(...)` 做的事情只是把这个对象交给本次 Registration：
 
 ```csharp
-.UseModule(RolandSpeedDiceModule.Instance)
+.UseModule(YourModSpeedDiceModule.Instance)
 ```
 
 注册完成后，基础库会检查该对象还实现了哪些职责接口。例如对象实现
@@ -260,9 +260,9 @@ public static RolandSpeedDiceModule Instance { get; } = new();
 - Light 当前值的存储对象；
 - Godot 节点；
 - 必须继承的基础类；
-- LibraryOfRuinaLib 自动创建的 Roland 专属对象。
+- LibraryOfRuinaLib 自动创建的 YourMod 专属对象。
 
-### 2.3 Roland 为什么必须提供自己的模块
+### 2.3 YourMod 为什么必须提供自己的模块
 
 Builder 只能知道通用配置：
 
@@ -274,35 +274,35 @@ Builder 只能知道通用配置：
 Light 配置与 Store
 ```
 
-但基础库不应该依赖 RolandMod，因此它不可能知道下面这些 Roland 规则：
+但基础库不应该依赖 YourMod，因此它不可能知道下面这些 YourMod 规则：
 
-| Roland 需求 | 基础库为什么不能写死 | Roland 实现的接口 |
+| YourMod 需求 | 基础库为什么不能写死 | YourMod 实现的接口 |
 | --- | --- | --- |
-| 只允许 RolandPageCard 装备 | 基础库不知道 RolandPageCard 类型 | `ILibrarySpeedDicePolicy` |
-| 使用时书页锁定、触发专属效果 | 基础库不知道 Roland timing metadata | `ILibrarySpeedDiceLifecycle` |
-| 群攻目标特殊校验 | 基础库不知道 Roland 群攻关键词 | `ILibrarySpeedDicePolicy` |
+| 只允许 YourModPageCard 装备 | 基础库不知道 YourModPageCard 类型 | `ILibrarySpeedDicePolicy` |
+| 使用时书页锁定、触发专属效果 | 基础库不知道 YourMod timing metadata | `ILibrarySpeedDiceLifecycle` |
+| 群攻目标特殊校验 | 基础库不知道 YourMod 群攻关键词 | `ILibrarySpeedDicePolicy` |
 | 装备、卸下、换目标走 Ritsu 联网 action | 基础库不能依赖 RitsuLib | `ILibrarySpeedDiceInputRouter` |
 | 使用 Ritsu 的同步 RNG | 基础库不能调用下游 RNG 框架 | `ILibrarySpeedDiceDeterminism` |
-| Roland 槽位颜色、字体与附加 UI | 角色表现必须由下游负责 | `ILibrarySpeedDicePresentation` |
-| Stiletto 增加 Light 回复 | 基础库不知道 Roland Power | `ILibraryLightPolicy` |
-| TheUdjat 允许 Light 溢出 | 基础库不知道 Roland Power | `ILibraryLightPolicy` |
-| 交锋开始、真卦、结算后选择 | 都是 Roland 角色机制 | `ILibrarySpeedDiceLifecycle` |
+| YourMod 槽位颜色、字体与附加 UI | 角色表现必须由下游负责 | `ILibrarySpeedDicePresentation` |
+| Stiletto 增加 Light 回复 | 基础库不知道 YourMod Power | `ILibraryLightPolicy` |
+| TheUdjat 允许 Light 溢出 | 基础库不知道 YourMod Power | `ILibraryLightPolicy` |
+| 交锋开始、真卦、结算后选择 | 都是 YourMod 角色机制 | `ILibrarySpeedDiceLifecycle` |
 
-所以 Roland 需要：
+所以 YourMod 需要：
 
 ```csharp
-.UseModule(RolandSpeedDiceModule.Instance)
+.UseModule(YourModSpeedDiceModule.Instance)
 ```
 
 如果你的角色没有任何自定义规则，只使用 Builder 默认行为，则可以完全
 省略 `.UseModule(...)`。
 
-### 2.4 Roland 为什么使用 `Instance` 单例
+### 2.4 YourMod 为什么使用 `Instance` 单例
 
-RolandSpeedDiceModule 本身没有可变字段：
+YourModSpeedDiceModule 本身没有可变字段：
 
 ```csharp
-internal sealed class RolandSpeedDiceModule :
+internal sealed class YourModSpeedDiceModule :
     ILibrarySpeedDicePolicy,
     ILibrarySpeedDiceLifecycle,
     ILibrarySpeedDiceInputRouter,
@@ -311,15 +311,15 @@ internal sealed class RolandSpeedDiceModule :
     ILibraryLightPolicy
 {
     // 全局只有一个适配对象，避免初始化时反复 new。
-    public static RolandSpeedDiceModule Instance { get; } = new();
+    public static YourModSpeedDiceModule Instance { get; } = new();
 
     // 禁止外部创建第二个相同模块。
-    private RolandSpeedDiceModule()
+    private YourModSpeedDiceModule()
     {
     }
 
     // 稳定身份，用于排序和重复 ID 检测。
-    public string Id => "roland.speed-dice";
+    public string Id => "yourmod.speed-dice";
 
     public int Order => 0;
 }
@@ -365,12 +365,12 @@ public Task OnUseAsync(
 }
 ```
 
-### 2.5 Roland 模块是如何实现的
+### 2.5 YourMod 模块是如何实现的
 
 第一步：声明实际需要的职责。一个类可以一次实现多个接口：
 
 ```csharp
-internal sealed class RolandSpeedDiceModule :
+internal sealed class YourModSpeedDiceModule :
     ILibrarySpeedDicePolicy,
     ILibrarySpeedDiceLifecycle,
     ILibrarySpeedDiceInputRouter,
@@ -378,26 +378,26 @@ internal sealed class RolandSpeedDiceModule :
     ILibrarySpeedDicePresentation,
     ILibraryLightPolicy
 {
-    public static RolandSpeedDiceModule Instance { get; } = new();
+    public static YourModSpeedDiceModule Instance { get; } = new();
 
-    private RolandSpeedDiceModule()
+    private YourModSpeedDiceModule()
     {
     }
 
-    public string Id => "roland.speed-dice";
+    public string Id => "yourmod.speed-dice";
     public int Order => 0;
 }
 ```
 
-第二步：把 Roland 的装备规则接到 Policy：
+第二步：把 YourMod 的装备规则接到 Policy：
 
 ```csharp
 public bool CanEquipCard(
     LibrarySpeedDiceCombatState state,
     CardModel card) =>
-    // 真正规则留在 Roland 自己的 service 中，
+    // 真正规则留在 YourMod 自己的 service 中，
     // 模块只是把基础库调用适配过去。
-    RolandSpeedDiceCardRules.CanEquip(card);
+    YourModSpeedDiceCardRules.CanEquip(card);
 
 public bool CanUnequipCard(
     LibrarySpeedDiceCombatState state,
@@ -414,31 +414,31 @@ public bool CanTargetCard(
     LibrarySpeedDiceCombatState state,
     CardModel card,
     Creature? target) =>
-    !RolandGroupAttackKeyword.IsPresentOn(card)
-    || RolandGroupAttackTargeting.IsValidPrimaryTarget(card, target);
+    !YourModGroupAttackKeyword.IsPresentOn(card)
+    || YourModGroupAttackTargeting.IsValidPrimaryTarget(card, target);
 
 public int ModifySpeedDiceCount(
     LibrarySpeedDiceCombatState state,
     int currentCount) =>
-    RolandSpeedDiceService.ModifyDiceCount(state, currentCount);
+    YourModSpeedDiceService.ModifyDiceCount(state, currentCount);
 ```
 
-第三步：把战斗生命周期接到 Roland 的 service：
+第三步：把战斗生命周期接到 YourMod 的 service：
 
 ```csharp
 public void OnStateCreated(LibrarySpeedDiceCombatState state) =>
-    // 新状态创建后立刻纳入 Roland 多人快照跟踪。
-    RolandMultiplayerPersistence.TrackState(state);
+    // 新状态创建后立刻纳入 YourMod 多人快照跟踪。
+    YourModMultiplayerPersistence.TrackState(state);
 
 public void BeforePlayerTurn(LibrarySpeedDiceCombatState state) =>
-    // 准备 Roland 本回合专属计数和效果。
-    RolandSpeedDiceService.PreparePlayerTurn(state.Player);
+    // 准备 YourMod 本回合专属计数和效果。
+    YourModSpeedDiceService.PreparePlayerTurn(state.Player);
 
 public Task AfterRollAsync(
     PlayerChoiceContext choiceContext,
     LibrarySpeedDiceCombatState state) =>
     // 应用迅捷、额外抽牌和同步控制器。
-    RolandSpeedDiceLifecycle.AfterRollAsync(
+    YourModSpeedDiceLifecycle.AfterRollAsync(
         choiceContext,
         state);
 ```
@@ -452,11 +452,11 @@ public async Task OnUseAsync(
     LibrarySpeedDiceSlot slot,
     LibrarySpeedDiceCardLease lease)
 {
-    if (lease.Card is not RolandPageCard card)
+    if (lease.Card is not YourModPageCard card)
         return;
 
     // 只有明确带“使用时”timing 的书页才锁定。
-    if (card.HasTiming(RolandCardTiming.Use))
+    if (card.HasTiming(YourModCardTiming.Use))
         lease.LockUnequip();
 
     // 基础库保证当前 lease 的 Use 只触发一次。
@@ -470,7 +470,7 @@ public Task OnTargetedUseAsync(
     LibrarySpeedDiceCardLease lease,
     Creature target) =>
     // 该回调只会在基础库确认目标有效后触发。
-    lease.Card is RolandPageCard card
+    lease.Card is YourModPageCard card
         ? card.InvokeTargetedUseAsync(choiceContext, target)
         : Task.CompletedTask;
 ```
@@ -483,10 +483,10 @@ public async Task BeforeResolutionBatchAsync(
 {
     foreach (LibrarySpeedDiceSlot slot in context.Slots)
     {
-        if (slot.Card is not RolandPageCard card)
+        if (slot.Card is not YourModPageCard card)
             continue;
 
-        // Roland 的“交锋开始”在这里执行，不再依赖字符串事件总线。
+        // YourMod 的“交锋开始”在这里执行，不再依赖字符串事件总线。
         await TrueTrigramClashService.BeforeClashAsync(
             context.ChoiceContext,
             context.State.Player);
@@ -498,7 +498,7 @@ public async Task BeforeResolutionBatchAsync(
 
 public Task AfterResolutionBatchAsync(
     LibrarySpeedDiceResolutionBatchContext context) =>
-    RolandSpeedDiceLifecycle.AfterResolutionAsync(
+    YourModSpeedDiceLifecycle.AfterResolutionAsync(
         context.ChoiceContext,
         context.State);
 
@@ -507,11 +507,11 @@ public void OnCardReleased(
     LibrarySpeedDiceSlot slot,
     CardModel card,
     LibrarySpeedDiceCardLease? lease) =>
-    // 基础库清 lease/预留；Roland 只清自己的 timing facade。
-    RolandCardTimingService.Clear(card);
+    // 基础库清 lease/预留；YourMod 只清自己的 timing facade。
+    YourModCardTimingService.Clear(card);
 ```
 
-第六步：把输入送入 Roland 自己的网络层：
+第六步：把输入送入 YourMod 自己的网络层：
 
 ```csharp
 public async Task<bool> RouteAsync(
@@ -519,23 +519,23 @@ public async Task<bool> RouteAsync(
 {
     // request 已包含 Kind、Player、SlotIndex、
     // TurnNumber、Revision、Card 和 Target。
-    await RolandSpeedDiceNetwork.RequestAsync(request);
+    await YourModSpeedDiceNetwork.RequestAsync(request);
 
     // true 表示该请求已处理，不再交给后续 InputRouter。
     return true;
 }
 ```
 
-这也是为什么 Roland 必须在 Builder 注册前初始化：
+这也是为什么 YourMod 必须在 Builder 注册前初始化：
 
 ```csharp
-RolandSpeedDiceNetwork.Initialize();
-RolandMultiplayerPersistence.Initialize();
-RolandLightService.Initialize();
+YourModSpeedDiceNetwork.Initialize();
+YourModMultiplayerPersistence.Initialize();
+YourModLightService.Initialize();
 
 LibrarySpeedDice
-    .ForCharacter<RolandModCharacter>(ModId, options)
-    .UseModule(RolandSpeedDiceModule.Instance)
+    .ForCharacter<YourModCharacter>(ModId, options)
+    .UseModule(YourModSpeedDiceModule.Instance)
     .Register();
 ```
 
@@ -555,7 +555,7 @@ public Rng? CreateTargetRepairRng(Player player) =>
         "speed-target-repair");
 
 public string? GetStableTargetKey(Creature target) =>
-    RolandSpeedDiceNetwork.GetStableTargetSortKey(target);
+    YourModSpeedDiceNetwork.GetStableTargetSortKey(target);
 ```
 
 第八步：把 UI 和 Light 角色规则留在下游：
@@ -565,7 +565,27 @@ public void ConfigureSlotUi(
     Control control,
     LibrarySpeedDiceCombatState state,
     LibrarySpeedDiceSlot slot) =>
-    RolandSpeedDiceUi.ConfigureSlot(control, state, slot);
+    YourModSpeedDiceUi.ConfigureSlot(control, state, slot);
+
+public void OnEquipSelectionChanged(
+    LibrarySpeedDiceCombatState state,
+    CardModel card,
+    bool isSelecting)
+{
+    // YourMod 在选槽位期间切换成“已装备”描述预览。
+    YourModSpeedDicePreviewContext.SetEquippedPreview(
+        card,
+        isSelecting);
+}
+
+public IReadOnlyList<Creature>? GetTargetLineTargets(
+    LibrarySpeedDiceCombatState state,
+    LibrarySpeedDiceSlot slot)
+{
+    // 返回 null 时基础库只画 slot.Target；
+    // YourMod 的群攻书页在这里返回主目标和所有追加目标。
+    return null;
+}
 
 public int ModifyTurnRecovery(
     LibraryLightState state,
@@ -576,15 +596,15 @@ public int ModifyTurnRecovery(
 
 public bool ShouldRecoverForTurn(LibraryLightState state) =>
     state.Player.Creature
-        .GetPower<RolandNoLightRecoveryNextTurnPower>() == null;
+        .GetPower<YourModNoLightRecoveryNextTurnPower>() == null;
 
 public bool AllowOverflow(LibraryLightState state) =>
     state.Player.Creature.GetPower<TheUdjatPower>() != null;
 ```
 
-这八组方法共同构成 `RolandSpeedDiceModule.Instance`。基础库只定义接口、
-稳定派发顺序和调用时机；所有 Roland 类型、Power、网络与 UI 都留在
-RolandMod。
+这八组方法共同构成 `YourModSpeedDiceModule.Instance`。基础库只定义接口、
+稳定派发顺序和调用时机；所有 YourMod 类型、Power、网络与 UI 都留在
+YourMod。
 
 ### 2.6 你的角色最少需要实现多少
 
@@ -633,7 +653,7 @@ LibrarySpeedDice
 .UseModule(MyUiModule.Instance)       // Order = 200
 ```
 
-这种拆分适合大型角色。小型角色可以像 Roland 一样用一个模块实现多个
+这种拆分适合大型角色。小型角色可以像 YourMod 一样用一个模块实现多个
 接口，再把具体业务继续分派到 `Service` / `Lifecycle` / `Network` 类。
 
 ## 3. 让卡牌进入速度骰子
@@ -660,12 +680,27 @@ public sealed class MyPageCard :
 
     public TargetType SpeedDiceTargetType => TargetType.AnyEnemy;
 
+    // 默认 true：基础库自动接管战斗手牌右键并显示选骰虚线。
+    // 若这张卡有其他右键用途，可显式返回 false。
+    public bool EnableSpeedDiceRightClickSelection => true;
+
     // 独立 Light 费用。
     public int BaseLightCost => 2;
 
     public bool HasLightCostX => false;
 }
 ```
+
+实现 `ILibrarySpeedDiceCard` 后，不需要为蓝色虚线单独复制图片或注册 UI：
+
+- 战斗手牌右键会自动进入速度骰子槽位选择。
+- 选槽位与选敌人时，基础库显示跟随鼠标/控制器焦点的选择虚线。
+- 槽位装备完成后，悬停速度骰子会自动显示指向存储目标的虚线。
+- 蓝线资源由 `LibraryOfRuinaLib.pck` 统一提供。
+
+若下游右键框架提供控制器等价事件，可转发到
+`LibrarySpeedDice.TryHandleRightClickSelection(card, usingController: true)`；
+鼠标右键不需要手工转发。
 
 常见组合：
 
@@ -676,7 +711,7 @@ public sealed class MyPageCard :
 | 仅 `ILibraryLightCard` | 原版 Energy/Stars，再加 Light |
 | 两者都实现 | 接口指定的 Energy/Stars，再加 Light |
 
-因此，类似罗兰的“只消耗 Light 的书页”应同时实现两个接口，并把
+因此，类似YourMod的“只消耗 Light 的书页”应同时实现两个接口，并把
 `SpeedDiceResourceCost` 设为 `(0, 0)`。
 
 原版 Energy-X 和 Star-X 卡不能装备到速度骰子。Light-X 受支持：
@@ -694,17 +729,17 @@ Light-X 会在装备时按当时可用 Light 冻结 X 值，结算时可通过
 自动替换为 Light。若同一张牌还允许从手牌正常打出，下游需要自行接入
 普通出牌的 Light UI、可用性检查与扣费。
 
-### 3.1 Roland 的书页基类
+### 3.1 YourMod 的书页基类
 
-Roland 用一个统一书页基类实现两种接口：
+YourMod 用一个统一书页基类实现两种接口：
 
 ```csharp
-public abstract class RolandPageCard : ModCardTemplate,
+public abstract class YourModPageCard : ModCardTemplate,
     ILibrarySpeedDiceCard,
-    IRolandLightCard // IRolandLightCard 继承 ILibraryLightCard
+    IYourModLightCard // IYourModLightCard 继承 ILibraryLightCard
 {
-    // Roland 的速度骰子书页不消耗原版 Energy。
-    // Roland 不使用 Stars；默认结构体中的 Stars 始终为 0。
+    // YourMod 的速度骰子书页不消耗原版 Energy。
+    // YourMod 不使用 Stars；默认结构体中的 Stars 始终为 0。
     // 普通手牌出牌仍使用 ModCardTemplate 的 baseCost。
     public LibrarySpeedDiceResourceCost SpeedDiceResourceCost { get; }
 
@@ -724,7 +759,7 @@ public abstract class RolandPageCard : ModCardTemplate,
 MookWorkshop 展示了“普通目标”和“速度骰子目标”分离：
 
 ```csharp
-public sealed class MookWorkshop() : RolandPageCard(
+public sealed class MookWorkshop() : YourModPageCard(
     baseCost: 1,
     type: CardType.Skill,
     rarity: CardRarity.Basic,
@@ -739,10 +774,10 @@ public sealed class MookWorkshop() : RolandPageCard(
 }
 ```
 
-### 3.2 Roland 明确区分 Energy、Light 与 Stars
+### 3.2 YourMod 明确区分 Energy、Light 与 Stars
 
 `normalEnergyCost` 只表示普通手牌出牌的原版 Energy 费用；
-`speedDiceLightCost` 只表示装备到速度骰子后的独立 Light 费用。Roland
+`speedDiceLightCost` 只表示装备到速度骰子后的独立 Light 费用。YourMod
 没有 Stars 费用，也不会把 Light 存进 `SpeedDiceResourceCost.Stars`：
 
 ```csharp
@@ -777,10 +812,10 @@ public abstract class MyPageCard(
 }
 ```
 
-Roland 的 KeepItFresh 是固定 1 Light 书页：
+YourMod 的 KeepItFresh 是固定 1 Light 书页：
 
 ```csharp
-public sealed class KeepItFresh() : RolandPageCard(
+public sealed class KeepItFresh() : YourModPageCard(
     0,
     CardType.Attack,
     CardRarity.Common,
@@ -806,7 +841,7 @@ int preview = LibraryLight.GetCost(card)
 - `ILibrarySpeedDiceLifecycle`：回合、投掷、Use、结算批次等时机。
 - `ILibrarySpeedDiceInputRouter`：将装备、卸下和换目标请求送入下游网络层。
 - `ILibrarySpeedDiceDeterminism`：提供 gameplay RNG、目标修复 RNG 和稳定目标键。
-- `ILibrarySpeedDicePresentation`：配置角色专属槽位表现。
+- `ILibrarySpeedDicePresentation`：配置角色专属槽位表现、选骰预览与多目标蓝线。
 - `ILibraryLightPolicy`：修改 Light 费用、上限、回复和溢出规则。
 
 最小模块示例：
@@ -904,12 +939,12 @@ await LibrarySpeedDice.ResolveBatchAsync(choiceContext, states);
 基础库会按最终骰值降序、玩家 NetId、槽位索引稳定排序。不要反射私有
 resolver。
 
-### 4.1 Roland 如何把六种职责放进一个模块
+### 4.1 YourMod 如何把六种职责放进一个模块
 
-Roland 的模块声明：
+YourMod 的模块声明：
 
 ```csharp
-internal sealed class RolandSpeedDiceModule :
+internal sealed class YourModSpeedDiceModule :
     ILibrarySpeedDicePolicy,       // 能否装备、卸下、选目标、骰子数量
     ILibrarySpeedDiceLifecycle,    // 回合、Use、批次结算、释放
     ILibrarySpeedDiceInputRouter,  // 把本地点击转成联网 action
@@ -931,14 +966,14 @@ internal sealed class RolandSpeedDiceModule :
 但各模块 ID 必须唯一，并且模块不能依赖“注册顺序刚好等于调用顺序”；真实
 顺序始终是 `Order`，然后是 ordinal `Id`。
 
-### 4.2 Roland 的装备与卸下 Policy
+### 4.2 YourMod 的装备与卸下 Policy
 
 ```csharp
 public bool CanEquipCard(
     LibrarySpeedDiceCombatState state,
     CardModel card) =>
     // 角色自己的规则集中在独立 service，模块只负责适配。
-    RolandSpeedDiceCardRules.CanEquip(card);
+    YourModSpeedDiceCardRules.CanEquip(card);
 
 public bool CanUnequipCard(
     LibrarySpeedDiceCombatState state,
@@ -957,33 +992,33 @@ public bool CanTargetCard(
     CardModel card,
     Creature? target) =>
     // 普通书页由基础库目标规则处理；
-    // 群攻书页再叠加 Roland 的主目标合法性。
-    !RolandGroupAttackKeyword.IsPresentOn(card)
-    || RolandGroupAttackTargeting.IsValidPrimaryTarget(card, target);
+    // 群攻书页再叠加 YourMod 的主目标合法性。
+    !YourModGroupAttackKeyword.IsPresentOn(card)
+    || YourModGroupAttackTargeting.IsValidPrimaryTarget(card, target);
 ```
 
 Policy 只判断，不应该直接移动卡牌、扣资源或修改目标。真正写状态由基础库
 的 Execute API 完成，否则多人重放时会出现两次写入。
 
-### 4.3 Roland 的骰子数量与投掷后修正
+### 4.3 YourMod 的骰子数量与投掷后修正
 
 ```csharp
 public int ModifySpeedDiceCount(
     LibrarySpeedDiceCombatState state,
     int currentCount) =>
-    RolandSpeedDiceService.ModifyDiceCount(state, currentCount);
+    YourModSpeedDiceService.ModifyDiceCount(state, currentCount);
 
 public Task AfterRollAsync(
     PlayerChoiceContext choiceContext,
     LibrarySpeedDiceCombatState state) =>
-    RolandSpeedDiceLifecycle.AfterRollAsync(choiceContext, state);
+    YourModSpeedDiceLifecycle.AfterRollAsync(choiceContext, state);
 ```
 
-Roland 的迅捷在 `AfterRollAsync` 中使用公开 API 修正槽位值：
+YourMod 的迅捷在 `AfterRollAsync` 中使用公开 API 修正槽位值：
 
 ```csharp
 int quickness = state.Player.Creature
-    .GetPowerAmount<RolandQuicknessPower>();
+    .GetPowerAmount<YourModQuicknessPower>();
 
 foreach (LibrarySpeedDiceSlot slot in state.Slots)
 {
@@ -997,7 +1032,7 @@ foreach (LibrarySpeedDiceSlot slot in state.Slots)
 不要从下游反射修改 `FinalValue` 或 `DisplayValue`。现行公共入口是
 `state.SetSlotRollValue(...)`。
 
-### 4.4 Roland 的 Light Policy
+### 4.4 YourMod 的 Light Policy
 
 ```csharp
 public int ModifyTurnRecovery(
@@ -1011,7 +1046,7 @@ public int ModifyTurnRecovery(
 public bool ShouldRecoverForTurn(LibraryLightState state) =>
     // 该 Power 存在时整次回合回复被禁止。
     state.Player.Creature
-        .GetPower<RolandNoLightRecoveryNextTurnPower>() == null;
+        .GetPower<YourModNoLightRecoveryNextTurnPower>() == null;
 
 public bool AllowOverflow(LibraryLightState state) =>
     // TheUdjatPower 允许 Current 暂时超过 Maximum。
@@ -1019,7 +1054,7 @@ public bool AllowOverflow(LibraryLightState state) =>
 ```
 
 这里修改的是 Light Policy。名字里即使出现 Energy，也不会自动修改原版
-Energy；Roland 的效果如果需要同时影响两者，必须在效果代码中分别调用。
+Energy；YourMod 的效果如果需要同时影响两者，必须在效果代码中分别调用。
 
 ## 5. 生命周期与时机
 
@@ -1056,9 +1091,9 @@ Use 状态绑定本次装备 lease，不绑定卡牌类型或全局状态：
 字符串式全局 timing 总线，也不要依赖兼容用的
 `LibraryClashResolver.Current`。
 
-### 5.1 Roland 的 Use 与 TargetedUse
+### 5.1 YourMod 的 Use 与 TargetedUse
 
-Roland 把书页的虚方法映射到 lease 生命周期：
+YourMod 把书页的虚方法映射到 lease 生命周期：
 
 ```csharp
 public async Task OnUseAsync(
@@ -1067,12 +1102,12 @@ public async Task OnUseAsync(
     LibrarySpeedDiceSlot slot,
     LibrarySpeedDiceCardLease lease)
 {
-    if (lease.Card is not RolandPageCard card)
+    if (lease.Card is not YourModPageCard card)
         return;
 
     // 只有明确声明“使用时”的牌才会锁定。
     // 不能只凭 IsUseTriggered 判断卡牌是否应该禁止卸下。
-    if (card.HasTiming(RolandCardTiming.Use))
+    if (card.HasTiming(YourModCardTiming.Use))
         lease.LockUnequip();
 
     // 基础库保证同一个 lease 最多调用一次。
@@ -1086,12 +1121,12 @@ public Task OnTargetedUseAsync(
     LibrarySpeedDiceCardLease lease,
     Creature target) =>
     // 只有基础库确认 target 有效后才进入这里。
-    lease.Card is RolandPageCard card
+    lease.Card is YourModPageCard card
         ? card.InvokeTargetedUseAsync(choiceContext, target)
         : Task.CompletedTask;
 ```
 
-RolandPageCard 只暴露受保护的角色逻辑：
+YourModPageCard 只暴露受保护的角色逻辑：
 
 ```csharp
 protected virtual Task OnUse(PlayerChoiceContext choiceContext) =>
@@ -1105,9 +1140,9 @@ protected virtual Task OnTargetedUse(
 
 因此具体书页不需要知道 slot、lease、Revision 或联网实现。
 
-### 5.2 Roland 的批次开始
+### 5.2 YourMod 的批次开始
 
-Roland 过去用全局 ClashResolver 模拟“交锋开始”。现在改为类型化批次事件：
+YourMod 过去用全局 ClashResolver 模拟“交锋开始”。现在改为类型化批次事件：
 
 ```csharp
 public async Task BeforeResolutionBatchAsync(
@@ -1115,7 +1150,7 @@ public async Task BeforeResolutionBatchAsync(
 {
     foreach (LibrarySpeedDiceSlot slot in context.Slots)
     {
-        if (slot.Card is not RolandPageCard card)
+        if (slot.Card is not YourModPageCard card)
             continue;
 
         try
@@ -1134,7 +1169,7 @@ public async Task BeforeResolutionBatchAsync(
         {
             // 单张书页失败要保留完整异常和卡牌 ID。
             Entry.Logger.Error(
-                $"Roland clash-start effect failed for "
+                $"YourMod clash-start effect failed for "
                 + $"{card.Id.Entry}: {exception}");
         }
     }
@@ -1145,12 +1180,12 @@ public async Task BeforeResolutionBatchAsync(
 需要逐卡前后逻辑时，改用 `BeforeCardResolutionAsync` 和
 `AfterCardResolutionAsync`。
 
-### 5.3 Roland 的批次结束与释放
+### 5.3 YourMod 的批次结束与释放
 
 ```csharp
 public Task AfterResolutionBatchAsync(
     LibrarySpeedDiceResolutionBatchContext context) =>
-    RolandSpeedDiceLifecycle.AfterResolutionAsync(
+    YourModSpeedDiceLifecycle.AfterResolutionAsync(
         context.ChoiceContext,
         context.State);
 
@@ -1161,10 +1196,10 @@ public void OnCardReleased(
     LibrarySpeedDiceCardLease? lease) =>
     // 清除的是本次牌的下游 timing 状态；
     // 基础库已负责释放资源预留和 lease。
-    RolandCardTimingService.Clear(card);
+    YourModCardTimingService.Clear(card);
 ```
 
-Roland 的批次结束逻辑会标记槽位、检查胜利条件，再准备下回合角色状态：
+YourMod 的批次结束逻辑会标记槽位、检查胜利条件，再准备下回合角色状态：
 
 ```csharp
 state.MarkAllSlotsSpent();
@@ -1172,7 +1207,7 @@ await CombatManager.Instance.CheckWinCondition();
 
 if (!CombatManager.Instance.IsOverOrEnding)
 {
-    await RolandMultiplayerPersistence.EnsureControllerAsync(
+    await YourModMultiplayerPersistence.EnsureControllerAsync(
         choiceContext,
         state);
 }
@@ -1225,9 +1260,9 @@ if (LibrarySpeedDice.TryForceEmotionLevelUp(
 }
 ```
 
-### 6.1 Roland 的情感配置
+### 6.1 YourMod 的情感配置
 
-Roland 当前不从普通伤害和速度骰极值获取情感，而是主要通过书页骰子、
+YourMod 当前不从普通伤害和速度骰极值获取情感，而是主要通过书页骰子、
 击杀和友方死亡获取：
 
 ```csharp
@@ -1237,10 +1272,10 @@ private const int KillEmotionUnits = 2;
 private const int AllyDeathEmotionUnits = 2;
 private const int MaxEnergyPerEmotionLevel = 0;
 
-private static LibraryEmotionConfig CreateRolandEmotionConfig() =>
+private static LibraryEmotionConfig CreateYourModEmotionConfig() =>
     new()
     {
-        // Roland 五次升级分别需要 6 / 9 / 12 / 15 / 20 单位。
+        // YourMod 五次升级分别需要 6 / 9 / 12 / 15 / 20 单位。
         UnitThresholds = [6, 9, 12, 15, 20],
 
         GainEmotionFromDamage = false,
@@ -1248,7 +1283,7 @@ private static LibraryEmotionConfig CreateRolandEmotionConfig() =>
         KillEmotionUnits = 2,
         AllyDeathEmotionUnits = 2,
 
-        // Roland 的情感等级不增加原版 Energy 上限。
+        // YourMod 的情感等级不增加原版 Energy 上限。
         MaxEnergyPerLevel = 0,
 
         // 4 级情感开始获得第 2 个速度骰子。
@@ -1262,7 +1297,7 @@ private static LibraryEmotionConfig CreateRolandEmotionConfig() =>
     };
 ```
 
-Roland 入口目前用反射设置三个后加字段，是为了兼容曾经的基础库 DLL：
+YourMod 入口目前用反射设置三个后加字段，是为了兼容曾经的基础库 DLL：
 
 ```csharp
 typeof(LibraryEmotionConfig)
@@ -1273,15 +1308,15 @@ typeof(LibraryEmotionConfig)
 新下游以 `1.1.0` 为最低版本时不需要这样写，直接使用对象初始化器即可。
 反射会丢失编译期检查，不应作为新接入的默认写法。
 
-### 6.2 Roland 从书页骰子获取情感
+### 6.2 YourMod 从书页骰子获取情感
 
-Roland 在 `LibraryHooks.AfterDiceRoll` 后检查是否掷出书页骰子的最大值：
+YourMod 在 `LibraryHooks.AfterDiceRoll` 后检查是否掷出书页骰子的最大值：
 
 ```csharp
 public static void Prefix(LibraryDice dice)
 {
     decimal maximum = dice.BaseValue + dice.FloatValue;
-    if (dice.SourceCard.Owner.Character is not RolandModCharacter
+    if (dice.SourceCard.Owner.Character is not YourModCharacter
         || dice.CurrentBaseValue != maximum
         || !LibrarySpeedDice.TryGetState(
             dice.SourceCard.Owner,
@@ -1298,10 +1333,10 @@ public static void Prefix(LibraryDice dice)
 }
 ```
 
-这里是 Roland 特有的“书页骰子最大值”规则，不等于
+这里是 YourMod 特有的“书页骰子最大值”规则，不等于
 `ExtremeRollEmotionUnits`；后者针对速度骰子的投掷。
 
-### 6.3 Roland 的主动升级效果
+### 6.3 YourMod 的主动升级效果
 
 ```csharp
 if (LibrarySpeedDice.TryForceEmotionLevelUp(
@@ -1311,16 +1346,16 @@ if (LibrarySpeedDice.TryForceEmotionLevelUp(
 {
     // WithLight 已配置 refillOnLevelIncrease=true。
     // 正常回合升级会由基础库统一恢复；
-    // Roland 的主动强制升级兼容层显式刷新自己的 facade。
-    if (RolandLightService.TryGetState(
+    // YourMod 的主动强制升级兼容层显式刷新自己的 facade。
+    if (YourModLightService.TryGetState(
             owner,
-            out RolandLightState? light)
+            out YourModLightState? light)
         && light != null)
     {
         await light.RefillAfterEmotionLevelIncreasedAsync(currentLevel);
     }
 
-    RolandSpeedDiceService.ApplyForcedEmotionLevelEffects(state);
+    YourModSpeedDiceService.ApplyForcedEmotionLevelEffects(state);
 }
 ```
 
@@ -1406,24 +1441,24 @@ if (LibraryLight.TryGetState(player, out LibraryLightState? light)
 基础库不负责角色专属 Light 图标、颜色、HUD 或 Ritsu 次级资源注册，这些
 仍由下游 Mod 实现。
 
-### 7.1 Roland 的 Light facade
+### 7.1 YourMod 的 Light facade
 
-Roland 保留原来的 `RolandLightState` 签名，但内部只转发到公共
+YourMod 保留原来的 `YourModLightState` 签名，但内部只转发到公共
 `LibraryLightState`：
 
 ```csharp
-internal sealed class RolandLightState
+internal sealed class YourModLightState
 {
     public const int StartingLight = 4;
 
     private readonly LibraryLightState _inner;
 
-    internal RolandLightState(LibraryLightState inner)
+    internal YourModLightState(LibraryLightState inner)
     {
         _inner = inner;
     }
 
-    // 旧 Roland 名称 -> 新公共状态。
+    // 旧 YourMod 名称 -> 新公共状态。
     public int MaxLight => _inner.Maximum;
     public int Light => _inner.Current;
     public int ReservedLight => _inner.Reserved;
@@ -1449,7 +1484,7 @@ internal sealed class RolandLightState
 
 新角色没有旧 API 兼容负担时，直接使用 `LibraryLightState`，不需要再包一层。
 
-### 7.2 Roland 的最大值修改
+### 7.2 YourMod 的最大值修改
 
 ```csharp
 public Task GainMaxLightAsync(
@@ -1492,9 +1527,9 @@ public Task ClearTemporaryMaxLightBonusAsync(
 `ModifyMaximum` 只修改上限；`ModifyMaximumAndGain` 会在上限实际增加时恢复
 等量 Current。两者都不会改变情感升级时的补满策略。
 
-### 7.3 Roland 如何保护已预留 Light
+### 7.3 YourMod 如何保护已预留 Light
 
-Roland 的 Ritsu 次级资源 Hook 在外部消费前检查公共状态的 `Available`：
+YourMod 的 Ritsu 次级资源 Hook 在外部消费前检查公共状态的 `Available`：
 
 ```csharp
 public bool ShouldSpendSecondaryResource(
@@ -1514,12 +1549,12 @@ public bool ShouldSpendSecondaryResource(
 如果写成 `context.Amount <= state.Current`，玩家可以在装备多张书页后从其他
 效果花掉已被 lease 占用的 Light，最终导致结算失败。
 
-### 7.4 Roland 的 UI 刷新
+### 7.4 YourMod 的 UI 刷新
 
 ```csharp
 state = States.GetValue(player, owner =>
 {
-    var facade = new RolandLightState(inner);
+    var facade = new YourModLightState(inner);
 
     // Current、Maximum 或 Reservation 改变后刷新手牌费用。
     facade.Changed += () => QueueHandCardRefresh(owner);
@@ -1527,7 +1562,7 @@ state = States.GetValue(player, owner =>
 });
 ```
 
-基础库负责发状态事件，不负责 Roland 的卡框颜色、图标和 HUD。下游 UI
+基础库负责发状态事件，不负责 YourMod 的卡框颜色、图标和 HUD。下游 UI
 只订阅状态，不应重新维护第二份 Light 数值。
 
 ## 8. Light 费用
@@ -1578,13 +1613,13 @@ modifier。回合结束、打出后、升级完成和降级时会跟随卡牌费
 基础库层的 Light modifier 只影响 Light。是否让某个角色的 Energy 改费
 同步影响 Light，由该角色自己的 `ILibraryLightPolicy` 明确决定。
 
-### 8.1 Roland 的费用 facade
+### 8.1 YourMod 的费用 facade
 
-Roland 保持两个资源状态独立，但为了让原版/第三方“改费”效果同时作用于
+YourMod 保持两个资源状态独立，但为了让原版/第三方“改费”效果同时作用于
 书页，会在 Light Policy 中按同一时间线镜像未标记的 Energy modifier：
 
 ```csharp
-internal static class RolandLightCost
+internal static class YourModLightCost
 {
     public static int ApplyMirroredEnergyModifiersToLight(
         CardModel card,
@@ -1603,9 +1638,9 @@ internal static class RolandLightCost
 }
 ```
 
-### 8.2 Roland 显式区分 Energy 与 Light
+### 8.2 YourMod 显式区分 Energy 与 Light
 
-Roland 的标记只用于决定改费作用域，不会把余额或付费混为同一资源：
+YourMod 的标记只用于决定改费作用域，不会把余额或付费混为同一资源：
 
 ```csharp
 public static void SetEnergyAndLightToFreeThisTurn(CardModel card)
@@ -1638,9 +1673,9 @@ public static void AddLightOnlyThisCombat(
 表示单资源效果。标记会通过 Ritsu `ModelCloneRegistry` 随卡牌克隆复制，
 避免克隆后作用域丢失。余额、上限、预留和实际扣费仍完全独立。
 
-### 8.3 Roland 的 Light 费用升级
+### 8.3 YourMod 的 Light 费用升级
 
-RolandPageCard 的兼容帮助方法：
+YourModPageCard 的兼容帮助方法：
 
 ```csharp
 protected void UpgradeSpeedDiceLightCostBy(int addend)
@@ -1663,7 +1698,7 @@ protected override void AfterDowngraded()
 }
 ```
 
-具体 Roland 书页在升级回调中降 1 Light：
+具体 YourMod 书页在升级回调中降 1 Light：
 
 ```csharp
 protected override void OnUpgrade()
@@ -1682,15 +1717,15 @@ protected override void OnUpgrade()
 }
 ```
 
-### 8.4 Roland 的 Light-X 与推荐新写法
+### 8.4 YourMod 的 Light-X 与推荐新写法
 
-Roland 的 SwordOfVolition 声明：
+YourMod 的 SwordOfVolition 声明：
 
 ```csharp
 public override bool HasSpeedDiceLightCostX => true;
 ```
 
-Roland 的 Ritsu Hook 从当前 lease 读取已经冻结的数值：
+YourMod 的 Ritsu Hook 从当前 lease 读取已经冻结的数值：
 
 ```csharp
 LibrarySpeedDiceSlot? slot = null;
@@ -1782,28 +1817,28 @@ Store 只负责当前值的读取、异步写入、恢复和外部变更通知�
 Store 必须触发 `Changed`。实现 `ILibraryLightStoreIdentity` 虽非强制，但
 持久化或多人资源应提供稳定、唯一的 `ResourceId`。
 
-Roland 的 RitsuLib 适配器可参考
-`RolandModCode/Light/RolandLightState.cs` 中的
-`RolandRitsuLightStore`。该适配器属于 RolandMod，不属于基础库。
+YourMod 的 RitsuLib 适配器可参考
+`YourModCode/Light/YourModLightState.cs` 中的
+`YourModRitsuLightStore`。该适配器属于 YourMod，不属于基础库。
 
-### 9.1 RolandRitsuLightStore 的完整职责
+### 9.1 YourModRitsuLightStore 的完整职责
 
-Roland 用 `ConditionalWeakTable<Player, ...>` 保证同一个 Player 获得同一个
+YourMod 用 `ConditionalWeakTable<Player, ...>` 保证同一个 Player 获得同一个
 Store，同时不阻止 Player 被回收：
 
 ```csharp
-internal sealed class RolandRitsuLightStore :
+internal sealed class YourModRitsuLightStore :
     ILibraryLightStore,
     ILibraryLightStoreIdentity
 {
     private static readonly ConditionalWeakTable<
         Player,
-        RolandRitsuLightStore> Stores = new();
+        YourModRitsuLightStore> Stores = new();
 
     private readonly Player _player;
     private int _fallbackCurrent;
 
-    private RolandRitsuLightStore(
+    private YourModRitsuLightStore(
         Player player,
         LibraryLightOptions options)
     {
@@ -1812,7 +1847,7 @@ internal sealed class RolandRitsuLightStore :
     }
 
     // 必须是稳定、唯一的资源 ID。
-    public string ResourceId => RolandLightService.ResourceId;
+    public string ResourceId => YourModLightService.ResourceId;
 
     // 外部资源系统改变余额后通知基础库重新读取。
     public event Action? Changed;
@@ -1826,7 +1861,7 @@ internal sealed class RolandRitsuLightStore :
 
         return Stores.GetValue(
             player,
-            owner => new RolandRitsuLightStore(owner, options));
+            owner => new YourModRitsuLightStore(owner, options));
     }
 }
 ```
@@ -1843,7 +1878,7 @@ public bool TryRead(out LibraryLightStoreSnapshot snapshot)
         // 战斗中由 Ritsu 次级资源持有真实余额。
         : SecondaryResourceCmd.Get(
             _player,
-            RolandLightService.ResourceId);
+            YourModLightService.ResourceId);
 
     _fallbackCurrent = Math.Max(0, current);
     snapshot = new LibraryLightStoreSnapshot(_fallbackCurrent);
@@ -1902,7 +1937,7 @@ internal static void NotifyResourceChanged(
 {
     if (!Stores.TryGetValue(
             player,
-            out RolandRitsuLightStore? store))
+            out YourModRitsuLightStore? store))
     {
         return;
     }
@@ -1912,12 +1947,12 @@ internal static void NotifyResourceChanged(
 }
 ```
 
-Roland 在 `AfterSecondaryResourceChanged` 中调用 `NotifyResourceChanged`，
+YourMod 在 `AfterSecondaryResourceChanged` 中调用 `NotifyResourceChanged`，
 从而让 LibraryLightState 与 Ritsu UI 保持同一余额。Library 发起的命令
 用异步上下文标记，回调不会在同一非重入锁内再次写 Light；外部命令超过
 角色动态上限时才执行一次独立钳制。
 
-### 9.2 Roland 的下游资源注册
+### 9.2 YourMod 的下游资源注册
 
 ```csharp
 ModSecondaryResourceRegistry registry =
@@ -1926,8 +1961,8 @@ ModSecondaryResourceRegistry registry =
 _definition = registry.Register(
     "light",
     new SecondaryResourceDefinition(
-        defaultAmount: RolandLightState.StartingLight,
-        baseMaxAmount: RolandLightState.StartingLight,
+        defaultAmount: YourModLightState.StartingLight,
+        baseMaxAmount: YourModLightState.StartingLight,
         minAmount: 0,
         hardMaxAmount: 999,
 
@@ -1936,15 +1971,15 @@ _definition = registry.Register(
 
         persistencePolicy: SecondaryResourcePersistencePolicy.Combat,
         locTable: "gameplay_ui",
-        titleKey: "ROLAND_MOD_LIGHT_HOVER.title",
-        descriptionKey: "ROLAND_MOD_LIGHT_HOVER.description",
+        titleKey: "YOUR_MOD_LIGHT_HOVER.title",
+        descriptionKey: "YOUR_MOD_LIGHT_HOVER.description",
         smallIconPath:
-            "res://RolandMod/images/cards/frames/light_cost.png",
+            "res://YourMod/images/cards/frames/light_cost.png",
         largeIconPath:
-            "res://RolandMod/images/cards/frames/light_cost.png"));
+            "res://YourMod/images/cards/frames/light_cost.png"));
 
-// UI 属于 Roland/Ritsu，下游自行决定如何展示。
-registry.AlwaysShowInCombatUiForCharacter<RolandModCharacter>("light");
+// UI 属于 YourMod/Ritsu，下游自行决定如何展示。
+registry.AlwaysShowInCombatUiForCharacter<YourModCharacter>("light");
 ```
 
 关键是 `turnStartPolicy: None`：如果下游资源框架和 LibraryLightState 都
@@ -1983,7 +2018,7 @@ bool restored =
 旧快照缺少扩展字段时使用兼容默认值。联机恢复后应比较双方快照和 gameplay
 hash，而不是只比较界面。
 
-### 10.1 Roland 如何把本地输入变成确定性请求
+### 10.1 YourMod 如何把本地输入变成确定性请求
 
 模块只负责把基础库输入交给网络层：
 
@@ -1991,7 +2026,7 @@ hash，而不是只比较界面。
 public async Task<bool> RouteAsync(
     LibrarySpeedDiceInputRequest request)
 {
-    await RolandSpeedDiceNetwork.RequestAsync(request);
+    await YourModSpeedDiceNetwork.RequestAsync(request);
 
     // true 表示输入已由本模块消费，后续 InputRouter 不再执行。
     return true;
@@ -2050,7 +2085,7 @@ await LibrarySpeedDice.ExecuteRetargetAsync(
     revision);
 ```
 
-### 10.2 Roland 的同步 RNG
+### 10.2 YourMod 的同步 RNG
 
 ```csharp
 public Rng? CreateGameplayRng(Player player) =>
@@ -2070,7 +2105,7 @@ public Rng? CreateTargetRepairRng(Player player) =>
 即使不用 RitsuLib，也必须从自己的同步 RNG 系统提供两个可重放流，不能用
 `new Random()`。
 
-### 10.3 Roland 的稳定目标键
+### 10.3 YourMod 的稳定目标键
 
 ```csharp
 public static string GetStableTargetSortKey(Creature target)
@@ -2095,7 +2130,7 @@ public static string GetStableTargetSortKey(Creature target)
 
 `GetHashCode()`、Godot instance ID 和本地集合地址都不能作为稳定键。
 
-### 10.4 Roland 的共享批次结算
+### 10.4 YourMod 的共享批次结算
 
 ```csharp
 private static async Task ResolveStatesAsync(
@@ -2121,7 +2156,7 @@ FinalValue descending -> Player.NetId -> Slot.Index
 
 稳定结算所有候选状态。
 
-### 10.5 Roland 的快照扩展
+### 10.5 YourMod 的快照扩展
 
 创建：
 
@@ -2131,7 +2166,7 @@ LibrarySpeedDiceStateSnapshot speed =
 
 foreach (LibrarySpeedDiceSlotSnapshot slot in speed.Slots)
 {
-    // Roland 额外保存跨客户端可解析的 card/target identity。
+    // YourMod 额外保存跨客户端可解析的 card/target identity。
     // 基础库快照仍保留槽位、lease、预留和 Light 扩展。
 }
 ```
@@ -2177,9 +2212,9 @@ bool restored = LibrarySpeedDice.TryRestoreSnapshot(
 调用时点不变。新角色应使用 `ForCharacter<T>()` Builder 和类型化模块；
 不要在新代码中继续扩展全局 resolver。
 
-### 11.1 Roland 的薄 facade 示例
+### 11.1 YourMod 的薄 facade 示例
 
-RolandLightState 保留旧方法名，但不再拥有第二份 Light 状态：
+YourModLightState 保留旧方法名，但不再拥有第二份 Light 状态：
 
 ```csharp
 public int Light => _inner.Current;
@@ -2191,7 +2226,7 @@ public Task GainLightAsync(
     _inner.Gain(amount, source);
 ```
 
-RolandLightCost 用带作用域标记的中性 Energy modifier 保留改费顺序：
+YourModLightCost 用带作用域标记的中性 Energy modifier 保留改费顺序：
 
 ```csharp
 public static void SetLightToFreeThisTurn(CardModel card)
@@ -2209,9 +2244,9 @@ public static void SetLightToFreeThisTurn(CardModel card)
 这个 marker 对 Energy 是 0 变化，对 Light 是绝对 0；因此资源命名和余额
 完全分离，同时仍按原版 modifier 顺序清理、复制和计算。
 
-### 11.2 Roland 仍存在的旧 participant 投影
+### 11.2 YourMod 仍存在的旧 participant 投影
 
-Roland 的共享 resolver 仍会读取兼容 callback：
+YourMod 的共享 resolver 仍会读取兼容 callback：
 
 ```csharp
 var callback = state.Participant.AfterSpeedResolutionAsync;
@@ -2230,10 +2265,10 @@ ILibrarySpeedDiceLifecycle.AfterResolutionBatchAsync
 
 不要同时在旧 callback 和新 lifecycle 中注册同一个效果，否则会重复执行。
 
-### 11.3 哪些 Roland 代码不应成为新范例
+### 11.3 哪些 YourMod 代码不应成为新范例
 
 - `speedDiceStarCost`：已移除；不得再把 Light 命名或存储为 Stars。
-- `GetSpeedDiceLightCost()`：旧 Roland facade；新代码使用
+- `GetSpeedDiceLightCost()`：旧 YourMod facade；新代码使用
   `LibraryLight.GetCost(card)`。
 - 空的 `SetReservation` / `ClearReservation` facade：预留已由基础库 lease
   管理，新代码不要手动维护第二份字典。
@@ -2247,7 +2282,7 @@ ILibrarySpeedDiceLifecycle.AfterResolutionBatchAsync
 - [ ] DLL 引用不复制进下游发布包。
 - [ ] 初始化时只注册一次，ID 全局唯一。
 - [ ] `UnitThresholds` 正好五个正数。
-- [ ] Roland Light-only 书页的速度骰子 Energy 为 0，且不使用 Stars。
+- [ ] YourMod Light-only 书页的速度骰子 Energy 为 0，且不使用 Stars。
 - [ ] 普通手牌出牌若也消耗 Light，已由下游单独接入。
 - [ ] 所有外部 Light 消费检查 `Available`。
 - [ ] Use 后锁定通过当前 lease 的 `LockUnequip()` 完成。
@@ -2257,32 +2292,32 @@ ILibrarySpeedDiceLifecycle.AfterResolutionBatchAsync
 - [ ] 验证 Light 每回合回复、情感升级补满、费用升级/降级与 Light-X。
 - [ ] 验证双人重连后的快照与 gameplay hash 一致。
 
-Roland 的完整高级示例：
+YourMod 的完整高级示例：
 
-- 注册：`RolandModCode/Entry.cs`
-- 组件：`RolandModCode/RolandSpeedDiceModule.cs`
-- Light/Ritsu Store：`RolandModCode/Light/RolandLightState.cs`
-- 同时实现两种卡牌接口：`RolandModCode/Cards/RolandPageCard.cs`
+- 注册：`YourModCode/Entry.cs`
+- 组件：`YourModCode/YourModSpeedDiceModule.cs`
+- Light/Ritsu Store：`YourModCode/Light/YourModLightState.cs`
+- 同时实现两种卡牌接口：`YourModCode/Cards/YourModPageCard.cs`
 
-### 12.1 按 Roland 对照验收
+### 12.1 按 YourMod 对照验收
 
 注册检查：
 
 ```csharp
-// Roland：角色类型、ID、速度范围、情感、Light、Store、模块齐全。
+// YourMod：角色类型、ID、速度范围、情感、Light、Store、模块齐全。
 LibrarySpeedDice
-    .ForCharacter<RolandModCharacter>(ModId, options)
+    .ForCharacter<YourModCharacter>(ModId, options)
     .WithEmotion(emotion)
-    .WithLight(light, RolandRitsuLightStore.Factory)
-    .UseModule(RolandSpeedDiceModule.Instance)
+    .WithLight(light, YourModRitsuLightStore.Factory)
+    .UseModule(YourModSpeedDiceModule.Instance)
     .Register();
 ```
 
 卡牌检查：
 
 ```csharp
-// RolandPageCard：
-// 1. 速度骰子 Energy 为 0，Roland 不使用 Stars；
+// YourModPageCard：
+// 1. 速度骰子 Energy 为 0，YourMod 不使用 Stars；
 // 2. Light 独立；
 // 3. 速度骰子目标可与普通目标不同。
 ILibrarySpeedDiceCard speedCard = page;
@@ -2292,7 +2327,7 @@ ILibraryLightCard lightCard = page;
 资源检查：
 
 ```csharp
-// Roland 的所有外部扣费必须以 Available 为上限。
+// YourMod 的所有外部扣费必须以 Available 为上限。
 bool canSpend = amount <= libraryLightState.Available;
 ```
 
@@ -2300,7 +2335,7 @@ bool canSpend = amount <= libraryLightState.Available;
 
 ```csharp
 // Use 锁定当前 lease，不锁同型号的其他卡牌。
-if (card.HasTiming(RolandCardTiming.Use))
+if (card.HasTiming(YourModCardTiming.Use))
     lease.LockUnequip();
 
 // 批次逻辑使用类型化 context。
@@ -2324,7 +2359,7 @@ await LibrarySpeedDice.ExecuteEquipAsync(
 await LibrarySpeedDice.ResolveBatchAsync(context, states);
 ```
 
-## 13. 可复制的“类 Roland”完整骨架
+## 13. 可复制的“类 YourMod”完整骨架
 
 下面只包含 LibraryOfRuinaLib 必需部分。卡牌注册、图鉴、资源图标和 UI
 继续使用你自己的框架。
@@ -2380,10 +2415,10 @@ internal static class MyLibraryRegistration
 }
 ```
 
-与 Roland 的差异只有：
+与 YourMod 的差异只有：
 
-- `RolandModCharacter` 换成 `MyCharacter`。
-- `RolandRitsuLightStore.Factory` 被省略，因此使用默认内存 Store。
+- `YourModCharacter` 换成 `MyCharacter`。
+- `YourModRitsuLightStore.Factory` 被省略，因此使用默认内存 Store。
 - 数值和模块换成自己的实现。
 
 ### 13.2 书页基类
@@ -2400,7 +2435,7 @@ public abstract class MyPageCard(
       ILibrarySpeedDiceCard,
       ILibraryLightCard
 {
-    // 类 Roland：装备时不使用原版 Energy，本角色也不使用 Stars。
+    // 类 YourMod：装备时不使用原版 Energy，本角色也不使用 Stars。
     public LibrarySpeedDiceResourceCost SpeedDiceResourceCost { get; }
 
     public TargetType SpeedDiceTargetType { get; } =
@@ -2448,7 +2483,7 @@ internal sealed class MyCharacterModule :
     public bool CanEquipCard(
         LibrarySpeedDiceCombatState state,
         CardModel card) =>
-        // 类 Roland：只允许自己的书页。
+        // 类 YourMod：只允许自己的书页。
         card is MyPageCard;
 
     public async Task OnUseAsync(
@@ -2482,7 +2517,7 @@ internal sealed class MyCharacterModule :
     public Task BeforeResolutionBatchAsync(
         LibrarySpeedDiceResolutionBatchContext context)
     {
-        // 在这里实现类 Roland 的“交锋开始”。
+        // 在这里实现类 YourMod 的“交锋开始”。
         return Task.CompletedTask;
     }
 
@@ -2559,12 +2594,12 @@ MyCharacterMod/
 └─ MyCharacterMod.json              # LibraryOfRuinaLib 依赖
 ```
 
-对应 Roland：
+对应 YourMod：
 
 ```text
-RolandModCode/Entry.cs
-RolandModCode/RolandSpeedDiceModule.cs
-RolandModCode/Cards/RolandPageCard.cs
-RolandModCode/Light/RolandLightState.cs
-RolandModCode/Networking/RolandSpeedDiceNetwork.cs
+YourModCode/Entry.cs
+YourModCode/YourModSpeedDiceModule.cs
+YourModCode/Cards/YourModPageCard.cs
+YourModCode/Light/YourModLightState.cs
+YourModCode/Networking/YourModSpeedDiceNetwork.cs
 ```

@@ -3,6 +3,7 @@ using LibraryLib.SpeedDice;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Logging;
+using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
@@ -59,6 +60,11 @@ internal sealed partial class LibrarySpeedDiceUi : Control
         public required TextureRect Broken { get; init; }
         public required TextureRect BrokenLine { get; init; }
         public bool IsFocused { get; set; }
+        public bool IsPointerHovered { get; set; }
+        public bool IsTargetManagerHovered { get; set; }
+        public List<LibrarySpeedDiceHoverTargetLine> TargetLines { get; } =
+            [];
+        public IReadOnlyList<Creature> LineTargets { get; set; } = [];
     }
 
     public void Initialize(
@@ -79,6 +85,7 @@ internal sealed partial class LibrarySpeedDiceUi : Control
     {
         if (_state != null)
             _state.Changed -= OnStateChanged;
+        ClearAllTargetLines();
         NHoverTipSet.Remove(this);
         base._ExitTree();
     }
@@ -131,6 +138,7 @@ internal sealed partial class LibrarySpeedDiceUi : Control
 
     private void RebuildSlots()
     {
+        ClearAllTargetLines();
         foreach (Node child in GetChildren())
         {
             RemoveChild(child);
@@ -399,6 +407,20 @@ internal sealed partial class LibrarySpeedDiceUi : Control
                     _state,
                     i,
                     out bool canAcceptSelectedCard);
+            bool pointerHovered =
+                !isBroken
+                && canInteract
+                && view.Root.IsVisibleInTree()
+                && view.Root.GetGlobalRect().HasPoint(
+                    view.Root.GetViewport().GetMousePosition());
+            view.IsPointerHovered = pointerHovered;
+            bool hoverActive =
+                !isBroken
+                && canInteract
+                && (pointerHovered
+                    || view.IsFocused
+                    || view.Root.HasFocus());
+            SetTargetManagerHovered(view, hoverActive);
 
             view.Normal.Visible = !isBroken;
             view.Roulette.Visible = isRolling;
@@ -430,7 +452,7 @@ internal sealed partial class LibrarySpeedDiceUi : Control
             }
 
             view.Highlight.Visible =
-                !isBroken && canInteract && view.IsFocused;
+                hoverActive;
             if (view.Highlight.Visible)
             {
                 float highlightPulse = 0.82f
@@ -444,7 +466,101 @@ internal sealed partial class LibrarySpeedDiceUi : Control
             }
 
             view.Root.SetEnabled(canInteract);
+            RefreshTargetLines(view, slot, hoverActive);
         }
+    }
+
+    private void RefreshTargetLines(
+        SlotView view,
+        LibrarySpeedDiceSlot slot,
+        bool hoverActive)
+    {
+        if (_state == null
+            || !hoverActive
+            || slot.Card == null)
+        {
+            ClearTargetLines(view);
+            return;
+        }
+
+        IReadOnlyList<Creature> targets =
+            _state.Registration.Dispatcher.GetTargetLineTargets(
+                _state,
+                slot);
+        if (HaveSameTargets(view, targets)
+            && view.TargetLines.All(GodotObject.IsInstanceValid))
+        {
+            return;
+        }
+
+        ClearTargetLines(view);
+        view.LineTargets = targets.ToArray();
+        Creature? primaryTarget =
+            slot.Target is { IsAlive: true }
+                ? slot.Target
+                : targets.FirstOrDefault();
+        for (int i = 0; i < targets.Count; i++)
+        {
+            Creature target = targets[i];
+            LibrarySpeedDiceHoverTargetLine? line =
+                LibrarySpeedDiceHoverTargetLine.Begin(
+                    view.Root,
+                    slot.Index,
+                    i,
+                    target,
+                    ReferenceEquals(target, primaryTarget),
+                    showStartMarker: i == 0);
+            if (line != null)
+                view.TargetLines.Add(line);
+        }
+    }
+
+    private static bool HaveSameTargets(
+        SlotView view,
+        IReadOnlyList<Creature> targets)
+    {
+        if (targets.Count != view.LineTargets.Count)
+            return false;
+
+        for (int i = 0; i < targets.Count; i++)
+        {
+            if (!ReferenceEquals(targets[i], view.LineTargets[i]))
+                return false;
+        }
+
+        return true;
+    }
+
+    private static void ClearTargetLines(SlotView view)
+    {
+        foreach (LibrarySpeedDiceHoverTargetLine line in view.TargetLines)
+            line.Stop();
+
+        view.TargetLines.Clear();
+        view.LineTargets = [];
+    }
+
+    private void ClearAllTargetLines()
+    {
+        foreach (SlotView view in _slotViews)
+        {
+            SetTargetManagerHovered(view, hovered: false);
+            ClearTargetLines(view);
+        }
+    }
+
+    private static void SetTargetManagerHovered(
+        SlotView view,
+        bool hovered)
+    {
+        if (view.IsTargetManagerHovered == hovered)
+            return;
+
+        view.IsTargetManagerHovered = hovered;
+        if (hovered)
+            LibrarySpeedDiceRightClickService.NotifyDiceFocused(view.Root);
+        else
+            LibrarySpeedDiceRightClickService.NotifyDiceUnfocused(view.Root);
     }
 
     private void UpdateRouletteRegion(SlotView view, int slotIndex)
@@ -539,6 +655,7 @@ internal sealed partial class LibrarySpeedDiceUi : Control
         SlotView view)
     {
         view.IsFocused = true;
+        SetTargetManagerHovered(view, hovered: true);
         ShowCardPreview(slotIndex, view.Root);
         RefreshViews();
     }
@@ -546,6 +663,9 @@ internal sealed partial class LibrarySpeedDiceUi : Control
     private void OnSlotUnfocused(SlotView view)
     {
         view.IsFocused = false;
+        SetTargetManagerHovered(
+            view,
+            view.IsPointerHovered);
         NHoverTipSet.Remove(view.Root);
         RefreshViews();
     }
