@@ -1,7 +1,7 @@
 [gd_resource type="AtlasTexture" load_steps=2 format=3 uid="uid://de6xhortndwf"]
 
-[ext_resource type="Texture2D" uid="uid://1o0hi7kj2exu" path="res://images/powers/library_strong_pierce_power.png" id="1_23ou1"]
+[ext_resource type="Texture2D" uid="uid://c3r6r1l8hp7rn" path="res://images/powers/library_strong_pierce_power.png" id="1_byrbs"]
 
 [resource]
-atlas = ExtResource("1_23ou1")
+atlas = ExtResource("1_byrbs")
 region = Rect2(0, 0, 235, 195)

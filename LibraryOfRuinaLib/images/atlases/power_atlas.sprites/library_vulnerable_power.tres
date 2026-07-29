@@ -1,8 +1,7 @@
-[gd_resource type="AtlasTexture" load_steps=2 format=3 uid="uid://c3ldvpvm0y1f7"]
+[gd_resource type="AtlasTexture" load_steps=2 format=3 uid="uid://bg5r54xutbsn5"]
 
-[ext_resource type="Texture2D" uid="uid://b4vtbx1p4w12i" path="res://images/powers/library_vulnerable_power.png" id="1_nk3wc"]
+[ext_resource type="Texture2D" uid="uid://cgt06xrwqt10x" path="res://images/powers/library_vulnerable_power.png" id="1_wxqyj"]
 
 [resource]
-atlas = ExtResource("1_nk3wc")
+atlas = ExtResource("1_wxqyj")
 region = Rect2(0, 0, 100, 108)
-

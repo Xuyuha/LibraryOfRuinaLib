@@ -42,15 +42,9 @@
   "LIBRARY_BLEEDING_POWER_DEFAULT.title": "Bleed",
   "LIBRARY_BLEEDING_POWER_DEFAULT.description": "After attacking, take damage and lose stacks over time.",
   "LIBRARY_BLEEDING_POWER_DEFAULT.smartDescription": "Whenever [gold]{OwnerName}[/gold] deals [red]attack damage[/red], they take [red]{Amount}[/red] damage, then [gold]Bleed[/gold] loses one third of its stacks. It also loses one third of its stacks at end of turn; remove it below [blue]3[/blue] stacks.",
-  "LIBRARY_BLEEDING_POWER.title": "Bleed",
-  "LIBRARY_BLEEDING_POWER.description": "After attacking, take damage and lose stacks over time.",
-  "LIBRARY_BLEEDING_POWER.smartDescription": "Whenever [gold]{OwnerName}[/gold] deals [red]attack damage[/red], they take [red]{Amount}[/red] damage, then [gold]Bleed[/gold] loses one third of its stacks. It also loses one third of its stacks at end of turn; remove it below [blue]3[/blue] stacks.",
   "LIBRARY_BURN_POWER_DEFAULT.title": "Burn",
   "LIBRARY_BURN_POWER_DEFAULT.description": "At end of turn, take damage and lose stacks over time.",
   "LIBRARY_BURN_POWER_DEFAULT.smartDescription": "At the end of [gold]{OwnerName}[/gold]'s side turn, they take [red]{Amount}[/red] damage, then [gold]Burn[/gold] loses one third of its stacks.",
-  "LIBRARY_BURN_POWER.title": "Burn",
-  "LIBRARY_BURN_POWER.description": "At end of turn, take damage and lose stacks over time.",
-  "LIBRARY_BURN_POWER.smartDescription": "At the end of [gold]{OwnerName}[/gold]'s side turn, they take [red]{Amount}[/red] damage, then [gold]Burn[/gold] loses one third of its stacks.",
   "LIBRARY_CHARGE_POWER_DEFAULT.title": "Charge",
   "LIBRARY_CHARGE_POWER_DEFAULT.description": "Stored energy.",
   "LIBRARY_CHARGE_POWER_DEFAULT.smartDescription": "[gold]{OwnerName}[/gold] has [blue]{Amount}[/blue] [gold]Charge[/gold].",
@@ -78,5 +72,10 @@
   "LIBRARY_QUICKNESS_POWER.smartDescription": "At the end of each turn, deal [red]{Amount}[/red] damage to all enemies, then reduce this power by 1.",
   "LIBRARY_BINDING_POWER.title": "Binding",
   "LIBRARY_BINDING_POWER.description": "During its duration, whenever this creature takes unblocked attack damage less than this power's stacks, raise that damage to this power's stacks.",
-  "LIBRARY_BINDING_POWER.smartDescription": "{IsPermanent:Permanent|For the next [blue]{Turns}[/blue] turns}, whenever [gold]{OwnerName}[/gold] takes less than [blue]{Amount}[/blue] unblocked attack damage, raise that damage to [blue]{Amount}[/blue]."
+  "LIBRARY_BINDING_POWER.smartDescription": "{IsPermanent:Permanent|For the next [blue]{Turns}[/blue] turns}, whenever [gold]{OwnerName}[/gold] takes less than [blue]{Amount}[/blue] unblocked attack damage, raise that damage to [blue]{Amount}[/blue].",  "LIBRARY_SMOKE_POWER.title.en": "Smoke",
+  "LIBRARY_SMOKE_POWER.description.en": "Increases attack damage dealt and received by [blue]1 + stacks * 0.05[/blue].",
+  "LIBRARY_SMOKE_POWER.smartDescription.en": "Increases attack damage dealt and received by {Multiplier}.",
+  "LIBRARY_DECAY_POWER.title.en": "Decay",
+  "LIBRARY_DECAY_POWER.description.en": "When taking damage, additionally deals damage and stagger damage to self. At the end of the turn, deals damage to self.",
+  "LIBRARY_DECAY_POWER.smartDescription.en": "When taking damage, additionally deals {Amount} damage and stagger damage to self. At the end of the turn, deals {Amount} damage to self and reduces this stack by 1."
 }

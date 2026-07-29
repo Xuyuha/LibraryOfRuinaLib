@@ -75,5 +75,8 @@
   "LIBRARY_CHARGE_POWER_R_CORP.smartDescription": "特定卡牌可消耗“充能”层数进行强化,最大值：20",
   "LIBRARY_SMOKE_POWER.title": "烟气",
   "LIBRARY_SMOKE_POWER.description":"使自身造成与受到的攻击伤害乘以[blue]1+该效果层数*0.05[/blue]",
-  "LIBRARY_SMOKE_POWER.smartDescription": "使自身造成与受到的攻击伤害*{Multiplier}"
+  "LIBRARY_SMOKE_POWER.smartDescription": "使自身造成与受到的攻击伤害*{Multiplier}",
+  "LIBRARY_DECAY_POWER.title": "腐蚀",
+  "LIBRARY_DECAY_POWER.description":"受伤时额外对自身造成伤害与混乱伤害，回合结束时对自身造成伤害",
+  "LIBRARY_DECAY_POWER.smartDescription": "受伤时额外对自身造成{Amount}点伤害与混乱伤害，回合结束时对自身造成{Amount}点伤害并使该层数-1"
 }
