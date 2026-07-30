@@ -122,6 +122,7 @@ public abstract class LibraryPowerModel : PowerModel,ILibraryAbstractModel
     /// </summary>
     public NPower BoundNPower
     {
+        get => _boundNPower;
         set
         {
             _boundNPower = value;
