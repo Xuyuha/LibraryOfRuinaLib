@@ -541,7 +541,8 @@ internal static class LibraryDiceCardDescriptionLayoutPatch
     {
         try
         {
-            if (!IsFitCurrent(bodyLabel, instanceId, revision))
+            if (!IsFitCurrent(bodyLabel, instanceId, revision)
+                || !bodyLabel.IsInsideTree())
                 return;
 
             if (diceLabel != null)
@@ -686,7 +687,6 @@ internal static class LibraryDiceCardDescriptionLayoutPatch
             if (!IsFitCurrent(bodyLabel, instanceId, revision))
                 return;
 
-            CompleteFitRevision(instanceId, revision);
             if (bodyLines.Length > 0)
             {
                 bodyLabel.OffsetTop =
@@ -700,7 +700,6 @@ internal static class LibraryDiceCardDescriptionLayoutPatch
         }
         catch (Exception exception)
         {
-            CompleteFitRevision(instanceId, revision);
             if (_loggedFailure)
                 return;
 
@@ -709,6 +708,10 @@ internal static class LibraryDiceCardDescriptionLayoutPatch
                 "[LibraryOfRuinaLib.CardDescription] "
                 + "Failed to finish dice card description layout: "
                 + $"{exception}");
+        }
+        finally
+        {
+            CompleteFitRevision(instanceId, revision);
         }
     }
 
@@ -811,19 +814,28 @@ internal static class LibraryDiceCardDescriptionLayoutPatch
         ulong instanceId,
         long revision)
     {
-        SceneTree? tree = bodyLabel.GetTree();
-        if (tree == null)
+        if (!IsFitCurrent(bodyLabel, instanceId, revision)
+            || !bodyLabel.IsInsideTree())
+        {
+            return false;
+        }
+
+        SceneTree? tree = Engine.GetMainLoop() as SceneTree;
+        if (tree == null || !GodotObject.IsInstanceValid(tree))
             return false;
 
         for (int frame = 0;
              frame < LayoutMeasurementFrameCount;
              frame++)
         {
-            await bodyLabel.ToSignal(
+            await tree.ToSignal(
                 tree,
                 SceneTree.SignalName.ProcessFrame);
-            if (!IsFitCurrent(bodyLabel, instanceId, revision))
+            if (!IsFitCurrent(bodyLabel, instanceId, revision)
+                || !bodyLabel.IsInsideTree())
+            {
                 return false;
+            }
         }
 
         return true;

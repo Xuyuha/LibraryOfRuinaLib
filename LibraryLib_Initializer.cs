@@ -20,6 +20,7 @@ public class Entry
 
         var harmony = new Harmony("LibraryOfRuinaLib");
         harmony.PatchAll();
+        LibrarySpeedDiceMobileRightClickCompat.TryInstall(harmony);
         Log.Info("成功加载 LibraryOfRuinaLib基础库");
         ScriptManagerBridge.LookupScriptsInAssembly(typeof(Entry).Assembly);
     }

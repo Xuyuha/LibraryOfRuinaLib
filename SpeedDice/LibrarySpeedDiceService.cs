@@ -1829,10 +1829,10 @@ internal static class LibrarySpeedDiceService
         try
         {
             var targetManager = NTargetManager.Instance;
-            var targetMode =
-                NControllerManager.Instance?.IsUsingController == true
-                    ? TargetMode.Controller
-                    : TargetMode.ClickMouseToTarget;
+            TargetMode targetMode =
+                LibrarySpeedDiceInputMode.ResolveTargetMode(
+                    NControllerManager.Instance?.IsUsingController
+                    == true);
             targetManager.StartTargeting(
                 card.GetSpeedDiceTargetType(),
                 targetingOrigin,
@@ -1981,9 +1981,9 @@ internal static class LibrarySpeedDiceService
         {
             NTargetManager targetManager = NTargetManager.Instance;
             TargetMode targetMode =
-                NControllerManager.Instance?.IsUsingController == true
-                    ? TargetMode.Controller
-                    : TargetMode.ClickMouseToTarget;
+                LibrarySpeedDiceInputMode.ResolveTargetMode(
+                    NControllerManager.Instance?.IsUsingController
+                    == true);
             targetManager.StartTargeting(
                 card.GetSpeedDiceTargetType(),
                 targetingOrigin,

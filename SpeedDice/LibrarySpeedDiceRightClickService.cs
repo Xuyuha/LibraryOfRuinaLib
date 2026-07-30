@@ -44,12 +44,23 @@ internal static class LibrarySpeedDiceRightClickService
     public static bool CanBeginSelection(CardModel card)
     {
         NPlayerHand? hand = NPlayerHand.Instance;
-        if (card.IsCanonical
+        return CanRequestSelection(card)
+            && hand != null
+            && !hand.InCardPlay
+            && !NTargetManager.Instance.IsInSelection;
+    }
+
+    public static bool CanRequestSelection(CardModel card)
+    {
+        NPlayerHand? hand = NPlayerHand.Instance;
+        if (card is not ILibrarySpeedDiceCard
+            {
+                EnableSpeedDiceRightClickSelection: true,
+            }
+            || card.IsCanonical
             || card.Pile?.Type != PileType.Hand
             || hand == null
-            || hand.InCardPlay
             || hand.IsInCardSelection
-            || NTargetManager.Instance.IsInSelection
             || !LibrarySpeedDiceService.CanEquipCard(card))
         {
             return false;
@@ -76,7 +87,8 @@ internal static class LibrarySpeedDiceRightClickService
         NTargetManager targetManager = NTargetManager.Instance;
         bool dieSelectionStarted = false;
         bool useControllerTargeting =
-            ShouldUseControllerTargeting(usingController);
+            LibrarySpeedDiceInputMode.ShouldUseControllerTargeting(
+                usingController);
         LibrarySpeedDiceRightClickTargetLine? targetLine = null;
         NotifyEquipSelectionChanged(state, card, isSelecting: true);
         try
@@ -108,9 +120,9 @@ internal static class LibrarySpeedDiceRightClickService
                 return;
             }
 
-            TargetMode targetMode = useControllerTargeting
-                ? TargetMode.Controller
-                : TargetMode.ClickMouseToTarget;
+            TargetMode targetMode =
+                LibrarySpeedDiceInputMode.ResolveTargetMode(
+                    usingController);
             targetManager.StartTargeting(
                 TargetType.AnyEnemy,
                 source,
@@ -245,16 +257,6 @@ internal static class LibrarySpeedDiceRightClickService
                 "[LibraryOfRuinaLib] Speed-dice selection presentation failed: "
                 + exception);
         }
-    }
-
-    private static bool ShouldUseControllerTargeting(
-        bool triggerIsController)
-    {
-        if (!triggerIsController)
-            return false;
-
-        return OS.GetName() != "Android"
-            || Input.GetConnectedJoypads().Count > 0;
     }
 
     private static Dictionary<Control, int> FindAvailableDiceControls(
