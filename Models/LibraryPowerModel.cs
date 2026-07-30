@@ -47,6 +47,7 @@ public abstract class LibraryPowerModel : PowerModel,ILibraryAbstractModel
     ///     为 true 时启用动态模式切换，本地化键变为 "{Id.Entry}_{Mode}.key"。
     /// </summary>
     public virtual bool IsDynamic => false;
+    public virtual bool NeedNpower => IsDynamic;
 
     /// <inheritdoc />
     public override LocString Title =>
