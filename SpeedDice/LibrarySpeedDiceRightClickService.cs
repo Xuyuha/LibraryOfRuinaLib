@@ -165,7 +165,8 @@ internal static class LibrarySpeedDiceRightClickService
                 await LibrarySpeedDiceService.EquipCardAsync(
                     card,
                     slotIndex,
-                    selectedControl);
+                    selectedControl,
+                    usingController);
             }
         }
         catch (Exception exception)
