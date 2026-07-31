@@ -726,7 +726,8 @@ internal static class LibrarySpeedDiceService
     public static async Task EquipCardAsync(
         CardModel card,
         int slotIndex,
-        Control targetingOrigin)
+        Control targetingOrigin,
+        bool usingController = false)
     {
         if (card.Owner == null
             || !TryGetState(
@@ -749,7 +750,8 @@ internal static class LibrarySpeedDiceService
                 target = await SelectUnequippedCardTargetAsync(
                     state,
                     card,
-                    targetingOrigin);
+                    targetingOrigin,
+                    usingController);
                 if (target == null)
                     return;
             }
@@ -1943,7 +1945,8 @@ internal static class LibrarySpeedDiceService
     private static async Task<Creature?> SelectUnequippedCardTargetAsync(
         LibrarySpeedDiceCombatState state,
         CardModel card,
-        Control targetingOrigin)
+        Control targetingOrigin,
+        bool usingController)
     {
         if (!GodotObject.IsInstanceValid(targetingOrigin)
             || state.Player.PlayerCombatState?.Phase
@@ -1979,7 +1982,8 @@ internal static class LibrarySpeedDiceService
         {
             NTargetManager targetManager = NTargetManager.Instance;
             TargetMode targetMode =
-                LibrarySpeedDiceInputMode.ResolveTargetMode(true);
+                LibrarySpeedDiceInputMode.ResolveTargetMode(
+                    usingController);
             targetManager.StartTargeting(
                 card.GetSpeedDiceTargetType(),
                 targetingOrigin,
