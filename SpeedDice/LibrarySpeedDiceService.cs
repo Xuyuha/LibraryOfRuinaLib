@@ -1830,7 +1830,7 @@ internal static class LibrarySpeedDiceService
         {
             var targetManager = NTargetManager.Instance;
             TargetMode targetMode =
-                LibrarySpeedDiceInputMode.ResolveTargetMode(true);
+                LibrarySpeedDiceInputMode.ResolveTargetMode(false);
             targetManager.StartTargeting(
                 card.GetSpeedDiceTargetType(),
                 targetingOrigin,
