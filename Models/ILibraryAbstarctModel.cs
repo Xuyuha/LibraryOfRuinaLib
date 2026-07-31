@@ -42,14 +42,14 @@ public interface ILibraryAbstractModel//库模型接口，定义了库里的钩�
     public Task AfterModifyingChaoDamageAmount(CardModel? cardSource, LibraryDamageType type);
     public Task AfterModifyingHpLostAfterOsty(LibraryDamageType type);
     public Task AfterModifyingHpLostBeforeOsty(LibraryDamageType type);
-    public Task AfterPowerEffect(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource);
+    public Task AfterPowerEffect(PlayerChoiceContext choiceContext, LibraryPowerModel power,decimal amount, Creature? dealer, CardModel? cardSource);
     public Task AfterPowerReduce(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource);
     public Task AfterSetPowerMode(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource, LibraryPowerMode mode);
     public Task AfterStun(Creature creature);
     public Task BeforeAttack(LibraryAttackCommand command);
     public Task BeforeChaoDamageReceived(PlayerChoiceContext choiceContext, Creature target, decimal amount, ValueProp props, Creature? dealer, CardModel? cardSource, LibraryDamageType type);
     public Task BeforeDamageReceived(PlayerChoiceContext choiceContext, Creature target, decimal amount, ValueProp props, Creature? dealer, CardModel? cardSource, LibraryDamageType type);
-    public Task BeforePowerEffect(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource);
+    public Task BeforePowerEffect(PlayerChoiceContext choiceContext, LibraryPowerModel power,decimal amount, Creature? dealer, CardModel? cardSource);
     public Task BeforePowerReduce(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource);
     public Task BeforeSetPowerMode(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource, LibraryPowerMode mode);
     public Task BeforeStun(Creature creature);

@@ -38,7 +38,11 @@ public abstract class LibraryDurationPowerModel : LibraryPowerModel, ISecondaryD
             return GetBaseValueForIConvertible().ToString();
         }
     }
-
+    public decimal Turns
+    {
+        get => DynamicVars["Turns"].BaseValue;
+        set => DynamicVars["Turns"].BaseValue = value;
+    }
     public override PowerStackType StackType => PowerStackType.Counter;
 
     public override PowerInstanceType InstanceType => PowerInstanceType.Instanced;
@@ -71,6 +75,7 @@ public abstract class LibraryDurationPowerModel : LibraryPowerModel, ISecondaryD
     public bool SetTurnsRemaining(int turnsRemaining, bool notifyDisplay = true)
     {
         AssertMutable();
+
         int clamped = Math.Max(0, turnsRemaining);
         Data data = GetInternalData<Data>();
         if (data.TurnsRemaining == clamped)

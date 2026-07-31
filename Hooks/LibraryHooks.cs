@@ -369,13 +369,13 @@ public static class LibraryHooks
             }
         }
     }
-    public static async Task AfterPowerEffect(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource)
+    public static async Task AfterPowerEffect(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryPowerModel power,decimal amount, Creature? dealer, CardModel? cardSource)
     {
         foreach (var model in combatState.IterateHookListeners())
         {
             if (model is ILibraryAbstractModel libraryModel)
             {
-                await libraryModel.AfterPowerEffect(choiceContext, power, dealer, cardSource);
+                await libraryModel.AfterPowerEffect(choiceContext, power, amount, dealer, cardSource);
                 model.InvokeExecutionFinished();
             }
         }
@@ -639,13 +639,13 @@ public static class LibraryHooks
             }
         }
     }
-    public static async Task BeforePowerEffect(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource)
+    public static async Task BeforePowerEffect(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryPowerModel power,decimal amount, Creature? dealer, CardModel? cardSource)
     {
         foreach (var model in combatState.IterateHookListeners())
         {
             if (model is ILibraryAbstractModel libraryModel)    
             {
-                await libraryModel.BeforePowerEffect(choiceContext, power, dealer, cardSource);
+                await libraryModel.BeforePowerEffect(choiceContext, power, amount, dealer, cardSource);
                 model.InvokeExecutionFinished();
             }
         }
@@ -1150,5 +1150,10 @@ public static class LibraryHooks
             }
         }
         return true;
+    }
+
+    internal static decimal ModifyEffectiveAmount(ICombatState combatState, LibraryBasePowerModel libraryBasePowerModel, Creature? dealer, decimal? amount, CardModel? cardSource, out IEnumerable<AbstractModel> modifiers)
+    {
+        throw new NotImplementedException();
     }
 }

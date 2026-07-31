@@ -172,8 +172,7 @@ public abstract class LibraryMonsterModel : MonsterModel,ILibraryAbstractModel
     {
         return Task.CompletedTask;
     }
-    public virtual Task AfterPowerEffect(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource)
-    {
+    public virtual Task AfterPowerEffect(PlayerChoiceContext choiceContext, LibraryPowerModel power,decimal amount, Creature? dealer, CardModel? cardSource)    {
         return Task.CompletedTask;
     }
     public virtual Task AfterPowerReduce(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource)
@@ -200,7 +199,7 @@ public abstract class LibraryMonsterModel : MonsterModel,ILibraryAbstractModel
     {
         return Task.CompletedTask;
     }
-    public virtual Task BeforePowerEffect(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource)
+    public virtual Task BeforePowerEffect(PlayerChoiceContext choiceContext, LibraryPowerModel power,decimal amount, Creature? dealer, CardModel? cardSource)
     {
         return Task.CompletedTask;
     }

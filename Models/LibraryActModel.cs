@@ -11,7 +11,7 @@ using MegaCrit.Sts2.Core.ValueProps;
 namespace Library.Models;
 
 public abstract class LibraryActModel : ActModel,ILibraryAbstractModel
-{
+{   
     public virtual Creature ModifyDamageTarget(Creature creature, decimal amount, ValueProp props, Creature? dealer,LibraryDamageType type)
     {
         return creature;
@@ -137,7 +137,7 @@ public abstract class LibraryActModel : ActModel,ILibraryAbstractModel
     {
         return Task.CompletedTask;
     }
-    public virtual Task AfterPowerEffect(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource)
+    public virtual Task AfterPowerEffect(PlayerChoiceContext choiceContext, LibraryPowerModel power,decimal amount, Creature? dealer, CardModel? cardSource)
     {
         return Task.CompletedTask;
     }
@@ -165,7 +165,7 @@ public abstract class LibraryActModel : ActModel,ILibraryAbstractModel
     {
         return Task.CompletedTask;
     }
-    public virtual Task BeforePowerEffect(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource)
+    public virtual Task BeforePowerEffect(PlayerChoiceContext choiceContext, LibraryPowerModel power,decimal amount, Creature? dealer, CardModel? cardSource)
     {
         return Task.CompletedTask;
     }

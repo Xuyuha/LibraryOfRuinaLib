@@ -138,7 +138,7 @@ public abstract class LibraryAncientEventModel : AncientEventModel,ILibraryAbstr
     {
         return Task.CompletedTask;
     }
-    public virtual Task AfterPowerEffect(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource)
+    public virtual Task AfterPowerEffect(PlayerChoiceContext choiceContext, LibraryPowerModel power,decimal amount, Creature? dealer, CardModel? cardSource)
     {
         return Task.CompletedTask;
     }
@@ -166,8 +166,7 @@ public abstract class LibraryAncientEventModel : AncientEventModel,ILibraryAbstr
     {
         return Task.CompletedTask;
     }
-    public virtual Task BeforePowerEffect(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource)
-    {
+    public virtual Task BeforePowerEffect(PlayerChoiceContext choiceContext, LibraryPowerModel power,decimal amount, Creature? dealer, CardModel? cardSource)    {
         return Task.CompletedTask;
     }
     public virtual Task BeforePowerReduce(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource)

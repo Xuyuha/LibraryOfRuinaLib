@@ -21,17 +21,18 @@ public abstract class LibraryBasePowerModel: LibraryMultipleModePowerModel//类�
     protected virtual Task Reduce(PlayerChoiceContext ChoiceContext){//子类实现减少逻辑
         return Task.CompletedTask;
     }
-    public async Task TriggerEffect(PlayerChoiceContext choiceContext, Creature? dealer, CardModel? cardSource)//通过触发方法实现钩子的触发
+    public async Task TriggerEffect(PlayerChoiceContext choiceContext, Creature? dealer, CardModel? cardSource, decimal? amount = null)//通过触发方法实现钩子的触发
     {
         ICombatState? combatState = Owner?.CombatState;
         if(combatState == null)return;
+        if(amount == null)amount = Amount;
         if (!LibraryHooks.TryPowerEffect(combatState, choiceContext, this, dealer, cardSource)) return;
         Log.Info(Id+"Effect");
-        decimal effectiveAmount = LibraryHooks.ModifyEffectiveAmount(combatState,this,  dealer , Amount, cardSource, out IEnumerable<AbstractModel> modifiers);
-        await LibraryHooks.AfterModifyingEffectiveAmount(combatState, this , cardSource, modifiers);
-        await LibraryHooks.BeforePowerEffect(combatState, choiceContext, this, dealer, cardSource);
+        decimal effectiveAmount = LibraryHooks.ModifyEffectiveAmount(combatState,this,  dealer , amount.Value, cardSource, out IEnumerable<AbstractModel> modifiers);
+        await LibraryHooks.AfterModifyingEffectiveAmount(combatState, this, cardSource, modifiers);
+        await LibraryHooks.BeforePowerEffect(combatState, choiceContext, this, effectiveAmount, dealer, cardSource);
         await Effect(choiceContext, effectiveAmount);
-        await LibraryHooks.AfterPowerEffect(combatState, choiceContext, this, dealer, cardSource);
+        await LibraryHooks.AfterPowerEffect(combatState, choiceContext, this, effectiveAmount, dealer, cardSource);
     }
     public async Task TriggerReduce(PlayerChoiceContext choiceContext, Creature? dealer, CardModel? cardSource)//通过减少方法实现减少钩子的触发
     {

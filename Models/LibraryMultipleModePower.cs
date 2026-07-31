@@ -196,10 +196,10 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
         await Mode.AfterModifyingHpLostBeforeOsty(type);
         await AfterModifyingHpLostBeforeOsty(type , null);
     }
-    public sealed override async Task AfterPowerEffect(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource)
+    public sealed override async Task AfterPowerEffect(PlayerChoiceContext choiceContext, LibraryPowerModel power,decimal amount, Creature? dealer, CardModel? cardSource)
     {
-        await Mode.AfterPowerEffect(choiceContext, power, dealer, cardSource);
-        await AfterPowerEffect(choiceContext, power, dealer, cardSource , null);
+        await Mode.AfterPowerEffect(choiceContext, power, amount, dealer, cardSource);
+        await AfterPowerEffect(choiceContext, power, amount, dealer, cardSource , null);
     }
     public sealed override async Task AfterPowerReduce(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource)
     {
@@ -231,10 +231,10 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
         await Mode.BeforeDamageReceived(choiceContext, target, amount, props, dealer, cardSource, type);
         await BeforeDamageReceived(choiceContext, target, amount, props, dealer, cardSource, type , null);
     }
-    public sealed override async Task BeforePowerEffect(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource)
+    public sealed override async Task BeforePowerEffect(PlayerChoiceContext choiceContext, LibraryPowerModel power,decimal amount, Creature? dealer, CardModel? cardSource)
     {
-        await Mode.BeforePowerEffect(choiceContext, power, dealer, cardSource);
-        await BeforePowerEffect(choiceContext, power, dealer, cardSource , null);
+        await Mode.BeforePowerEffect(choiceContext, power, amount, dealer, cardSource);
+        await BeforePowerEffect(choiceContext, power, amount, dealer, cardSource , null);
     }
     public sealed override async Task BeforePowerReduce(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource)
     {
@@ -1483,7 +1483,7 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
     {
         return Task.CompletedTask;
     }
-    public virtual Task AfterPowerEffect(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource, object? _ = null)
+    public virtual Task AfterPowerEffect(PlayerChoiceContext choiceContext, LibraryPowerModel power,decimal amount, Creature? dealer, CardModel? cardSource, object? _ = null)
     {
         return Task.CompletedTask;
     }
@@ -1511,7 +1511,7 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
     {
         return Task.CompletedTask;
     }
-    public virtual Task BeforePowerEffect(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource, object? _ = null)
+    public virtual Task BeforePowerEffect(PlayerChoiceContext choiceContext, LibraryPowerModel power,decimal amount, Creature? dealer, CardModel? cardSource, object? _ = null)
     {
         return Task.CompletedTask;
     }
