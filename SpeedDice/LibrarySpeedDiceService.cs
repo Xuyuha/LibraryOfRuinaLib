@@ -406,6 +406,13 @@ internal static class LibrarySpeedDiceService
         return RunManager.Instance.ActionExecutor.CurrentlyRunningAction == null;
     }
 
+    internal static bool IsLocalPlayerInResolutionLifecycle()
+    {
+        return TryGetLocalState(out LibrarySpeedDiceCombatState? state)
+            && state != null
+            && (state.IsLifecycleBusy || state.IsResolving);
+    }
+
     public static async Task AdvanceLocalAsync()
     {
         if (!TryGetLocalState(out var state) || state == null)
