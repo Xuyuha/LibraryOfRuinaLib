@@ -1,5 +1,6 @@
 using Godot;
 using LibraryLib.SpeedDice;
+using MegaCrit.Sts2.Core.Context;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Logging;
@@ -8,6 +9,7 @@ using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 using MegaCrit.Sts2.Core.Nodes.HoverTips;
+using MegaCrit.Sts2.Core.Nodes.Rooms;
 
 namespace Library.SpeedDice;
 
@@ -124,6 +126,8 @@ internal sealed partial class LibrarySpeedDiceUi : Control
         {
             if (!GodotObject.IsInstanceValid(this) || _state == null)
                 return;
+            if (LocalContext.IsMe(_state.Player))
+                NCombatRoom.Instance?.Ui?.EndTurnButton?.RefreshEnabled();
             if (_slotViews.Count != _state.Slots.Count)
             {
                 Log.Info(

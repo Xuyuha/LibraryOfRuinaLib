@@ -332,11 +332,36 @@ internal static class LibrarySpeedDiceCardPlaySelectionCleanupPatch
 [HarmonyPatch(
     typeof(NEndTurnButton),
     nameof(NEndTurnButton.CallReleaseLogic))]
-internal static class LibrarySpeedDiceEndTurnSelectionCleanupPatch
+internal static class LibrarySpeedDiceEndTurnGuardPatch
 {
-    private static void Prefix()
+    private static bool Prefix()
     {
+        if (LibrarySpeedDiceService.IsLocalPlayerResolvingSpeedDice())
+            return false;
+
         LibrarySpeedDiceRightClickService.CancelActiveSelection();
+        return true;
+    }
+}
+
+[HarmonyPatch(
+    typeof(NEndTurnButton),
+    nameof(NEndTurnButton.SecretEndTurnLogicViaFtue))]
+internal static class LibrarySpeedDiceEndTurnFtueGuardPatch
+{
+    private static bool Prefix() =>
+        !LibrarySpeedDiceService.IsLocalPlayerResolvingSpeedDice();
+}
+
+[HarmonyPatch(
+    typeof(NEndTurnButton),
+    nameof(NEndTurnButton.RefreshEnabled))]
+internal static class LibrarySpeedDiceEndTurnEnabledPatch
+{
+    private static void Postfix(NEndTurnButton __instance)
+    {
+        if (LibrarySpeedDiceService.IsLocalPlayerResolvingSpeedDice())
+            __instance.Disable();
     }
 }
 
