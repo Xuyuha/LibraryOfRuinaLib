@@ -5,7 +5,7 @@ using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Random;
 
-namespace Library.SpeedDice;
+namespace LibraryLib.SpeedDice;
 
 public sealed class LibrarySpeedDiceParticipant
 {

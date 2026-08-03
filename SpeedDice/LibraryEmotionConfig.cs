@@ -1,4 +1,4 @@
-namespace Library.SpeedDice;
+namespace LibraryLib.SpeedDice;
 
 /// <summary>
 /// 情感系统配置，控制情感等级的升级阈值及各等级加成

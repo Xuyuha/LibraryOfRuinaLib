@@ -1,11 +1,11 @@
-using Library.Combat;
-using Library.Utils;
-using Library.Entities.Creatures;
-using Library.Models;
-using Library.Powers.Mode;
-using Library.SpeedDice;
-using Library.Resistance;
+using LibraryLib.Combat;
+using LibraryLib.Commands;
+using LibraryLib.Entities.Creatures;
+using LibraryLib.Localization.LibraryDynamicVars;
+using LibraryLib.Models;
+using LibraryLib.Powers.LibraryPowerMode;
 using LibraryLib.SpeedDice;
+using LibraryLib.Utils.Resistance;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
@@ -16,7 +16,7 @@ using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.ValueProps;
 
-namespace Library.Hooks;
+namespace LibraryLib.Hooks;
 
 public static class LibraryHooks
 {

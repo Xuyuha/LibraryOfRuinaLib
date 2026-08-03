@@ -1,7 +1,8 @@
 #nullable enable
 using Godot;
 using HarmonyLib;
-using Library.Models;
+using LibraryLib.Models;
+using LibraryLib.Utils.RelicRightClick;
 using MegaCrit.Sts2.Core.Context;
 using MegaCrit.Sts2.Core.ControllerInput;
 using MegaCrit.Sts2.Core.Entities.Players;
@@ -10,7 +11,7 @@ using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 using MegaCrit.Sts2.Core.Nodes.Relics;
 
-namespace Library.Patches;
+namespace LibraryLib.Patches;
 
 [HarmonyPatch(typeof(NRelicInventoryHolder), nameof(NRelicInventoryHolder._Ready))]
 internal static class LibraryRelicRightClickPatch

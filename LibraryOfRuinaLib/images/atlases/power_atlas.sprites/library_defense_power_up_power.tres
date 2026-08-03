@@ -1,0 +1,7 @@
+[gd_resource type="AtlasTexture" load_steps=2 format=3]
+
+[ext_resource type="Texture2D" path="res://LibraryOfRuinaLib/images/powers/library_defense_power_up_power.png" id="1_defense"]
+
+[resource]
+atlas = ExtResource("1_defense")
+region = Rect2(0, 0, 128, 119)

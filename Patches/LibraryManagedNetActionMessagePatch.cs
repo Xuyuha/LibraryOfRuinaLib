@@ -1,12 +1,12 @@
 #nullable enable
 using HarmonyLib;
-using Library.Models;
+using LibraryLib.Utils.RelicRightClick;
 using MegaCrit.Sts2.Core.Multiplayer.Messages.Game;
 using MegaCrit.Sts2.Core.Multiplayer.Replay;
 using MegaCrit.Sts2.Core.Multiplayer.Serialization;
 using MegaCrit.Sts2.Core.Runs;
 
-namespace Library.Patches;
+namespace LibraryLib.Patches;
 
 internal static class LibraryManagedNetActionMessagePatch
 {

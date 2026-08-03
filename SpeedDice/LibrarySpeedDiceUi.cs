@@ -1,17 +1,16 @@
 using Godot;
-using LibraryLib.SpeedDice;
 using MegaCrit.Sts2.Core.Context;
+using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Logging;
-using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 using MegaCrit.Sts2.Core.Nodes.HoverTips;
 using MegaCrit.Sts2.Core.Nodes.Rooms;
 
-namespace Library.SpeedDice;
+namespace LibraryLib.SpeedDice;
 
 internal sealed partial class LibrarySpeedDiceUi : Control
 {

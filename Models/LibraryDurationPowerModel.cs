@@ -8,7 +8,7 @@ using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models;
 
-namespace Library.Models;
+namespace LibraryLib.Models;
 
 /// <summary>
 ///     带持续回合的 power 抽象基类。

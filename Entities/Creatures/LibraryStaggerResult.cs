@@ -1,6 +1,8 @@
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.ValueProps;
 
+namespace LibraryLib.Entities.Creatures;
+
 public class LibraryChaoResult//相当于DamageResult，用于存储Chao值变化结果
 {
 	public LibraryChaoResult(Creature receiver, ValueProp props)

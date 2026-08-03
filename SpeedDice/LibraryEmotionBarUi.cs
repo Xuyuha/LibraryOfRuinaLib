@@ -2,11 +2,10 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using Godot;
 using HarmonyLib;
-using LibraryLib.SpeedDice;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 
-namespace Library.SpeedDice;
+namespace LibraryLib.SpeedDice;
 
 internal static class LibraryEmotionBarUi
 {

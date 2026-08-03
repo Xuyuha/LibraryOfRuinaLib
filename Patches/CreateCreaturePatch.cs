@@ -2,12 +2,12 @@
 using System.Reflection;
 using System.Reflection.Emit;
 using HarmonyLib;
-using Library.Entities.Creatures;
+using LibraryLib.Entities.Creatures;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Models;
 
-namespace Library.Patches;
+namespace LibraryLib.Patches;
 
 [HarmonyPatch]
 public static class CreateCreaturePatch//patch了CombatState.CreateCreature方法，用于将怪物的creature创建为LibraryCreature

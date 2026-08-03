@@ -1,5 +1,6 @@
-using Library.Models;
-using Library.Powers.Mode;
+using LibraryLib.Models;
+
+namespace LibraryLib.Powers.LibraryPowerMode;
 
 public abstract class LibraryBurnMode : LibraryPowerMode
 {

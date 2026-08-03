@@ -1,6 +1,6 @@
-using Library.Models;
+using LibraryLib.Models;
 
-namespace Library.Powers.Mode;
+namespace LibraryLib.Powers.LibraryPowerMode;
 public sealed class LibraryBurnModeDefault : LibraryBurnMode
 {
     public LibraryBurnModeDefault(LibraryMultipleModePowerModel sourcePower) : base(sourcePower)

@@ -2,7 +2,7 @@
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Multiplayer.Serialization;
 
-namespace Library.Models;
+namespace LibraryLib.Utils.RelicRightClick;
 
 internal static class LibraryManagedNetActionCodec
 {

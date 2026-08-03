@@ -1,4 +1,4 @@
-namespace Library.Light;
+namespace LibraryLib.Light;
 
 internal readonly record struct LibraryLightRecoveryPlan(
     int LastEmotionLevel,

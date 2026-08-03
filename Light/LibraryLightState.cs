@@ -1,10 +1,9 @@
-using Library.SpeedDice;
-using MegaCrit.Sts2.Core.Entities.Cards;
+using LibraryLib.SpeedDice;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Models;
 
-namespace Library.Light;
+namespace LibraryLib.Light;
 
 public sealed record LibraryLightStateSnapshot(
     int Current,

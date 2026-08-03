@@ -1,8 +1,8 @@
 using HarmonyLib;
-using Library.Entities.Creatures;
+using LibraryLib.Entities.Creatures;
 using MegaCrit.Sts2.Core.Combat;
 
-namespace Library.Patches;
+namespace LibraryLib.Patches;
 
 /// <summary>在全部玩家回合（包括连续额外回合）结束后恢复混乱前的抗性。</summary>
 [HarmonyPatch(typeof(CombatManager), "SwitchSides")]

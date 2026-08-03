@@ -1,10 +1,9 @@
 using System.Runtime.CompilerServices;
-using Library.SpeedDice;
 using LibraryLib.SpeedDice;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models;
 
-namespace Library.Light;
+namespace LibraryLib.Light;
 
 public static class LibraryLight
 {

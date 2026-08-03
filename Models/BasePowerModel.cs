@@ -1,11 +1,11 @@
-using Library.Hooks;
+using LibraryLib.Hooks;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Models;
 
-namespace Library.Models;
+namespace LibraryLib.Models;
 
 public abstract class LibraryBasePowerModel: LibraryMultipleModePowerModel//类似于烧伤，流血的基础模板
 {

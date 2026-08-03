@@ -1,4 +1,4 @@
-namespace Library.SpeedDice;
+namespace LibraryLib.SpeedDice;
 
 public sealed class LibraryEmotionState
 {

@@ -3,8 +3,8 @@
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using Godot;
-using Library.Entities.Creatures;
-using Library.Resistance;
+using LibraryLib.Entities.Creatures;
+using LibraryLib.Utils.Resistance;
 using MegaCrit.Sts2.Core.Context;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Helpers;
@@ -14,7 +14,7 @@ using MegaCrit.Sts2.Core.Nodes.Rooms;
 using MegaCrit.Sts2.Core.Random;
 using MegaCrit.Sts2.Core.TestSupport;
 
-namespace Library.Patches;
+namespace LibraryLib.Patches;
 
 /// <summary>
 /// Library of Ruina 风格的伤害跳字：抗性图标 + 实际数值，物理在左、混乱在右。

@@ -1,9 +1,8 @@
 using Godot;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Nodes.Combat;
-using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 
-namespace Library.SpeedDice;
+namespace LibraryLib.SpeedDice;
 
 internal sealed partial class LibrarySpeedDiceRightClickTargetLine : Node2D
 {

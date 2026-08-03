@@ -1,11 +1,12 @@
-using Library.Entities.Creatures;
-using Library.Patches;
-using Library.Resistance;
-using Library.Resistance.Patches;
+using LibraryLib.Entities.Creatures;
+using LibraryLib.Patches;
+using LibraryLib.Utils.Resistance;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.ValueProps;
+
+namespace LibraryLib.Localization;
 
 public static class ResistancePreview
 {

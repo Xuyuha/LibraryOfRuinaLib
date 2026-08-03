@@ -1,14 +1,14 @@
-using Library.Models;
-using Library.Powers.Mode;
+using LibraryLib.Models;
+using LibraryLib.Powers.LibraryPowerMode;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Powers;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models;
 
-namespace Library.Powers;
+namespace LibraryLib.Powers;
 public sealed class LibraryChargePower : LibraryBasePowerModel
 {
-    protected override LibraryPowerMode DefaultMode => new LibraryChargeModeDefault(this);
+    protected override LibraryPowerMode.LibraryPowerMode DefaultMode => new LibraryChargeModeDefault(this);
     public LibraryChargeMode CurrentMode => Mode as LibraryChargeMode;
     public override bool IsDynamic => true;
     public override PowerType Type => PowerType.Buff;

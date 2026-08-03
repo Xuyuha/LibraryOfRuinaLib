@@ -1,5 +1,5 @@
-using Library.Hooks;
-using Library.Resistance;
+using LibraryLib.Hooks;
+using LibraryLib.Utils.Resistance;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
@@ -7,6 +7,8 @@ using MegaCrit.Sts2.Core.Hooks;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.ValueProps;
+
+namespace LibraryLib.Localization.LibraryDynamicVars;
 
 public class LibraryCalculatedDamageVar : CalculatedDamageVar
 {

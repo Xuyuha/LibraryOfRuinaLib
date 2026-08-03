@@ -1,12 +1,12 @@
 #nullable enable
 using HarmonyLib;
-using Library.Entities.Creatures;
+using LibraryLib.Entities.Creatures;
 using MegaCrit.Sts2.Core.Combat.History;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Models;
 
-namespace Library.Patches;
+namespace LibraryLib.Patches;
 
 [HarmonyPatch(typeof(CombatHistory), nameof(CombatHistory.DamageReceived))]
 internal static class CombatHistoryDamageReceivedSafetyPatch

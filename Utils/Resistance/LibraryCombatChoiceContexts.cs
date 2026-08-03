@@ -5,7 +5,7 @@ using MegaCrit.Sts2.Core.Entities.Multiplayer;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 
-namespace Library.Resistance;
+namespace LibraryLib.Utils.Resistance;
 
 public static class LibraryCombatChoiceContexts
 {

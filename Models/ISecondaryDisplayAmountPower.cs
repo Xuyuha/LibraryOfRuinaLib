@@ -1,6 +1,6 @@
 using Godot;
 
-namespace Library.Models;
+namespace LibraryLib.Models;
 
 /// <summary>
 ///     由 <see cref="PowerModel"/> 子类实现，用于在能力图标上显示次要数字徽章

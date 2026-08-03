@@ -1,9 +1,9 @@
 #nullable enable
-using Library.Models;
+using LibraryLib.Models;
 using MegaCrit.Sts2.Core.Entities.Powers;
 using MegaCrit.Sts2.Core.Helpers;
 
-namespace Library.Resistance.Powers;
+namespace LibraryLib.Powers;
 
 /// <summary>
 ///     混乱抗性能力——仅用于图标和本地化描述的展示壳。

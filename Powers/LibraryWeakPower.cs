@@ -1,12 +1,12 @@
-using Library.Models;
-using Library.Resistance;
+using LibraryLib.Models;
+using LibraryLib.Utils.Resistance;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Powers;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.ValueProps;
 
-namespace Library.Powers;
+namespace LibraryLib.Powers;
 public sealed class LibraryWeakPower : LibraryDurationPowerModel//虚弱，造成的伤害与混乱伤害-1
 {
     public override PowerType Type => PowerType.Debuff;

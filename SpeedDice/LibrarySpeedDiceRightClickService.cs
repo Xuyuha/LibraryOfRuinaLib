@@ -1,5 +1,4 @@
 using Godot;
-using LibraryLib.SpeedDice;
 using MegaCrit.Sts2.Core.Audio.Debug;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Helpers;
@@ -11,7 +10,7 @@ using MegaCrit.Sts2.Core.Nodes.GodotExtensions;
 using MegaCrit.Sts2.Core.Nodes.HoverTips;
 using MegaCrit.Sts2.Core.Nodes.Rooms;
 
-namespace Library.SpeedDice;
+namespace LibraryLib.SpeedDice;
 
 internal static class LibrarySpeedDiceRightClickService
 {

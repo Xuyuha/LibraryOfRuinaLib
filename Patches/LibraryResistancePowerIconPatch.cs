@@ -1,11 +1,11 @@
 #nullable enable
 using Godot;
 using HarmonyLib;
-using Library.Resistance.Powers;
+using LibraryLib.Powers;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Models;
 
-namespace Library.Patches;
+namespace LibraryLib.Patches;
 
 [HarmonyPatch(typeof(PowerModel), nameof(PowerModel.Icon), MethodType.Getter)]
 internal static class LibraryResistancePowerIconPatch

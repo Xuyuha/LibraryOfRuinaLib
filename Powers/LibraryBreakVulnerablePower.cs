@@ -1,5 +1,5 @@
-using Library.Models;
-using Library.Resistance;
+using LibraryLib.Models;
+using LibraryLib.Utils.Resistance;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
@@ -7,7 +7,7 @@ using MegaCrit.Sts2.Core.Entities.Powers;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.ValueProps;
 
-namespace Library.Powers;
+namespace LibraryLib.Powers;
 public sealed class LibraryBreakVulnerablePower : LibraryDurationPowerModel//萎靡，受到混乱伤害+1
 {
     public override PowerType Type => PowerType.Debuff;

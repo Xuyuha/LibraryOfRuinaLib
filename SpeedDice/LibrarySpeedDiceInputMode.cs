@@ -1,7 +1,7 @@
 using Godot;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 
-namespace Library.SpeedDice;
+namespace LibraryLib.SpeedDice;
 
 internal static class LibrarySpeedDiceInputMode
 {

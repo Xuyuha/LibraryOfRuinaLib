@@ -6,7 +6,7 @@ using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Multiplayer.Serialization;
 using MegaCrit.Sts2.Core.Nodes.Screens.MainMenu;
 
-namespace Library.Patches;
+namespace LibraryLib.Patches;
 
 [HarmonyPatch(typeof(NMainMenu), nameof(NMainMenu._Ready))]
 internal static class StableNetMessageTypesPatch

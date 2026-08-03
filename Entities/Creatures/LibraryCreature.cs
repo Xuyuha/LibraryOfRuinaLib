@@ -1,7 +1,6 @@
-using Library.Models;
-using Library.Patches;
-using Library.Resistance;
-using Library.Resistance.Patches;
+using LibraryLib.Models;
+using LibraryLib.Patches;
+using LibraryLib.Utils.Resistance;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Logging;
@@ -13,7 +12,7 @@ using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Random;
 using MegaCrit.Sts2.Core.ValueProps;
 
-namespace Library.Entities.Creatures;
+namespace LibraryLib.Entities.Creatures;
 public class LibraryCreature : Creature//扩展Creature，添加Chao值属性
 {
 //todo：后续改成与混乱相关的都改成resitanceData，删除_damageResistance和_chaoResistance

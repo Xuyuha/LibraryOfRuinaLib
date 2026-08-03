@@ -2,7 +2,7 @@ using System.Collections.ObjectModel;
 using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Models;
 
-namespace Library.SpeedDice;
+namespace LibraryLib.SpeedDice;
 
 public enum LibrarySpeedDiceResourceKind
 {

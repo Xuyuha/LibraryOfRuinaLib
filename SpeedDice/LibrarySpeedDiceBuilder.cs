@@ -1,9 +1,8 @@
-using Library.Light;
-using LibraryLib.SpeedDice;
+using LibraryLib.Light;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models;
 
-namespace Library.SpeedDice;
+namespace LibraryLib.SpeedDice;
 
 public sealed class LibrarySpeedDiceRegistrationBuilder<TCharacter>
     where TCharacter : CharacterModel

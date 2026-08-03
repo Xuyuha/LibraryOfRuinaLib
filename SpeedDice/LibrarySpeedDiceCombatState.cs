@@ -1,9 +1,9 @@
-using Library.Light;
+using LibraryLib.Light;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Random;
 
-namespace Library.SpeedDice;
+namespace LibraryLib.SpeedDice;
 
 public sealed class LibrarySpeedDiceCombatState
 {

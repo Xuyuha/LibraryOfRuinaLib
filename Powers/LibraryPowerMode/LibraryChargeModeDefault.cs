@@ -1,6 +1,6 @@
-using Library.Models;
+using LibraryLib.Models;
 
-namespace Library.Powers.Mode;
+namespace LibraryLib.Powers.LibraryPowerMode;
 public sealed class LibraryChargeModeDefault : LibraryChargeMode
 {
     public LibraryChargeModeDefault(LibraryMultipleModePowerModel sourcePower) : base(sourcePower)

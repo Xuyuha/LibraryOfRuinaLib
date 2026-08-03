@@ -5,7 +5,7 @@ using HarmonyLib;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Localization;
 
-namespace Library.Localization;
+namespace LibraryLib.Localization;
 
 internal static class LibraryResistanceLocalization
 {

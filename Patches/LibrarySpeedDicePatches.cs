@@ -1,6 +1,5 @@
 using Godot;
 using HarmonyLib;
-using Library.SpeedDice;
 using LibraryLib.SpeedDice;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
@@ -19,7 +18,7 @@ using MegaCrit.Sts2.Core.Nodes.CommonUi;
 using MegaCrit.Sts2.Core.Nodes.Debug;
 using MegaCrit.Sts2.Core.Nodes.Rooms;
 
-namespace Library.Patches;
+namespace LibraryLib.Patches;
 
 [HarmonyPatch(typeof(Creature), nameof(Creature.BeforeTurnStart))]
 internal static class LibrarySpeedDiceTurnStartPatch

@@ -3,16 +3,16 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using Godot;
 using HarmonyLib;
-using Library.Entities.Creatures;
-using Library.Models;
-using Library.Resistance;
+using LibraryLib.Entities.Creatures;
+using LibraryLib.Models;
+using LibraryLib.Utils.Resistance;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.HoverTips;
 
-namespace Library.Resistance.Patches;
+namespace LibraryLib.Patches;
 
 /// <summary>
 ///     在 NHealthBar 左侧显示物理抗性图标（斩/刺/打），与混乱抗性图标对称。

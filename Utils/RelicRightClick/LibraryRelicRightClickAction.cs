@@ -1,4 +1,5 @@
 #nullable enable
+using LibraryLib.Models;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Multiplayer;
 using MegaCrit.Sts2.Core.Entities.Players;
@@ -9,7 +10,7 @@ using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Multiplayer.Serialization;
 using MegaCrit.Sts2.Core.Runs;
 
-namespace Library.Models;
+namespace LibraryLib.Utils.RelicRightClick;
 
 public sealed class LibraryRelicRightClickAction : GameAction
 {

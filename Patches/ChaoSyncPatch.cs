@@ -1,10 +1,10 @@
 using HarmonyLib;
-using Library.Entities.Creatures;
+using LibraryLib.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Random;
 
-namespace Library.Patches;
+namespace LibraryLib.Patches;
 
 [HarmonyPatch(typeof(Creature), nameof(Creature.SetUniqueMonsterHpValue))]
 public static class ChaoSyncSetUniquePatch//设置血量时，同步设置混乱值

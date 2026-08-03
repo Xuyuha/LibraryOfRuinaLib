@@ -1,10 +1,10 @@
 #nullable enable
 using Godot;
-using Library.Entities.Creatures;
-using Library.Hooks;
-using Library.Utils;
-using Library.Models;
-using Library.Resistance;
+using LibraryLib.Entities.Creatures;
+using LibraryLib.Hooks;
+using LibraryLib.Localization.LibraryDynamicVars;
+using LibraryLib.Models;
+using LibraryLib.Utils.Resistance;
 using MegaCrit.Sts2.Core.Audio.Debug;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
@@ -20,6 +20,8 @@ using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Monsters;
 using MegaCrit.Sts2.Core.Random;
 using MegaCrit.Sts2.Core.ValueProps;
+
+namespace LibraryLib.Commands;
 
 public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究，AttackCommand几乎没有与任何其他类交互，可以放心重置
 //todo：骰子相关的方法

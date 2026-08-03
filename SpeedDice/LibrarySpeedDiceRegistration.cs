@@ -1,12 +1,12 @@
 using Godot;
-using Library.Light;
+using LibraryLib.Light;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Random;
 
-namespace Library.SpeedDice;
+namespace LibraryLib.SpeedDice;
 
 internal sealed class LibrarySpeedDiceRegistration
 {

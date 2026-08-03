@@ -1,14 +1,15 @@
-using Library.Utils;
-using Library.Entities.Creatures;
-using Library.Powers.Mode;
-using Library.Resistance;
+using LibraryLib.Commands;
+using LibraryLib.Entities.Creatures;
+using LibraryLib.Localization.LibraryDynamicVars;
+using LibraryLib.Powers.LibraryPowerMode;
+using LibraryLib.Utils.Resistance;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.ValueProps;
 
-namespace Library.Models;
+namespace LibraryLib.Models;
 public abstract class LibraryCardModel : CardModel,ILibraryAbstractModel//加入了使用前/中/后的方法，调用时更灵活，不过一般卡牌类不继承这个类影响也不大
 {
     public virtual Creature ModifyDamageTarget(Creature creature, decimal amount, ValueProp props, Creature? dealer,LibraryDamageType type)

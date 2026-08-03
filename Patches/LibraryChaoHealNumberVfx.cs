@@ -1,7 +1,7 @@
 #nullable enable
 
 using Godot;
-using Library.Entities.Creatures;
+using LibraryLib.Entities.Creatures;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Context;
 using MegaCrit.Sts2.Core.Helpers;
@@ -11,7 +11,7 @@ using MegaCrit.Sts2.Core.Nodes.Rooms;
 using MegaCrit.Sts2.Core.Random;
 using MegaCrit.Sts2.Core.TestSupport;
 
-namespace Library.Patches;
+namespace LibraryLib.Patches;
 
 /// <summary>
 /// 混乱抗性恢复跳字：图标 + 实际恢复量。

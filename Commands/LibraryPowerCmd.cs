@@ -1,10 +1,10 @@
-using Library.Models;
+using LibraryLib.Models;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models;
 
-namespace Library.Utils;
+namespace LibraryLib.Commands;
 
 /// <summary>
 ///     类似 <see cref="PowerCmd"/> 的 power 命令便捷方法。

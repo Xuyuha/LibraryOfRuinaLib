@@ -1,7 +1,6 @@
-using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Models;
 
-namespace Library.Light;
+namespace LibraryLib.Light;
 
 public readonly record struct LibraryLightStoreSnapshot(int Current);
 

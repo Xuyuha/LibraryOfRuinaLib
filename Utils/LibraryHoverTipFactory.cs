@@ -1,9 +1,9 @@
-using Library.Models;
-using Library.Powers.Mode;
+using LibraryLib.Models;
+using LibraryLib.Powers.LibraryPowerMode;
 using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Models;
 
-namespace Ruina.Utils;
+namespace LibraryLib.Utils;
 public static class LibraryHoverTipFactory
 {
     public static IHoverTip FromPower<T,U>(int? amount = null) 

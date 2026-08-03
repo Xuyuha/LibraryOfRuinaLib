@@ -1,7 +1,8 @@
-using Library.Utils;
-using Library.Entities.Creatures;
-using Library.Models;
-using Library.Resistance;
+using LibraryLib.Commands;
+using LibraryLib.Entities.Creatures;
+using LibraryLib.Localization.LibraryDynamicVars;
+using LibraryLib.Models;
+using LibraryLib.Utils.Resistance;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands.Builders;
 using MegaCrit.Sts2.Core.Entities.CardRewardAlternatives;
@@ -15,7 +16,7 @@ using MegaCrit.Sts2.Core.Rooms;
 using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.ValueProps;
 
-namespace Library.Powers.Mode;
+namespace LibraryLib.Powers.LibraryPowerMode;
 public abstract class LibraryPowerMode
 {
 	public LibraryMultipleModePowerModel? SourcePower ;

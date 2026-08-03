@@ -2,7 +2,7 @@ using Godot;
 using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Nodes;
 
-namespace Library.SpeedDice;
+namespace LibraryLib.SpeedDice;
 
 internal static class LibrarySpeedDiceAudio
 {

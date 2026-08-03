@@ -2,14 +2,14 @@ using System.Collections;
 using System.Reflection;
 using Godot;
 using HarmonyLib;
-using Library.Models;
+using LibraryLib.Models;
 using MegaCrit.Sts2.addons.mega_text;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.HoverTips;
 using MegaCrit.Sts2.Core.Nodes.Rooms;
 
-namespace Library.Patches;
+namespace LibraryLib.Patches;
 
 /// <summary>
 ///     为实现了 <see cref="ISecondaryDisplayAmountPower"/> 的能力，

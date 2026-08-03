@@ -1,9 +1,9 @@
 #nullable enable
 
 using HarmonyLib;
-using Library.Entities.Creatures;
-using Library.Localization;
-using Library.Resistance;
+using LibraryLib.Entities.Creatures;
+using LibraryLib.Localization;
+using LibraryLib.Utils.Resistance;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
@@ -12,7 +12,7 @@ using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Powers;
 using MegaCrit.Sts2.Core.ValueProps;
 
-namespace Library.Patches;
+namespace LibraryLib.Patches;
 
 /// <summary>
 /// 让卡牌伤害预览在基础伤害修正之后继续吃 Library 受击抗性，并提示对应抗性图标。

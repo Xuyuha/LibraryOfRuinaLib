@@ -2,13 +2,13 @@
 
 using Godot;
 using HarmonyLib;
-using Library.Entities.Creatures;
+using LibraryLib.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Nodes;
 using MegaCrit.Sts2.Core.Nodes.Vfx;
 
-namespace Library.Patches;
+namespace LibraryLib.Patches;
 
 /// <summary>
 /// 临时把原版 AttackCommand 的伤害跳字接入 Library 打击类型显示。

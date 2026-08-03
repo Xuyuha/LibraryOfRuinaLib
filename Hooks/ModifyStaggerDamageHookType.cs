@@ -1,4 +1,4 @@
-namespace Library.Hooks
+namespace LibraryLib.Hooks
 {
     public enum ModifyChaoDamageHookType
     {

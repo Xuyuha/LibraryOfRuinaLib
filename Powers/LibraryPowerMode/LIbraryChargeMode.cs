@@ -1,6 +1,7 @@
-using Library.Models;
-using Library.Powers.Mode;
+using LibraryLib.Models;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+
+namespace LibraryLib.Powers.LibraryPowerMode;
 
 public abstract class LibraryChargeMode : LibraryPowerMode
 {

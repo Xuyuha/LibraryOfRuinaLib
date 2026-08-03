@@ -2,7 +2,7 @@
 using System.Reflection;
 using Godot;
 
-namespace Library;
+namespace LibraryLib;
 
 internal static class LibraryResourcePack
 {

@@ -1,6 +1,6 @@
 #nullable enable
 
-namespace Library.Resistance;
+namespace LibraryLib.Utils.Resistance;
 
 /// <summary>
 ///     抗性等级枚举，定义生物对伤害的抵抗程度。

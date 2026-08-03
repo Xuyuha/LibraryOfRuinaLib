@@ -1,4 +1,5 @@
-using Library.Models;
+using LibraryLib.Commands;
+using LibraryLib.Models;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Creatures;
@@ -7,7 +8,7 @@ using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.ValueProps;
 
-namespace Library.Powers;
+namespace LibraryLib.Powers;
 public sealed class LibraryDecayPower : LibraryPowerModel//腐蚀，效果为被击中时将追加承受等同于“腐蚀”层数的伤害与混乱伤害，每一幕结束时受到层数的伤害
 {
     public override PowerType Type => PowerType.Debuff;

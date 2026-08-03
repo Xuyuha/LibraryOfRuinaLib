@@ -1,5 +1,5 @@
-using Library.Models;
-using Library.Powers.Mode;
+using LibraryLib.Models;
+using LibraryLib.Powers.LibraryPowerMode;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Creatures;
@@ -7,10 +7,10 @@ using MegaCrit.Sts2.Core.Entities.Powers;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.ValueProps;
 
-namespace Library.Powers;
+namespace LibraryLib.Powers;
 public sealed class LibraryBurnPower : LibraryBasePowerModel
 {
-    protected override LibraryPowerMode DefaultMode => new LibraryBurnModeDefault(this);
+    protected override LibraryPowerMode.LibraryPowerMode DefaultMode => new LibraryBurnModeDefault(this);
     public LibraryBurnMode CurrentMode => Mode as LibraryBurnMode;
     public override bool IsDynamic => true;
     public override PowerType Type => PowerType.Debuff;

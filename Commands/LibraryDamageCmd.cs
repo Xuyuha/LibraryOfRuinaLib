@@ -1,5 +1,7 @@
-using Library.Utils;
+using LibraryLib.Localization.LibraryDynamicVars;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
+
+namespace LibraryLib.Commands;
 
 public static class LibraryDamageCmd//重置DamageCmd，仅用于创建LibraryCommand，不包含任何逻辑
 {

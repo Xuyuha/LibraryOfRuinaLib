@@ -1,9 +1,7 @@
 using System.Reflection;
 using Godot;
 using HarmonyLib;
-using LibraryLib.SpeedDice;
 using MegaCrit.Sts2.Core.Context;
-using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Models;
@@ -11,7 +9,7 @@ using MegaCrit.Sts2.Core.Nodes;
 using MegaCrit.Sts2.Core.Nodes.Cards.Holders;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 
-namespace Library.SpeedDice;
+namespace LibraryLib.SpeedDice;
 
 internal static class LibrarySpeedDiceMobileRightClickCompat
 {

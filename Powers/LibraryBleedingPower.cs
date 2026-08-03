@@ -1,5 +1,5 @@
-using Library.Models;
-using Library.Powers.Mode;
+using LibraryLib.Models;
+using LibraryLib.Powers.LibraryPowerMode;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Creatures;
@@ -8,10 +8,10 @@ using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.ValueProps;
 
-namespace Library.Powers;
+namespace LibraryLib.Powers;
 public sealed class LibraryBleedingPower : LibraryBasePowerModel
 {
-    protected override LibraryPowerMode DefaultMode => new LibraryBleedingModeDefault(this);
+    protected override LibraryPowerMode.LibraryPowerMode DefaultMode => new LibraryBleedingModeDefault(this);
     public LibraryBleedingMode CurrentMode => Mode as LibraryBleedingMode;
     public override bool IsDynamic => true;
     public override PowerType Type => PowerType.Debuff;

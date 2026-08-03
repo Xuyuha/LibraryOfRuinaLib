@@ -1,3 +1,5 @@
+namespace LibraryLib.Utils.Resistance;
+
 public static class LibraryDamageTypeExpansion
 {
     public static string String(this LibraryDamageType damageType)=>damageType switch

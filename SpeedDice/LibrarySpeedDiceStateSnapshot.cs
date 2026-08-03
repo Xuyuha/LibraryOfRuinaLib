@@ -1,8 +1,8 @@
-using Library.Light;
+using LibraryLib.Light;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Models;
 
-namespace Library.SpeedDice;
+namespace LibraryLib.SpeedDice;
 
 public sealed record LibrarySpeedDiceStateSnapshot(
     int TurnNumber,

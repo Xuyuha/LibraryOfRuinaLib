@@ -11,7 +11,7 @@ using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.Nodes.Rooms;
 
-namespace Library.Models;
+namespace LibraryLib.Models;
 //和LibraryDurationPowerModel的区别在于可以在同一个power上显示其回合层数变化
 public abstract class LibraryTurnsPowerModel : LibraryPowerModel, ISecondaryDisplayAmountPower
 {

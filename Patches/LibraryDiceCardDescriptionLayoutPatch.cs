@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Godot;
 using HarmonyLib;
 using MegaCrit.Sts2.addons.mega_text;
@@ -5,9 +6,8 @@ using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.UI;
 using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Nodes.Cards;
-using System.Text.RegularExpressions;
 
-namespace Library.Patches;
+namespace LibraryLib.Patches;
 
 [HarmonyPatch(
     typeof(NCard),

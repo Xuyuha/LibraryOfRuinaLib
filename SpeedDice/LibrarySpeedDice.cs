@@ -1,11 +1,10 @@
 using Godot;
-using LibraryLib.SpeedDice;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models;
 
-namespace Library.SpeedDice;
+namespace LibraryLib.SpeedDice;
 
 public static class LibrarySpeedDice
 {

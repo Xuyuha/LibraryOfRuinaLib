@@ -1,6 +1,6 @@
 using MegaCrit.Sts2.Core.Models;
 
-namespace Library.Light;
+namespace LibraryLib.Light;
 
 public sealed class LibraryLightCost
 {

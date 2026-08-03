@@ -1,11 +1,11 @@
 using Godot;
-using Library.Combat;
-using Library.Entities.Creatures;
-using Library.Hooks;
-using Library.Utils;
-using Library.Models;
-using Library.Patches;
-using Library.Resistance;
+using LibraryLib.Combat;
+using LibraryLib.Entities.Creatures;
+using LibraryLib.Hooks;
+using LibraryLib.Localization.LibraryDynamicVars;
+using LibraryLib.Models;
+using LibraryLib.Patches;
+using LibraryLib.Utils.Resistance;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Context;
@@ -23,6 +23,8 @@ using MegaCrit.Sts2.Core.Nodes.Vfx.Utilities;
 using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.Runs.History;
 using MegaCrit.Sts2.Core.ValueProps;
+
+namespace LibraryLib.Commands;
 
 public static class LibraryCreatureCmd
 {
@@ -187,8 +189,8 @@ public static class LibraryCreatureCmd
 			bool wasFullyBlocked =
 				interception.WasFullyIntercepted
 				|| (!props.HasFlag(ValueProp.Unblockable)
-					&& (blockedDamage > 0m || modifiedTarget.Block > 0)
-					&& (int)unblockedDamage == 0);
+				    && (blockedDamage > 0m || modifiedTarget.Block > 0)
+				    && (int)unblockedDamage == 0);
 			if (modifiedTarget == unblockedDamageTarget)
 			{
 				unblockedDamageResult.BlockedDamage = (int)blockedDamage;

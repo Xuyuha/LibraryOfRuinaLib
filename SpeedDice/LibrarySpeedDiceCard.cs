@@ -1,6 +1,6 @@
 using MegaCrit.Sts2.Core.Entities.Cards;
 
-namespace Library.SpeedDice;
+namespace LibraryLib.SpeedDice;
 
 public readonly record struct LibrarySpeedDiceResourceCost(int Energy, int Stars);
 

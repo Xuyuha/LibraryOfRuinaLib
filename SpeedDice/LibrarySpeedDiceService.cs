@@ -1,7 +1,6 @@
 using System.Runtime.CompilerServices;
 using Godot;
-using Library.Light;
-using Library.SpeedDice;
+using LibraryLib.Light;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Context;

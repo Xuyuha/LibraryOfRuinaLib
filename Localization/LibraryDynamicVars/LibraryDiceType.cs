@@ -1,3 +1,5 @@
+namespace LibraryLib.Localization.LibraryDynamicVars;
+
 public enum LibraryDiceType//伤害类型
 {
     Block ,

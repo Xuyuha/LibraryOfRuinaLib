@@ -1,9 +1,9 @@
 using HarmonyLib;
-using Library.Models;
+using LibraryLib.Models;
 using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Models;
 
-namespace Ruina.Patches;
+namespace LibraryLib.Patches;
 
 [HarmonyPatch(typeof(PowerModel), "AddDumbVariablesToDescription")]
 public static class PowerDescriptionPatch

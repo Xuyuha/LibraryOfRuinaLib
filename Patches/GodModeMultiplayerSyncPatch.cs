@@ -9,7 +9,7 @@ using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Runs;
 
-namespace Library.Patches;
+namespace LibraryLib.Patches;
 
 // 自己测试的时候发现开godmode有概率导致多人不同步（似乎原版的bug？）让ai写了一个小补丁，平时也用不到
 [HarmonyPatch(typeof(GodModeConsoleCmd), "OnCombatSetUp")]

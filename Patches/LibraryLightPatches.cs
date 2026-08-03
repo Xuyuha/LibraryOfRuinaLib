@@ -1,10 +1,10 @@
 using System.Reflection;
 using HarmonyLib;
-using Library.Light;
+using LibraryLib.Light;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Models;
 
-namespace Library.Patches;
+namespace LibraryLib.Patches;
 
 [HarmonyPatch(typeof(AbstractModel), nameof(AbstractModel.MutableClone))]
 internal static class LibraryLightClonePatch

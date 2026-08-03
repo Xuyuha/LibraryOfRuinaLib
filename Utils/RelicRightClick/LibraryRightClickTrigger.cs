@@ -1,4 +1,4 @@
 #nullable enable
-namespace Library.Models;
+namespace LibraryLib.Utils.RelicRightClick;
 
 public readonly record struct LibraryRightClickTrigger(bool IsController = false, string? Metadata = null);

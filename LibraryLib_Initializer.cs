@@ -1,13 +1,12 @@
 using Godot.Bridge;
 using HarmonyLib;
-using Library.Localization;
-using Library.SpeedDice;
+using LibraryLib.Localization;
 using LibraryLib.SpeedDice;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Modding;
 
-namespace Library;
+namespace LibraryLib;
 
 [ModInitializer("Init")]
 public class Entry

@@ -1,4 +1,4 @@
-namespace Library.Light;
+namespace LibraryLib.Light;
 
 public sealed class LibraryLightOptions
 {

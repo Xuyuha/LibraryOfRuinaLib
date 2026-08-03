@@ -1,6 +1,7 @@
-using Library.Entities.Creatures;
-using Library.Resistance;
+using LibraryLib.Entities.Creatures;
 using MegaCrit.Sts2.Core.ValueProps;
+
+namespace LibraryLib.Utils.Resistance;
 
 public static class LibraryDamageCalculate//计算伤害和Chao值
 {

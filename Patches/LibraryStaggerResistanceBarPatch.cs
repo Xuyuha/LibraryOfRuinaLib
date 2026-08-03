@@ -3,11 +3,11 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using Godot;
 using HarmonyLib;
-using Library.Entities.Creatures;
+using LibraryLib.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 
-namespace Library.Resistance.Patches;
+namespace LibraryLib.Patches;
 
 /// <summary>
 ///     在 NHealthBar 下方渲染混乱抗性条（黄色数值条），显示当前混乱抗性值/最大值。

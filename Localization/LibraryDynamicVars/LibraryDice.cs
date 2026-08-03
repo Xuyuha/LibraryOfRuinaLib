@@ -1,9 +1,9 @@
 using Godot;
-using Library.Utils;
-using Library.Entities.Creatures;
-using Library.Hooks;
-using Library.Models;
-using Library.Resistance;
+using LibraryLib.Commands;
+using LibraryLib.Entities.Creatures;
+using LibraryLib.Hooks;
+using LibraryLib.Models;
+using LibraryLib.Utils.Resistance;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
@@ -18,7 +18,7 @@ using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.ValueProps;
 
-namespace Library.Utils;
+namespace LibraryLib.Localization.LibraryDynamicVars;
 public class LibraryDice : DynamicVar
 {
     public const ValueProp Props = ValueProp.Move;

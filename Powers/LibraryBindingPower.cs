@@ -1,11 +1,11 @@
-using Library.Models;
+using LibraryLib.Models;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Powers;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.ValueProps;
 
-namespace Library.Powers;
+namespace LibraryLib.Powers;
 public sealed class LibraryBindingPower : LibraryDurationPowerModel
 {
     public override PowerType Type => PowerType.Debuff;

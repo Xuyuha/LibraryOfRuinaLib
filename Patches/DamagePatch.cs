@@ -1,12 +1,14 @@
-using System.Reflection;
 using HarmonyLib;
-using Library.Hooks;
+using LibraryLib.Hooks;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.ValueProps;
+
+namespace LibraryLib.Patches;
+
 [HarmonyPatch(typeof(CreatureCmd), nameof(CreatureCmd.Damage))]
 public static class DamageTargetPatch
 {

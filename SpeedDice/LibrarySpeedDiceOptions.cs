@@ -1,4 +1,4 @@
-namespace Library.SpeedDice;
+namespace LibraryLib.SpeedDice;
 
 /// <summary>
 /// 速度骰子系统的基础数值。角色专属规则应通过模块扩展。

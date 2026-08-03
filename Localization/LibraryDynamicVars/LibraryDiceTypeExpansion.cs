@@ -1,3 +1,5 @@
+namespace LibraryLib.Localization.LibraryDynamicVars;
+
 public static class LibraryDiceTypeExpansion
 {
     public static string String(this LibraryDiceType damageType)=>damageType switch

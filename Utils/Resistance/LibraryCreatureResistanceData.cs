@@ -1,6 +1,6 @@
 #nullable enable
 
-namespace Library.Resistance;
+namespace LibraryLib.Utils.Resistance;
 
 /// <summary>
 ///     存储单个生物的物理抗性和混乱抗性数据。

@@ -1,9 +1,10 @@
 using Godot;
 using HarmonyLib;
-using Library.Utils;
-using Library.Entities.Creatures;
-using Library.Powers.Mode;
-using Library.Resistance;
+using LibraryLib.Commands;
+using LibraryLib.Entities.Creatures;
+using LibraryLib.Localization.LibraryDynamicVars;
+using LibraryLib.Powers.LibraryPowerMode;
+using LibraryLib.Utils.Resistance;
 using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
@@ -14,7 +15,7 @@ using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 using MegaCrit.Sts2.Core.ValueProps;
 
-namespace Library.Models;
+namespace LibraryLib.Models;
 
 /// <summary>
 ///     废墟图书馆基础库模组的基类 PowerModel。支持三种本地化策略：
