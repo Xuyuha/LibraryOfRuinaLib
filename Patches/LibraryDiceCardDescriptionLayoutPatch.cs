@@ -14,7 +14,7 @@ namespace LibraryLib.Patches;
     nameof(NCard.UpdateVisuals),
     typeof(PileType),
     typeof(CardPreviewMode))]
-internal static class LibraryDiceCardDescriptionLayoutPatch
+public static class LibraryDiceCardDescriptionLayoutPatch
 {
     private const string DiceLabelNodeName =
         "LibraryDiceDescriptionLabel";
@@ -43,6 +43,18 @@ internal static class LibraryDiceCardDescriptionLayoutPatch
         RegexOptions.Compiled
         | RegexOptions.CultureInvariant
         | RegexOptions.IgnoreCase);
+
+    /// <summary>
+    /// 正文（关键词行与非骰子描述行）的对齐方式。
+    /// 默认为 <c>false</c>（左对齐）。
+    /// </summary>
+    public static bool UseCenteredBodyText { get; set; }
+
+    /// <summary>
+    /// 骰子行的对齐方式。
+    /// 默认为 <c>false</c>（左对齐）。下游 mod 设为 <c>true</c> 可让骰子行居中。
+    /// </summary>
+    public static bool UseCenteredDiceText { get; set; }
 
     private static readonly Dictionary<ulong, long> FitRevisions = [];
 
@@ -250,25 +262,21 @@ internal static class LibraryDiceCardDescriptionLayoutPatch
         if (diceLabel != null)
             RestoreBodyLayout(bodyLabel, diceLabel);
 
-        float fullTop = bodyLabel.OffsetTop;
         float fullHeight = Math.Max(
             0f,
             bodyLabel.OffsetBottom - bodyLabel.OffsetTop);
 
+        // 先隐藏标签，计算好字号后再由异步路径统一显示，避免字体抖动
         bodyLabel.AutoSizeEnabled = false;
-        bodyLabel.Visible = bodyLines.Count > 0;
+        bodyLabel.Visible = false;
         bodyLabel.VerticalAlignment = VerticalAlignment.Top;
 
         if (diceLabel != null)
         {
             diceLabel.AutoSizeEnabled = false;
-            diceLabel.Visible =
-                keywordLines.Count > 0 || diceLines.Count > 0;
+            diceLabel.Visible = false;
             diceLabel.VerticalAlignment = VerticalAlignment.Top;
         }
-
-        float selectedTopHeight = 0f;
-        float selectedGap = 0f;
 
         for (int diceFontSize = MaximumDiceFontSize;
              diceFontSize >= MinimumDiceFontSize;
@@ -309,9 +317,6 @@ internal static class LibraryDiceCardDescriptionLayoutPatch
                 ? GetDiceBodyGap(diceFontSize)
                 : 0f;
 
-            selectedTopHeight = topHeight;
-            selectedGap = gap;
-
             bool measurementReady =
                 ((keywordLines.Count == 0
                   && diceLines.Count == 0)
@@ -323,17 +328,6 @@ internal static class LibraryDiceCardDescriptionLayoutPatch
             {
                 break;
             }
-        }
-
-        if (bodyLines.Count > 0)
-        {
-            bodyLabel.OffsetTop =
-                fullTop + selectedTopHeight + selectedGap;
-        }
-        else
-        {
-            bodyLabel.Visible = false;
-            bodyLabel.SetTextAutoSize(string.Empty);
         }
     }
 
@@ -350,9 +344,12 @@ internal static class LibraryDiceCardDescriptionLayoutPatch
             keywordLines.Select(line => line.Trim()));
         if (!string.IsNullOrWhiteSpace(keywordText))
         {
+            string keywordAlignment = UseCenteredBodyText
+                ? "center"
+                : "left";
             sections.Add(
-                $"[center][font_size={bodyFontSize}]"
-                + $"{keywordText}[/font_size][/center]");
+                $"[{keywordAlignment}][font_size={bodyFontSize}]"
+                + $"{keywordText}[/font_size][/{keywordAlignment}]");
         }
 
         string diceText = FormatDiceRows(
@@ -362,7 +359,11 @@ internal static class LibraryDiceCardDescriptionLayoutPatch
             iconSize);
         if (!string.IsNullOrWhiteSpace(diceText))
         {
-            sections.Add($"[left]{diceText}[/left]");
+            string diceAlignment = UseCenteredDiceText
+                ? "center"
+                : "left";
+            sections.Add(
+                $"[{diceAlignment}]{diceText}[/{diceAlignment}]");
         }
 
         return string.Join('\n', sections);
@@ -387,8 +388,8 @@ internal static class LibraryDiceCardDescriptionLayoutPatch
             }
 
             string alignment = sectionIsDice.Value
-                ? "left"
-                : "center";
+                ? UseCenteredDiceText ? "center" : "left"
+                : UseCenteredBodyText ? "center" : "left";
             string sectionText = sectionIsDice.Value
                 ? FormatDiceRows(
                     sectionLines,
@@ -687,6 +688,8 @@ internal static class LibraryDiceCardDescriptionLayoutPatch
             if (!IsFitCurrent(bodyLabel, instanceId, revision))
                 return;
 
+            // 计算完毕，统一设置可见性与位置，避免中间态渲染造成字体抖动
+            bodyLabel.Visible = bodyLines.Length > 0;
             if (bodyLines.Length > 0)
             {
                 bodyLabel.OffsetTop =
@@ -694,8 +697,13 @@ internal static class LibraryDiceCardDescriptionLayoutPatch
             }
             else
             {
-                bodyLabel.Visible = false;
                 bodyLabel.SetTextAutoSize(string.Empty);
+            }
+
+            if (diceLabel != null)
+            {
+                diceLabel.Visible =
+                    keywordLines.Length > 0 || diceLines.Length > 0;
             }
         }
         catch (Exception exception)
@@ -723,15 +731,12 @@ internal static class LibraryDiceCardDescriptionLayoutPatch
         IReadOnlyList<string> bodyLines)
     {
         bodyLabel.AutoSizeEnabled = false;
-        bodyLabel.Visible = bodyLines.Count > 0;
         bodyLabel.VerticalAlignment = VerticalAlignment.Top;
 
         if (diceLabel == null)
             return;
 
         diceLabel.AutoSizeEnabled = false;
-        diceLabel.Visible =
-            keywordLines.Count > 0 || diceLines.Count > 0;
         diceLabel.VerticalAlignment = VerticalAlignment.Top;
     }
 

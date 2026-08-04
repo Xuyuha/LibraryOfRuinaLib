@@ -22,6 +22,10 @@ namespace LibraryLib.SpeedDice;
 
 internal static class LibrarySpeedDiceService
 {
+    private readonly record struct ExplicitSelection(
+        CardModel Card,
+        string SourceId);
+
     private enum AdvanceAction
     {
         Roll,
@@ -33,7 +37,7 @@ internal static class LibrarySpeedDiceService
         [];
     private static ConditionalWeakTable<Player, LibrarySpeedDiceCombatState> States = new();
     private static WeakReference<LibrarySpeedDiceCombatState>? _localState;
-    private static CardModel? _explicitlySelectedCard;
+    private static ExplicitSelection? _explicitSelection;
 
     public static void RegisterParticipant(LibrarySpeedDiceParticipant participant)
     {
@@ -257,7 +261,7 @@ internal static class LibrarySpeedDiceService
 
     public static void ClearCombat()
     {
-        _explicitlySelectedCard = null;
+        _explicitSelection = null;
         States = new ConditionalWeakTable<Player, LibrarySpeedDiceCombatState>();
         _localState = null;
         LibraryLight.ClearCombatCosts();
@@ -405,11 +409,11 @@ internal static class LibrarySpeedDiceService
         return RunManager.Instance.ActionExecutor.CurrentlyRunningAction == null;
     }
 
-    internal static bool IsLocalPlayerResolvingSpeedDice()
+    internal static bool IsLocalPlayerInResolutionLifecycle()
     {
         return TryGetLocalState(out LibrarySpeedDiceCombatState? state)
             && state != null
-            && state.IsResolving;
+            && (state.IsLifecycleBusy || state.IsResolving);
     }
 
     public static async Task AdvanceLocalAsync()
@@ -641,27 +645,52 @@ internal static class LibrarySpeedDiceService
         if (slot.Card != null)
             return true;
 
-        var card = GetSelectedCard();
+        ExplicitSelection? selection = GetSelectedSelection();
+        CardModel? card = selection?.Card;
         canAcceptSelectedCard =
             card != null
+            && selection != null
             && card.Owner == state.Player
-            && card.Pile?.Type == PileType.Hand
             && !card.EnergyCost.CostsX
             && !card.HasStarCostX
-            && CanEquipCard(state, card)
+            && CanEquipCard(state, card, selection.Value.SourceId)
             && CanReserveCard(state, card);
         return canAcceptSelectedCard;
     }
 
     public static bool CanEquipCard(CardModel card)
     {
-        return card.Owner != null
+        return !card.IsCanonical
+            && card.Owner != null
             && TryGetState(
                 card.Owner,
                 out var state)
             && state != null
             && !state.IsLifecycleBusy
-            && CanEquipCard(state, card)
+            && TryResolveSelectionSource(
+                state,
+                card,
+                requestedSourceId: null,
+                out string sourceId)
+            && CanEquipCard(state, card, sourceId)
+            && state.Slots.Any(slot =>
+                !slot.IsSpent
+                && !slot.IsLocked
+                && slot.Card == null);
+    }
+
+    internal static bool CanEquipCard(
+        CardModel card,
+        string sourceId)
+    {
+        return !card.IsCanonical
+            && card.Owner != null
+            && TryGetState(
+                card.Owner,
+                out LibrarySpeedDiceCombatState? state)
+            && state != null
+            && !state.IsLifecycleBusy
+            && CanEquipCard(state, card, sourceId)
             && state.Slots.Any(slot =>
                 !slot.IsSpent
                 && !slot.IsLocked
@@ -670,13 +699,22 @@ internal static class LibrarySpeedDiceService
 
     public static bool TryBeginEquipSelection(CardModel card)
     {
-        if (_explicitlySelectedCard != null
-            || !CanEquipCard(card))
+        return TryBeginEquipSelection(
+            card,
+            LibrarySpeedDiceSelectionSourceIds.Hand);
+    }
+
+    internal static bool TryBeginEquipSelection(
+        CardModel card,
+        string sourceId)
+    {
+        if (_explicitSelection != null
+            || !CanEquipCard(card, sourceId))
         {
             return false;
         }
 
-        _explicitlySelectedCard = card;
+        _explicitSelection = new ExplicitSelection(card, sourceId);
         if (TryGetState(
                 card.Owner,
                 out var state)
@@ -690,10 +728,25 @@ internal static class LibrarySpeedDiceService
 
     public static void EndEquipSelection(CardModel card)
     {
-        if (!ReferenceEquals(_explicitlySelectedCard, card))
-            return;
+        EndEquipSelection(card, sourceId: null);
+    }
 
-        _explicitlySelectedCard = null;
+    internal static void EndEquipSelection(
+        CardModel card,
+        string? sourceId)
+    {
+        if (_explicitSelection is not { } selection
+            || !ReferenceEquals(selection.Card, card)
+            || sourceId != null
+            && !string.Equals(
+                selection.SourceId,
+                sourceId,
+                StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _explicitSelection = null;
         if (card.Owner != null
             && TryGetState(
                 card.Owner,
@@ -709,10 +762,10 @@ internal static class LibrarySpeedDiceService
         if (!TryGetLocalState(out var state) || state == null)
             return;
 
-        if (_explicitlySelectedCard != null)
+        if (_explicitSelection != null)
             return;
 
-        CardModel? selectedCard = GetSelectedCard();
+        CardModel? selectedCard = GetSelectedSelection()?.Card;
         if (selectedCard != null
             && state.Registration.Dispatcher.HasInputRouter
             && RunManager.Instance.NetService.Type != NetGameType.Singleplayer)
@@ -735,17 +788,36 @@ internal static class LibrarySpeedDiceService
         Control targetingOrigin,
         bool usingController = false)
     {
+        await SubmitEquipCardAsync(
+            card,
+            slotIndex,
+            targetingOrigin,
+            usingController,
+            LibrarySpeedDiceSelectionSourceIds.Hand);
+    }
+
+    internal static async Task<bool> SubmitEquipCardAsync(
+        CardModel card,
+        int slotIndex,
+        Control targetingOrigin,
+        bool usingController,
+        string sourceId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(sourceId);
         if (card.Owner == null
             || !TryGetState(
                 card.Owner,
                 out var state)
             || state == null)
         {
-            return;
+            return false;
         }
 
         if (state.IsLifecycleBusy)
-            return;
+            return false;
+
+        if (!CanEquipCard(state, card, sourceId))
+            return false;
 
         if (state.Registration.Dispatcher.HasInputRouter
             && RunManager.Instance.NetService.Type != NetGameType.Singleplayer)
@@ -757,9 +829,10 @@ internal static class LibrarySpeedDiceService
                     state,
                     card,
                     targetingOrigin,
-                    usingController);
+                    usingController,
+                    sourceId);
                 if (target == null)
-                    return;
+                    return false;
             }
 
             if (!IsStateUsable(state)
@@ -772,13 +845,12 @@ internal static class LibrarySpeedDiceService
                 || slotIndex >= state.Slots.Count
                 || state.Slots[slotIndex].Card != null
                 || card.Owner != state.Player
-                || card.Pile?.Type != PileType.Hand
-                || !CanEquipCard(state, card))
+                || !CanEquipCard(state, card, sourceId))
             {
-                return;
+                return false;
             }
 
-            await state.Registration.Dispatcher.RouteInputAsync(
+            return await state.Registration.Dispatcher.RouteInputAsync(
                 new LibrarySpeedDiceInputRequest(
                     LibrarySpeedDiceInputKind.Equip,
                     state.Player,
@@ -786,16 +858,46 @@ internal static class LibrarySpeedDiceService
                     state.Player.PlayerCombatState?.TurnNumber ?? -1,
                     state.Revision,
                     card,
-                    target));
-            return;
+                    target)
+                {
+                    SourceId = sourceId,
+                });
         }
 
-        await ActivateSlotWithLifecycleAsync(
-            state,
-            slotIndex,
-            targetingOrigin,
+        if (card.GetSpeedDiceAssignmentMode()
+            == LibrarySpeedDiceAssignmentMode.Persistent)
+        {
+            await ActivateSlotWithLifecycleAsync(
+                state,
+                slotIndex,
+                targetingOrigin,
+                card,
+                allowRetargetExisting: false);
+            return TryGetEquippedSlot(card, out _);
+        }
+
+        Creature? instantTarget = null;
+        if (card.RequiresSpeedDiceTarget())
+        {
+            instantTarget = await SelectUnequippedCardTargetAsync(
+                state,
+                card,
+                targetingOrigin,
+                usingController,
+                sourceId);
+            if (instantTarget == null)
+                return false;
+        }
+
+        return await ExecuteEquipAsync(
+            new BlockingPlayerChoiceContext(),
+            state.Player,
             card,
-            allowRetargetExisting: false);
+            slotIndex,
+            instantTarget,
+            state.Player.PlayerCombatState?.TurnNumber ?? -1,
+            state.Revision,
+            sourceId);
     }
 
     private static async Task ActivateSlotWithLifecycleAsync(
@@ -868,7 +970,10 @@ internal static class LibrarySpeedDiceService
                     || card.Pile?.Type != PileType.Hand
                     || card.EnergyCost.CostsX
                     || card.HasStarCostX
-                    || !CanEquipCard(state, card))
+                    || !CanEquipCard(
+                        state,
+                        card,
+                        LibrarySpeedDiceSelectionSourceIds.Hand))
                 {
                     return;
                 }
@@ -963,7 +1068,7 @@ internal static class LibrarySpeedDiceService
             state.Revision);
     }
 
-    public static async Task<bool> ExecuteEquipAsync(
+    public static Task<bool> ExecuteEquipAsync(
         PlayerChoiceContext choiceContext,
         Player player,
         CardModel card,
@@ -972,9 +1077,31 @@ internal static class LibrarySpeedDiceService
         int expectedTurnNumber,
         int expectedRevision)
     {
+        return ExecuteEquipAsync(
+            choiceContext,
+            player,
+            card,
+            slotIndex,
+            target,
+            expectedTurnNumber,
+            expectedRevision,
+            LibrarySpeedDiceSelectionSourceIds.Hand);
+    }
+
+    public static async Task<bool> ExecuteEquipAsync(
+        PlayerChoiceContext choiceContext,
+        Player player,
+        CardModel card,
+        int slotIndex,
+        Creature? target,
+        int expectedTurnNumber,
+        int expectedRevision,
+        string sourceId)
+    {
         ArgumentNullException.ThrowIfNull(choiceContext);
         ArgumentNullException.ThrowIfNull(player);
         ArgumentNullException.ThrowIfNull(card);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sourceId);
         if (!TryGetState(player, out LibrarySpeedDiceCombatState? state)
             || state == null)
         {
@@ -986,9 +1113,14 @@ internal static class LibrarySpeedDiceService
             || !state.TryBeginLifecycle())
             return false;
 
+        LibrarySpeedDiceCardLease? instantLease = null;
+        LibrarySpeedDiceCombatState.GameplayNotificationBatch?
+            instantNotificationBatch = null;
+        bool instantResourcesCommitted = false;
         try
         {
             LibrarySpeedDiceSlot? equippedSlot = null;
+            LibrarySpeedDiceInstantAssignmentContext? instantContext = null;
             await state.Gate.WaitAsync();
             try
             {
@@ -998,9 +1130,8 @@ internal static class LibrarySpeedDiceService
                         expectedTurnNumber,
                         expectedRevision)
                     || card.Owner != player
-                    || card.Pile?.Type != PileType.Hand
                     || state.Slots[slotIndex].Card != null
-                    || !CanEquipCard(state, card)
+                    || !CanEquipCard(state, card, sourceId)
                     || card.RequiresSpeedDiceTarget()
                     && !card.IsValidSpeedDiceTarget(target))
                 {
@@ -1008,6 +1139,20 @@ internal static class LibrarySpeedDiceService
                 }
 
                 LibrarySpeedDiceSlot slot = state.Slots[slotIndex];
+                LibrarySpeedDiceAssignmentMode assignmentMode =
+                    card.GetSpeedDiceAssignmentMode();
+                if (assignmentMode == LibrarySpeedDiceAssignmentMode.Instant
+                    && (slot.IsSpent || slot.IsLocked))
+                {
+                    return false;
+                }
+
+                if (assignmentMode == LibrarySpeedDiceAssignmentMode.Instant)
+                {
+                    instantNotificationBatch =
+                        state.BeginGameplayNotificationBatch();
+                }
+
                 if (!TryCreateReservationLease(
                         state,
                         card,
@@ -1018,33 +1163,80 @@ internal static class LibrarySpeedDiceService
                     return false;
                 }
 
-                var result = await CardPileCmd.Add(
-                    card,
-                    PileType.Play,
-                    skipVisuals: true);
-                if (!result.success)
+                if (assignmentMode == LibrarySpeedDiceAssignmentMode.Instant)
                 {
-                    lease.Transaction.Release();
-                    return false;
-                }
+                    instantLease = lease;
+                    if (!await lease.Transaction.CommitAsync())
+                    {
+                        lease.Transaction.Release();
+                        return false;
+                    }
 
-                slot.Card = card;
-                slot.Target = target;
-                slot.SetLease(lease);
-                ApplyLegacyReservationProjection(state, card, slot);
-                state.NotifyGameplayChanged();
-                equippedSlot = slot;
+                    lease.IsCommitted = true;
+                    instantResourcesCommitted = true;
+                    instantContext =
+                        new LibrarySpeedDiceInstantAssignmentContext(
+                            choiceContext,
+                            state,
+                            slot,
+                            card,
+                            target,
+                            sourceId,
+                            lease.ReservationPlan);
+                }
+                else
+                {
+                    var result = await CardPileCmd.Add(
+                        card,
+                        PileType.Play,
+                        skipVisuals: true);
+                    if (!result.success)
+                    {
+                        lease.Transaction.Release();
+                        return false;
+                    }
+
+                    slot.Card = card;
+                    slot.Target = target;
+                    slot.SetLease(lease);
+                    ApplyLegacyReservationProjection(state, card, slot);
+                    state.NotifyGameplayChanged();
+                    equippedSlot = slot;
+                }
             }
             catch (Exception exception)
             {
+                if (instantLease?.IsCommitted != true)
+                    instantLease?.Transaction.Release();
                 Log.Error(
                     "[LibraryOfRuinaLib] Synchronized speed-die equip failed: "
                     + exception);
-                return false;
+                return instantResourcesCommitted;
             }
             finally
             {
                 state.Gate.Release();
+            }
+
+            if (instantContext != null && instantLease != null)
+            {
+                try
+                {
+                    await state.Registration.Dispatcher
+                        .OnInstantAssignmentAsync(instantContext);
+                    return true;
+                }
+                catch (Exception exception)
+                {
+                    Log.Error(
+                        "[LibraryOfRuinaLib] Instant speed-die assignment lifecycle failed: "
+                        + exception);
+                    return true;
+                }
+                finally
+                {
+                    instantLease.IsReleased = true;
+                }
             }
 
             if (equippedSlot?.Lease != null)
@@ -1075,7 +1267,23 @@ internal static class LibrarySpeedDiceService
         }
         finally
         {
-            state.EndLifecycle();
+            try
+            {
+                if (instantNotificationBatch != null)
+                {
+                    if (instantResourcesCommitted)
+                        instantNotificationBatch.Complete();
+                    else
+                        instantNotificationBatch.Dispose();
+                }
+
+                if (instantResourcesCommitted && instantLease != null)
+                    instantLease.IsReleased = true;
+            }
+            finally
+            {
+                state.EndLifecycle();
+            }
         }
     }
 
@@ -1087,8 +1295,28 @@ internal static class LibrarySpeedDiceService
         int expectedTurnNumber,
         int expectedRevision)
     {
+        return RequestEquipAsync(
+            player,
+            card,
+            slotIndex,
+            target,
+            expectedTurnNumber,
+            expectedRevision,
+            LibrarySpeedDiceSelectionSourceIds.Hand);
+    }
+
+    public static Task RequestEquipAsync(
+        Player player,
+        CardModel card,
+        int slotIndex,
+        Creature? target,
+        int expectedTurnNumber,
+        int expectedRevision,
+        string sourceId)
+    {
         ArgumentNullException.ThrowIfNull(player);
         ArgumentNullException.ThrowIfNull(card);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sourceId);
         return RequestInputAsync(
             new LibrarySpeedDiceInputRequest(
                 LibrarySpeedDiceInputKind.Equip,
@@ -1097,7 +1325,10 @@ internal static class LibrarySpeedDiceService
                 expectedTurnNumber,
                 expectedRevision,
                 card,
-                target));
+                target)
+            {
+                SourceId = sourceId,
+            });
     }
 
     public static Task RequestUnequipAsync(
@@ -1164,7 +1395,10 @@ internal static class LibrarySpeedDiceService
                     request.SlotIndex,
                     request.Target,
                     request.TurnNumber,
-                    request.Revision);
+                    request.Revision,
+                    string.IsNullOrWhiteSpace(request.SourceId)
+                        ? LibrarySpeedDiceSelectionSourceIds.Hand
+                        : request.SourceId);
                 break;
             case LibrarySpeedDiceInputKind.Unequip:
                 await ExecuteUnequipAsync(
@@ -1952,7 +2186,8 @@ internal static class LibrarySpeedDiceService
         LibrarySpeedDiceCombatState state,
         CardModel card,
         Control targetingOrigin,
-        bool usingController)
+        bool usingController,
+        string sourceId)
     {
         if (!GodotObject.IsInstanceValid(targetingOrigin)
             || state.Player.PlayerCombatState?.Phase
@@ -1975,7 +2210,7 @@ internal static class LibrarySpeedDiceService
             || state.IsResolving
             || state.IsSelectingTarget
             || card.Owner != state.Player
-            || card.Pile?.Type != PileType.Hand
+            || !CanEquipCard(state, card, sourceId)
             || NTargetManager.Instance.IsInSelection)
         {
             return null;
@@ -2001,7 +2236,11 @@ internal static class LibrarySpeedDiceService
                     || !state.HasRolled
                     || state.IsLocked
                     || state.IsResolving
-                    || card.Pile?.Type != PileType.Hand,
+                    || !TryResolveSelectionSource(
+                        state,
+                        card,
+                        sourceId,
+                        out _),
                 node =>
                 {
                     Creature? target = GetCreatureFromTargetNode(node);
@@ -2018,7 +2257,11 @@ internal static class LibrarySpeedDiceService
             return selectedTarget != null
                 && state.Player.PlayerCombatState?.Phase
                 == PlayerTurnPhase.Play
-                && card.Pile?.Type == PileType.Hand
+                && TryResolveSelectionSource(
+                    state,
+                    card,
+                    sourceId,
+                    out _)
                 && card.IsValidSpeedDiceTarget(selectedTarget)
                     ? selectedTarget
                     : null;
@@ -2060,14 +2303,27 @@ internal static class LibrarySpeedDiceService
             await CardPileCmd.Add(card, PileType.Discard);
     }
 
-    private static CardModel? GetSelectedCard()
+    private static ExplicitSelection? GetSelectedSelection()
     {
-        if (_explicitlySelectedCard is { } explicitCard)
+        if (_explicitSelection is { } selection)
         {
-            if (explicitCard.Pile?.Type == PileType.Hand)
-                return explicitCard;
+            CardModel card = selection.Card;
+            if (!card.IsCanonical
+                && card.Owner != null
+                && TryGetState(
+                    card.Owner,
+                    out LibrarySpeedDiceCombatState? state)
+                && state != null
+                && TryResolveSelectionSource(
+                    state,
+                    card,
+                    selection.SourceId,
+                    out _))
+            {
+                return selection;
+            }
 
-            _explicitlySelectedCard = null;
+            _explicitSelection = null;
         }
         return null;
     }
@@ -2106,7 +2362,8 @@ internal static class LibrarySpeedDiceService
 
     private static bool CanEquipCard(
         LibrarySpeedDiceCombatState state,
-        CardModel card)
+        CardModel card,
+        string sourceId)
     {
         if (!IsStateUsable(state)
             || state.Player.PlayerCombatState?.Phase != PlayerTurnPhase.Play
@@ -2115,15 +2372,132 @@ internal static class LibrarySpeedDiceService
             || state.IsResolving
             || state.IsSelectingTarget
             || card.Owner != state.Player
-            || card.Pile?.Type != PileType.Hand
             || card.EnergyCost.CostsX
             || card.HasStarCostX
+            || card.GetSpeedDiceAssignmentMode()
+                == LibrarySpeedDiceAssignmentMode.Persistent
+            && !string.Equals(
+                sourceId,
+                LibrarySpeedDiceSelectionSourceIds.Hand,
+                StringComparison.Ordinal)
+            || !TryResolveSelectionSource(
+                state,
+                card,
+                sourceId,
+                out _)
             || !CanParticipantEquipCard(state, card))
         {
             return false;
         }
 
         return CanReserveCard(state, card);
+    }
+
+    internal static bool TryResolveSelectionSource(
+        LibrarySpeedDiceCombatState state,
+        CardModel card,
+        string? requestedSourceId,
+        out string sourceId)
+    {
+        sourceId = string.Empty;
+        if (card.IsCanonical || card.Owner != state.Player)
+            return false;
+
+        if (!string.IsNullOrWhiteSpace(requestedSourceId))
+        {
+            if (string.Equals(
+                    requestedSourceId,
+                    LibrarySpeedDiceSelectionSourceIds.Hand,
+                    StringComparison.Ordinal))
+            {
+                if (card.Pile?.Type != PileType.Hand)
+                    return false;
+
+                sourceId = LibrarySpeedDiceSelectionSourceIds.Hand;
+                return true;
+            }
+
+            ILibrarySpeedDiceSelectionSource? requested =
+                state.Registration.Dispatcher.FindSelectionSource(
+                    requestedSourceId);
+            if (requested == null
+                || !CanSelectionSourceSelect(requested, state, card))
+            {
+                return false;
+            }
+
+            sourceId = requested.SourceId;
+            return true;
+        }
+
+        var matches = new List<string>();
+        if (card.Pile?.Type == PileType.Hand)
+            matches.Add(LibrarySpeedDiceSelectionSourceIds.Hand);
+
+        foreach (ILibrarySpeedDiceSelectionSource source in
+                 state.Registration.Dispatcher.SelectionSources)
+        {
+            if (CanSelectionSourceSelect(source, state, card))
+                matches.Add(source.SourceId);
+        }
+
+        if (matches.Count != 1)
+        {
+            if (matches.Count > 1)
+            {
+                Log.Error(
+                    "[LibraryOfRuinaLib] Ambiguous speed-dice selection source "
+                    + $"for card {card.Id}: {string.Join(", ", matches)}");
+            }
+            return false;
+        }
+
+        sourceId = matches[0];
+        return true;
+    }
+
+    internal static Control? GetSelectionTargetingOrigin(
+        LibrarySpeedDiceCombatState state,
+        CardModel card,
+        string sourceId)
+    {
+        ILibrarySpeedDiceSelectionSource? source =
+            state.Registration.Dispatcher.FindSelectionSource(sourceId);
+        if (source == null
+            || !CanSelectionSourceSelect(source, state, card))
+        {
+            return null;
+        }
+
+        try
+        {
+            return source.GetTargetingOrigin(state, card);
+        }
+        catch (Exception exception)
+        {
+            Log.Error(
+                $"[LibraryOfRuinaLib] Selection source '{sourceId}' targeting origin failed: "
+                + exception);
+            return null;
+        }
+    }
+
+    private static bool CanSelectionSourceSelect(
+        ILibrarySpeedDiceSelectionSource source,
+        LibrarySpeedDiceCombatState state,
+        CardModel card)
+    {
+        try
+        {
+            return source.CanSelect(state, card);
+        }
+        catch (Exception exception)
+        {
+            Log.Error(
+                $"[LibraryOfRuinaLib] Selection source '{source.SourceId}' predicate failed: "
+                + exception);
+            return false;
+        }
     }
 
     private static bool TryGetLegacySecondaryResourceReservations(
@@ -3130,6 +3504,14 @@ internal static class LibrarySpeedDiceService
 
 internal static class LibrarySpeedDiceCardExtensions
 {
+    public static LibrarySpeedDiceAssignmentMode
+        GetSpeedDiceAssignmentMode(this CardModel card)
+    {
+        return card is ILibrarySpeedDiceCard speedDiceCard
+            ? speedDiceCard.AssignmentMode
+            : LibrarySpeedDiceAssignmentMode.Persistent;
+    }
+
     public static TargetType GetSpeedDiceTargetType(this CardModel card)
     {
         return card is ILibrarySpeedDiceCard speedDiceCard

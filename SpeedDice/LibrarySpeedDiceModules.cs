@@ -38,6 +38,44 @@ public interface ILibrarySpeedDicePolicy : ILibrarySpeedDiceModule
         int currentCount) => currentCount;
 }
 
+/// <summary>
+/// 用于多人模式的多牌堆速度骰子装备请求。下游模块可以通过实现 ILibrarySpeedDiceInputRouter 来拦截和处理这些请求。
+/// </summary>
+public static class LibrarySpeedDiceSelectionSourceIds
+{
+    public const string Hand = "library.hand";
+}
+
+public enum LibrarySpeedDiceSelectionResult
+{
+    Rejected,
+    Canceled,
+    Submitted,
+}
+
+/// <summary>
+/// 速度骰子装备选择来源。下游模块可以通过实现 ILibrarySpeedDiceSelectionSource 来提供自定义的装备选择来源。
+/// </summary>
+public interface ILibrarySpeedDiceSelectionSource : ILibrarySpeedDiceModule
+{
+    /// <summary>
+    /// 选择来源的唯一标识符。用于在多人模式中区分不同来源的选择请求。
+    /// </summary>
+    string SourceId => Id;
+
+    bool CanSelect(
+        LibrarySpeedDiceCombatState state,
+        CardModel card);
+
+    /// <summary>
+    /// 返回用于速度骰子目标选择的本地UI控件。
+    /// 此方法仅用于界面展示，不会在网络验证中使用。
+    /// </summary>
+    Control? GetTargetingOrigin(
+        LibrarySpeedDiceCombatState state,
+        CardModel card) => null;
+}
+
 public interface ILibrarySpeedDiceLifecycle : ILibrarySpeedDiceModule
 {
     void OnStateCreated(LibrarySpeedDiceCombatState state)
@@ -73,6 +111,10 @@ public interface ILibrarySpeedDiceLifecycle : ILibrarySpeedDiceModule
         PlayerChoiceContext choiceContext,
         LibrarySpeedDiceCombatState state,
         LibrarySpeedDiceSlot slot) => Task.CompletedTask;
+
+    Task OnInstantAssignmentAsync(
+        LibrarySpeedDiceInstantAssignmentContext context) =>
+        Task.CompletedTask;
 
     Task BeforeResolutionBatchAsync(
         LibrarySpeedDiceResolutionBatchContext context) =>
@@ -205,4 +247,39 @@ public sealed class LibrarySpeedDiceCardResolutionContext
     public CardModel Card { get; }
 
     public LibrarySpeedDiceCardLease Lease { get; }
+}
+
+public sealed class LibrarySpeedDiceInstantAssignmentContext
+{
+    internal LibrarySpeedDiceInstantAssignmentContext(
+        PlayerChoiceContext choiceContext,
+        LibrarySpeedDiceCombatState state,
+        LibrarySpeedDiceSlot slot,
+        CardModel card,
+        Creature? target,
+        string sourceId,
+        LibrarySpeedDiceReservationPlan reservationPlan)
+    {
+        ChoiceContext = choiceContext;
+        State = state;
+        Slot = slot;
+        Card = card;
+        Target = target;
+        SourceId = sourceId;
+        ReservationPlan = reservationPlan;
+    }
+
+    public PlayerChoiceContext ChoiceContext { get; }
+
+    public LibrarySpeedDiceCombatState State { get; }
+
+    public LibrarySpeedDiceSlot Slot { get; }
+
+    public CardModel Card { get; }
+
+    public Creature? Target { get; }
+
+    public string SourceId { get; }
+
+    public LibrarySpeedDiceReservationPlan ReservationPlan { get; }
 }

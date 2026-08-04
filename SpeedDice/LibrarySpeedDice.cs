@@ -76,6 +76,28 @@ public static class LibrarySpeedDice
             usingController);
     }
 
+    /// <summary>
+    /// Starts speed-die slot selection for either the vanilla hand or a
+    /// registered custom selection source. A null source id requires exactly
+    /// one source to match the card.
+    /// </summary>
+    public static Task<LibrarySpeedDiceSelectionResult>
+        BeginSlotSelectionAsync(
+            CardModel card,
+            bool usingController = false,
+            string? sourceId = null)
+    {
+        return LibrarySpeedDiceRightClickService.BeginSlotSelectionAsync(
+            card,
+            usingController,
+            sourceId);
+    }
+
+    public static void CancelActiveSelection()
+    {
+        LibrarySpeedDiceRightClickService.CancelActiveSelection();
+    }
+
     public static void EndEquipSelection(CardModel card)
     {
         LibrarySpeedDiceService.EndEquipSelection(card);
@@ -116,6 +138,25 @@ public static class LibrarySpeedDice
             target,
             expectedTurnNumber,
             expectedRevision);
+    }
+
+    public static Task RequestEquipAsync(
+        Player player,
+        CardModel card,
+        int slotIndex,
+        Creature? target,
+        int expectedTurnNumber,
+        int expectedRevision,
+        string sourceId)
+    {
+        return LibrarySpeedDiceService.RequestEquipAsync(
+            player,
+            card,
+            slotIndex,
+            target,
+            expectedTurnNumber,
+            expectedRevision,
+            sourceId);
     }
 
     public static Task RequestUnequipAsync(
@@ -187,6 +228,27 @@ public static class LibrarySpeedDice
             target,
             expectedTurnNumber,
             expectedRevision);
+    }
+
+    public static Task<bool> ExecuteEquipAsync(
+        PlayerChoiceContext choiceContext,
+        Player player,
+        CardModel card,
+        int slotIndex,
+        Creature? target,
+        int expectedTurnNumber,
+        int expectedRevision,
+        string sourceId)
+    {
+        return LibrarySpeedDiceService.ExecuteEquipAsync(
+            choiceContext,
+            player,
+            card,
+            slotIndex,
+            target,
+            expectedTurnNumber,
+            expectedRevision,
+            sourceId);
     }
 
     public static Task<bool> ExecuteUnequipAsync(

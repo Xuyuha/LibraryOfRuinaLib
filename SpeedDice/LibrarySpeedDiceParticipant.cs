@@ -218,4 +218,7 @@ public readonly record struct LibrarySpeedDiceInputRequest(
     int TurnNumber,
     int Revision,
     CardModel? Card = null,
-    Creature? Target = null);
+    Creature? Target = null)
+{
+    public string? SourceId { get; init; }
+}

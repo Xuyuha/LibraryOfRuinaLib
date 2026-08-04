@@ -3,6 +3,7 @@ using LibraryLib.Light;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Random;
 
@@ -92,6 +93,7 @@ internal sealed class LibrarySpeedDiceModuleDispatcher
     private readonly ILibrarySpeedDicePolicy[] _policies;
     private readonly ILibrarySpeedDiceLifecycle[] _lifecycles;
     private readonly ILibrarySpeedDiceInputRouter[] _inputRouters;
+    private readonly ILibrarySpeedDiceSelectionSource[] _selectionSources;
     private readonly ILibrarySpeedDiceDeterminism[] _determinism;
     private readonly ILibrarySpeedDicePresentation[] _presentation;
     private readonly ILibraryLightPolicy[] _lightPolicies;
@@ -127,6 +129,31 @@ internal sealed class LibrarySpeedDiceModuleDispatcher
         _inputRouters = ordered
             .OfType<ILibrarySpeedDiceInputRouter>()
             .ToArray();
+        _selectionSources = ordered
+            .OfType<ILibrarySpeedDiceSelectionSource>()
+            .ToArray();
+        foreach (ILibrarySpeedDiceSelectionSource source in
+                 _selectionSources)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(source.SourceId);
+        }
+        string? duplicateSourceId = _selectionSources
+            .GroupBy(source => source.SourceId, StringComparer.Ordinal)
+            .FirstOrDefault(group => group.Count() > 1)
+            ?.Key;
+        if (duplicateSourceId != null)
+        {
+            throw new InvalidOperationException(
+                $"Duplicate speed-dice selection source id '{duplicateSourceId}'.");
+        }
+        if (_selectionSources.Any(source => string.Equals(
+                source.SourceId,
+                LibrarySpeedDiceSelectionSourceIds.Hand,
+                StringComparison.Ordinal)))
+        {
+            throw new InvalidOperationException(
+                $"Selection source id '{LibrarySpeedDiceSelectionSourceIds.Hand}' is reserved.");
+        }
         _determinism = ordered
             .OfType<ILibrarySpeedDiceDeterminism>()
             .ToArray();
@@ -141,6 +168,16 @@ internal sealed class LibrarySpeedDiceModuleDispatcher
     public bool HasInputRouter => _inputRouters.Any(router =>
         router is not LegacyParticipantAdapter legacy
         || legacy.HasInputRouter);
+
+    public IReadOnlyList<ILibrarySpeedDiceSelectionSource>
+        SelectionSources => _selectionSources;
+
+    public ILibrarySpeedDiceSelectionSource? FindSelectionSource(
+        string sourceId) =>
+        _selectionSources.FirstOrDefault(source => string.Equals(
+            source.SourceId,
+            sourceId,
+            StringComparison.Ordinal));
 
     public bool CanEquipCard(
         LibrarySpeedDiceCombatState state,
@@ -310,6 +347,24 @@ internal sealed class LibrarySpeedDiceModuleDispatcher
                 choiceContext,
                 state,
                 slot);
+        }
+    }
+
+    public async Task OnInstantAssignmentAsync(
+        LibrarySpeedDiceInstantAssignmentContext context)
+    {
+        foreach (ILibrarySpeedDiceLifecycle lifecycle in _lifecycles)
+        {
+            try
+            {
+                await lifecycle.OnInstantAssignmentAsync(context);
+            }
+            catch (Exception exception)
+            {
+                Log.Error(
+                    "[LibraryOfRuinaLib] Instant speed-die assignment "
+                    + $"lifecycle '{lifecycle.Id}' failed: {exception}");
+            }
         }
     }
 

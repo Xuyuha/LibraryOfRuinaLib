@@ -44,8 +44,8 @@ RitsuLib，并通过 `ILibraryLightStore` 将 Light 接到自己的资源系统�
 接入代码需要：
 
 ```csharp
-using Library.Light;
-using Library.SpeedDice;
+using LibraryLib.Light;
+using LibraryLib.SpeedDice;
 ```
 
 ### 1.1 YourMod 的依赖写法
@@ -517,7 +517,7 @@ public void OnCardReleased(
 public async Task<bool> RouteAsync(
     LibrarySpeedDiceInputRequest request)
 {
-    // request 已包含 Kind、Player、SlotIndex、
+    // request 已包含 Kind、Player、SlotIndex、SourceId、
     // TurnNumber、Revision、Card 和 Target。
     await YourModSpeedDiceNetwork.RequestAsync(request);
 
@@ -665,8 +665,8 @@ LibrarySpeedDice
 `ILibrarySpeedDiceCard`：
 
 ```csharp
-using Library.Light;
-using Library.SpeedDice;
+using LibraryLib.Light;
+using LibraryLib.SpeedDice;
 using MegaCrit.Sts2.Core.Entities.Cards;
 
 public sealed class MyPageCard :
@@ -833,6 +833,85 @@ int preview = LibraryLight.GetCost(card)
     .GetWithModifiers(LibraryLightCostModifiers.All);
 ```
 
+### 3.3 自定义牌堆与瞬时分配
+
+不在原版 Hand 中、且“选择速度骰后立即生效并释放槽位”的牌，应使用
+`ILibrarySpeedDiceSelectionSource` 与 `Instant`，不要临时搬进 Hand：
+
+```csharp
+public sealed class MyStanceCard : MyCardBase, ILibrarySpeedDiceCard
+{
+    public LibrarySpeedDiceResourceCost SpeedDiceResourceCost => new(0, 0);
+    public TargetType SpeedDiceTargetType => TargetType.None;
+    public LibrarySpeedDiceAssignmentMode AssignmentMode =>
+        LibrarySpeedDiceAssignmentMode.Instant;
+
+    // 自定义 holder 主动调用 BeginSlotSelectionAsync，不启用手牌右键入口。
+    public bool EnableSpeedDiceRightClickSelection => false;
+}
+
+internal sealed class MyStanceModule :
+    ILibrarySpeedDiceSelectionSource,
+    ILibrarySpeedDiceLifecycle,
+    ILibrarySpeedDiceInputRouter
+{
+    public const string StableSourceId = "my-mod.stance-pile";
+    public string Id => "my-mod.stance-module";
+    public string SourceId => StableSourceId;
+
+    // 这里只判断跨客户端一致的 gameplay 状态，不能读取 Godot 节点。
+    public bool CanSelect(
+        LibrarySpeedDiceCombatState state,
+        CardModel card) =>
+        card is MyStanceCard
+        && MyStancePile.Contains(state.Player, card);
+
+    // 仅本地表现使用，可返回自定义 ExtraHand 中的 holder/card node。
+    public Control? GetTargetingOrigin(
+        LibrarySpeedDiceCombatState state,
+        CardModel card) =>
+        MyStanceUi.FindHolder(card);
+
+    public Task OnInstantAssignmentAsync(
+        LibrarySpeedDiceInstantAssignmentContext context) =>
+        context.Card is MyStanceCard stance
+            ? MyStanceService.ApplyAsync(context.ChoiceContext, stance)
+            : Task.CompletedTask;
+
+    public async Task<bool> RouteAsync(LibrarySpeedDiceInputRequest request)
+    {
+        await MyNetwork.RequestSpeedDiceInputAsync(request);
+        return true;
+    }
+}
+```
+
+自定义 holder 的鼠标或控制器入口统一调用：
+
+```csharp
+LibrarySpeedDiceSelectionResult result =
+    await LibrarySpeedDice.BeginSlotSelectionAsync(
+        card,
+        usingController,
+        MyStanceModule.StableSourceId);
+
+// 关闭自定义牌栏时，先取消仍在等待的选槽流程。
+LibrarySpeedDice.CancelActiveSelection();
+```
+
+`Submitted` 表示输入已在单人局执行，或已提交给多人 InputRouter；它不是远端
+确认回执。`Canceled` 表示玩家开始选槽后取消，`Rejected` 表示来源、资源、
+回合、Revision 或槽位校验失败。
+
+多人消息必须保存并回传 `request.SourceId`，权威 action 调用带 `sourceId`
+参数的 `ExecuteEquipAsync(...)`。旧消息的 null `SourceId` 只兼容为
+`library.hand`。自定义来源目前只允许 `Instant` 卡；`Persistent` 卡仍由原版
+Hand 进入，因为卸下和回合清理的返回目标仍是 Hand。
+
+Instant 成功时会提交冻结的资源计划并增加 Revision，但不会移动卡牌、设置
+`slot.Card` / `slot.Target`、消耗骰子或把槽位标记为 spent。实际效果只写在
+`OnInstantAssignmentAsync`；不要再调用普通 `CardModel.OnPlay`。
+
 ## 4. 角色模块
 
 一个模块可以实现一个或多个职责接口：
@@ -847,8 +926,8 @@ int preview = LibraryLight.GetCost(card)
 最小模块示例：
 
 ```csharp
-using Library.Light;
-using Library.SpeedDice;
+using LibraryLib.Light;
+using LibraryLib.SpeedDice;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models;
@@ -1753,7 +1832,7 @@ int resolvedX = LibraryLight.GetCost(this).GetResolved();
 框架时，实现：
 
 ```csharp
-using Library.Light;
+using LibraryLib.Light;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models;
 
@@ -2040,6 +2119,7 @@ new EquipMessage(
     request.SlotIndex,
     request.TurnNumber, // 防止上一回合的延迟消息污染当前回合
     request.Revision,   // 防止基于旧槽位/资源状态执行
+    request.SourceId ?? LibrarySpeedDiceSelectionSourceIds.Hand,
     cardIdentity,
     cardModelIdHash,
     cardOrdinal,
@@ -2056,7 +2136,9 @@ bool applied = await LibrarySpeedDice.ExecuteEquipAsync(
     context.Message.SlotIndex,
     target,
     context.Message.TurnNumber,
-    context.Message.Revision);
+    context.Message.Revision,
+    context.Message.SourceId
+        ?? LibrarySpeedDiceSelectionSourceIds.Hand);
 
 if (!applied)
 {
@@ -2367,8 +2449,8 @@ await LibrarySpeedDice.ResolveBatchAsync(context, states);
 ### 13.1 入口
 
 ```csharp
-using Library.Light;
-using Library.SpeedDice;
+using LibraryLib.Light;
+using LibraryLib.SpeedDice;
 
 internal static class MyLibraryRegistration
 {
@@ -2424,8 +2506,8 @@ internal static class MyLibraryRegistration
 ### 13.2 书页基类
 
 ```csharp
-using Library.Light;
-using Library.SpeedDice;
+using LibraryLib.Light;
+using LibraryLib.SpeedDice;
 using MegaCrit.Sts2.Core.Entities.Cards;
 
 public abstract class MyPageCard(
@@ -2459,8 +2541,8 @@ public abstract class MyPageCard(
 ### 13.3 角色模块
 
 ```csharp
-using Library.Light;
-using Library.SpeedDice;
+using LibraryLib.Light;
+using LibraryLib.SpeedDice;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models;
@@ -2535,8 +2617,8 @@ internal sealed class MyCharacterModule :
 ### 13.4 效果代码
 
 ```csharp
-using Library.Light;
-using Library.SpeedDice;
+using LibraryLib.Light;
+using LibraryLib.SpeedDice;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Models;
 

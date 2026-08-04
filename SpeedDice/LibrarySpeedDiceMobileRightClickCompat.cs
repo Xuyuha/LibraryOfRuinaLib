@@ -2,6 +2,7 @@ using System.Reflection;
 using Godot;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Context;
+using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Models;
@@ -13,6 +14,10 @@ namespace LibraryLib.SpeedDice;
 
 internal static class LibrarySpeedDiceMobileRightClickCompat
 {
+    private readonly record struct PendingSelection(
+        CardModel Card,
+        string SourceId);
+
     private const string LogTag =
         "[LibrarySpeedDiceMobileRightClick]";
     private const string AndroidInputTypeName =
@@ -29,7 +34,7 @@ internal static class LibrarySpeedDiceMobileRightClickCompat
         AccessTools.Field(typeof(NPlayerHand), "_currentCardPlay");
 
     private static MethodInfo? _clearAllPinnedMethod;
-    private static CardModel? _pendingCard;
+    private static PendingSelection? _pendingSelection;
     private static bool _bridgeInstalled;
 
     public static void TryInstall(Harmony harmony)
@@ -121,24 +126,31 @@ internal static class LibrarySpeedDiceMobileRightClickCompat
                 return true;
 
             CardModel? card = ResolveCandidate(hand, position);
-            if (card == null || !IsEligibleLocalCard(card))
+            if (card == null
+                || !TryResolveEligibleSelection(
+                    card,
+                    out PendingSelection selection))
+            {
                 return true;
+            }
 
             __result = true;
-            if (_pendingCard != null)
+            if (_pendingSelection is { } pending)
             {
                 Log.Info(
                     $"{LogTag} event=aborted card={card.Id} "
                     + $"reason=selection-already-pending "
-                    + $"pendingCard={_pendingCard.Id}");
+                    + $"pendingCard={pending.Card.Id} "
+                    + $"pendingSource={pending.SourceId}");
                 return false;
             }
 
-            _pendingCard = card;
+            _pendingSelection = selection;
             Log.Info(
                 $"{LogTag} event=intercepted "
-                + $"card={card.Id} position={position}");
-            TaskHelper.RunSafely(HandleInterceptedAsync(card));
+                + $"card={card.Id} source={selection.SourceId} "
+                + $"position={position}");
+            TaskHelper.RunSafely(HandleInterceptedAsync(selection));
             return false;
         }
         catch (Exception exception)
@@ -172,10 +184,46 @@ internal static class LibrarySpeedDiceMobileRightClickCompat
                 : null;
     }
 
-    private static bool IsEligibleLocalCard(CardModel card)
+    private static bool TryResolveEligibleSelection(
+        CardModel card,
+        out PendingSelection selection)
+    {
+        selection = default;
+        if (!LocalContext.IsMe(card.Owner)
+            || card.Owner == null)
+        {
+            return false;
+        }
+
+        string? requestedSourceId = card.Pile?.Type == PileType.Hand
+            ? LibrarySpeedDiceSelectionSourceIds.Hand
+            : null;
+        if (!LibrarySpeedDiceService.TryGetState(
+                card.Owner,
+                out LibrarySpeedDiceCombatState? state)
+            || state == null
+            || !LibrarySpeedDiceService.TryResolveSelectionSource(
+                state,
+                card,
+                requestedSourceId,
+                out string sourceId)
+            || !IsEligibleLocalCard(card, sourceId))
+        {
+            return false;
+        }
+
+        selection = new PendingSelection(card, sourceId);
+        return true;
+    }
+
+    private static bool IsEligibleLocalCard(
+        CardModel card,
+        string sourceId)
     {
         return LocalContext.IsMe(card.Owner)
-            && LibrarySpeedDiceRightClickService.CanRequestSelection(card);
+            && LibrarySpeedDiceRightClickService.CanRequestSelection(
+                card,
+                sourceId);
     }
 
     private static NCardHolder? FindTopmostCardHolderAtPosition(
@@ -212,8 +260,11 @@ internal static class LibrarySpeedDiceMobileRightClickCompat
             && hitbox.GetGlobalRect().HasPoint(position);
     }
 
-    private static async Task HandleInterceptedAsync(CardModel card)
+    private static async Task HandleInterceptedAsync(
+        PendingSelection selection)
     {
+        CardModel card = selection.Card;
+        string sourceId = selection.SourceId;
         try
         {
             NPlayerHand? hand = NPlayerHand.Instance;
@@ -260,20 +311,43 @@ internal static class LibrarySpeedDiceMobileRightClickCompat
                 return;
             }
 
-            if (!ReferenceEquals(_pendingCard, card)
-                || !IsEligibleLocalCard(card))
+            if (_pendingSelection is not { } pending
+                || !ReferenceEquals(pending.Card, card)
+                || !string.Equals(
+                    pending.SourceId,
+                    sourceId,
+                    StringComparison.Ordinal)
+                || !IsEligibleLocalCard(card, sourceId))
             {
                 LogAborted(card, "card-no-longer-eligible");
                 return;
             }
 
             Log.Info(
-                $"{LogTag} event=selection-started card={card.Id}");
-            await LibrarySpeedDiceRightClickService.BeginSelectionAsync(
-                card,
-                usingController: false);
+                $"{LogTag} event=selection-started card={card.Id} "
+                + $"source={sourceId}");
+            LibrarySpeedDiceSelectionResult selectionResult =
+                await LibrarySpeedDiceRightClickService
+                    .BeginSlotSelectionAsync(
+                        card,
+                        usingController: false,
+                        sourceId);
 
-            if (LibrarySpeedDiceService.TryGetEquippedSlot(
+            if (selectionResult
+                != LibrarySpeedDiceSelectionResult.Submitted)
+            {
+                LogAborted(
+                    card,
+                    $"selection-{selectionResult.ToString().ToLowerInvariant()}");
+            }
+            else if (card.GetSpeedDiceAssignmentMode()
+                     == LibrarySpeedDiceAssignmentMode.Instant)
+            {
+                Log.Info(
+                    $"{LogTag} event=instant-assignment-submitted "
+                    + $"card={card.Id}");
+            }
+            else if (LibrarySpeedDiceService.TryGetEquippedSlot(
                     card,
                     out LibrarySpeedDiceSlot? slot)
                 && slot != null)
@@ -284,7 +358,8 @@ internal static class LibrarySpeedDiceMobileRightClickCompat
             }
             else
             {
-                LogAborted(card, "selection-ended-without-equip");
+                Log.Info(
+                    $"{LogTag} event=equip-submitted card={card.Id}");
             }
         }
         catch (Exception exception)
@@ -296,8 +371,15 @@ internal static class LibrarySpeedDiceMobileRightClickCompat
         }
         finally
         {
-            if (ReferenceEquals(_pendingCard, card))
-                _pendingCard = null;
+            if (_pendingSelection is { } pending
+                && ReferenceEquals(pending.Card, card)
+                && string.Equals(
+                    pending.SourceId,
+                    sourceId,
+                    StringComparison.Ordinal))
+            {
+                _pendingSelection = null;
+            }
         }
     }
 

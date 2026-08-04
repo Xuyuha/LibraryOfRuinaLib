@@ -17,12 +17,12 @@ public sealed class LibraryDecayPower : LibraryPowerModel//腐蚀，效果为被
     {
         if(target != Owner)return;
         if(!props.IsPoweredAttack())return;
-        await CreatureCmd.Damage(new ThrowingPlayerChoiceContext(),Owner,Amount,ValueProp.Unpowered,Owner);
-        await LibraryCreatureCmd.ChaoDamage(new ThrowingPlayerChoiceContext(),Owner,Amount,ValueProp.Unpowered,Owner,null);        
+        await CreatureCmd.Damage(choiceContext,Owner,Amount,ValueProp.Unpowered,Owner);
+        await LibraryCreatureCmd.ChaoDamage(choiceContext,Owner,Amount,ValueProp.Unpowered,Owner,null);
     }
     public override async Task AfterSideTurnEnd(PlayerChoiceContext choiceContext, CombatSide side, IEnumerable<Creature> participants)
     {
-        await CreatureCmd.Damage(new ThrowingPlayerChoiceContext(),Owner,Amount,ValueProp.Unpowered,Owner);
+        await CreatureCmd.Damage(choiceContext,Owner,Amount,ValueProp.Unpowered,Owner);
         await PowerCmd.Decrement(this);
     }
 }

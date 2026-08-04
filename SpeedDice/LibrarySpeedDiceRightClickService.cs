@@ -15,6 +15,7 @@ namespace LibraryLib.SpeedDice;
 internal static class LibrarySpeedDiceRightClickService
 {
     private static CardModel? _activeCard;
+    private static string? _activeSourceId;
     private static Dictionary<Control, int> _activeDiceControls = [];
     private static LibrarySpeedDiceRightClickTargetLine? _activeTargetLine;
 
@@ -51,16 +52,32 @@ internal static class LibrarySpeedDiceRightClickService
 
     public static bool CanRequestSelection(CardModel card)
     {
+        return CanRequestSelection(
+            card,
+            LibrarySpeedDiceSelectionSourceIds.Hand);
+    }
+
+    internal static bool CanRequestSelection(
+        CardModel card,
+        string sourceId)
+    {
         NPlayerHand? hand = NPlayerHand.Instance;
-        if (card is not ILibrarySpeedDiceCard
+        if (string.IsNullOrWhiteSpace(sourceId)
+            || card is not ILibrarySpeedDiceCard
             {
                 EnableSpeedDiceRightClickSelection: true,
             }
             || card.IsCanonical
-            || card.Pile?.Type != PileType.Hand
+            || string.Equals(
+                sourceId,
+                LibrarySpeedDiceSelectionSourceIds.Hand,
+                StringComparison.Ordinal)
+            && card.Pile?.Type != PileType.Hand
             || hand == null
             || hand.IsInCardSelection
-            || !LibrarySpeedDiceService.CanEquipCard(card))
+            || !LibrarySpeedDiceService.CanEquipCard(
+                card,
+                sourceId))
         {
             return false;
         }
@@ -68,19 +85,43 @@ internal static class LibrarySpeedDiceRightClickService
         return FindAvailableDiceControls(card).Count > 0;
     }
 
-    public static async Task BeginSelectionAsync(
+    public static Task<LibrarySpeedDiceSelectionResult> BeginSelectionAsync(
         CardModel card,
         bool usingController)
     {
-        if (!CanBeginSelection(card)
-            || !LibrarySpeedDiceService.TryBeginEquipSelection(card)
+        return BeginSlotSelectionAsync(
+            card,
+            usingController,
+            LibrarySpeedDiceSelectionSourceIds.Hand);
+    }
+
+    public static async Task<LibrarySpeedDiceSelectionResult>
+        BeginSlotSelectionAsync(
+            CardModel card,
+            bool usingController,
+            string? requestedSourceId)
+    {
+        if (card.IsCanonical
             || card.Owner == null
             || !LibrarySpeedDiceService.TryGetState(
                 card.Owner,
                 out LibrarySpeedDiceCombatState? state)
-            || state == null)
+            || state == null
+            || !LibrarySpeedDiceService.TryResolveSelectionSource(
+                state,
+                card,
+                requestedSourceId,
+                out string sourceId)
+            || NPlayerHand.Instance is { InCardPlay: true }
+            || NPlayerHand.Instance?.IsInCardSelection == true
+            || NTargetManager.Instance.IsInSelection
+            || !LibrarySpeedDiceService.CanEquipCard(card, sourceId)
+            || FindAvailableDiceControls(card).Count == 0
+            || !LibrarySpeedDiceService.TryBeginEquipSelection(
+                card,
+                sourceId))
         {
-            return;
+            return LibrarySpeedDiceSelectionResult.Rejected;
         }
 
         NTargetManager targetManager = NTargetManager.Instance;
@@ -89,34 +130,50 @@ internal static class LibrarySpeedDiceRightClickService
             LibrarySpeedDiceInputMode.ShouldUseControllerTargeting(
                 usingController);
         LibrarySpeedDiceRightClickTargetLine? targetLine = null;
+        LibrarySpeedDiceSelectionResult selectionResult =
+            LibrarySpeedDiceSelectionResult.Rejected;
         NotifyEquipSelectionChanged(state, card, isSelecting: true);
         try
         {
-            NPlayerHand? hand = NPlayerHand.Instance;
-            NHandCardHolder? holder =
-                hand?.GetCardHolder(card) as NHandCardHolder;
-            Control? source =
-                (Control?)holder?.CardNode
-                ?? holder;
+            NHandCardHolder? holder = null;
+            Control? source;
+            if (string.Equals(
+                    sourceId,
+                    LibrarySpeedDiceSelectionSourceIds.Hand,
+                    StringComparison.Ordinal))
+            {
+                holder = NPlayerHand.Instance?.GetCardHolder(card)
+                    as NHandCardHolder;
+                source = (Control?)holder?.CardNode ?? holder;
+            }
+            else
+            {
+                source = LibrarySpeedDiceService
+                    .GetSelectionTargetingOrigin(
+                        state,
+                        card,
+                        sourceId);
+            }
+
             Dictionary<Control, int> diceControls =
                 FindAvailableDiceControls(card);
             if (source == null || diceControls.Count == 0)
-                return;
+                return LibrarySpeedDiceSelectionResult.Rejected;
 
             NDebugAudioManager.Instance?.Play("card_select.mp3", 0.5f);
             if (holder != null)
                 NHoverTipSet.Remove(holder);
             holder?.CardNode?.CardHighlight.AnimFlash();
 
-            SetActiveSelection(card, diceControls);
+            SetActiveSelection(card, sourceId, diceControls);
             await source.ToSignal(
                 source.GetTree(),
                 SceneTree.SignalName.ProcessFrame);
             if (!GodotObject.IsInstanceValid(source)
-                || card.Pile?.Type != PileType.Hand
+                || !LibrarySpeedDiceService.CanEquipCard(card, sourceId)
                 || targetManager.IsInSelection)
             {
-                return;
+                return LibrarySpeedDiceSelectionResult.Rejected;
             }
 
             TargetMode targetMode =
@@ -127,8 +184,9 @@ internal static class LibrarySpeedDiceRightClickService
                 source,
                 targetMode,
                 () =>
-                    card.Pile?.Type != PileType.Hand
-                    || !LibrarySpeedDiceService.CanEquipCard(card),
+                    !LibrarySpeedDiceService.CanEquipCard(
+                        card,
+                        sourceId),
                 node =>
                     node is Control control
                     && diceControls.ContainsKey(control));
@@ -138,6 +196,7 @@ internal static class LibrarySpeedDiceRightClickService
                 useControllerTargeting);
             _activeTargetLine = targetLine;
             dieSelectionStarted = true;
+            selectionResult = LibrarySpeedDiceSelectionResult.Canceled;
 
             if (useControllerTargeting)
             {
@@ -158,21 +217,28 @@ internal static class LibrarySpeedDiceRightClickService
             if (selectedNode is Control selectedControl
                 && diceControls.TryGetValue(
                     selectedControl,
-                    out int slotIndex)
-                && card.Pile?.Type == PileType.Hand)
+                    out int slotIndex))
             {
-                await LibrarySpeedDiceService.EquipCardAsync(
-                    card,
-                    slotIndex,
-                    selectedControl,
-                    usingController);
+                bool submitted = await LibrarySpeedDiceService
+                    .SubmitEquipCardAsync(
+                        card,
+                        slotIndex,
+                        selectedControl,
+                        usingController,
+                        sourceId);
+                selectionResult = submitted
+                    ? LibrarySpeedDiceSelectionResult.Submitted
+                    : LibrarySpeedDiceSelectionResult.Rejected;
             }
+
+            return selectionResult;
         }
         catch (Exception exception)
         {
             Log.Error(
                 "[LibraryOfRuinaLib] Speed-dice right-click selection failed: "
                 + exception);
+            return LibrarySpeedDiceSelectionResult.Rejected;
         }
         finally
         {
@@ -187,7 +253,7 @@ internal static class LibrarySpeedDiceRightClickService
                 NCombatRoom.Instance?.EnableControllerNavigation();
 
             ClearActiveSelection(card);
-            LibrarySpeedDiceService.EndEquipSelection(card);
+            LibrarySpeedDiceService.EndEquipSelection(card, sourceId);
             NotifyEquipSelectionChanged(state, card, isSelecting: false);
         }
     }
@@ -207,6 +273,7 @@ internal static class LibrarySpeedDiceRightClickService
     public static void CancelActiveSelection()
     {
         CardModel? card = _activeCard;
+        string? sourceId = _activeSourceId;
         if (card == null)
             return;
 
@@ -234,7 +301,7 @@ internal static class LibrarySpeedDiceRightClickService
         _activeTargetLine = null;
         NCombatRoom.Instance?.EnableControllerNavigation();
         ClearActiveSelection(card);
-        LibrarySpeedDiceService.EndEquipSelection(card);
+        LibrarySpeedDiceService.EndEquipSelection(card, sourceId);
         if (state != null)
             NotifyEquipSelectionChanged(state, card, isSelecting: false);
     }
@@ -297,9 +364,11 @@ internal static class LibrarySpeedDiceRightClickService
 
     private static void SetActiveSelection(
         CardModel card,
+        string sourceId,
         Dictionary<Control, int> diceControls)
     {
         _activeCard = card;
+        _activeSourceId = sourceId;
         _activeDiceControls = diceControls;
     }
 
@@ -309,6 +378,7 @@ internal static class LibrarySpeedDiceRightClickService
             return;
 
         _activeCard = null;
+        _activeSourceId = null;
         _activeDiceControls = [];
     }
 

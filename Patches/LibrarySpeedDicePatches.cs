@@ -335,7 +335,7 @@ internal static class LibrarySpeedDiceEndTurnGuardPatch
 {
     private static bool Prefix()
     {
-        if (LibrarySpeedDiceService.IsLocalPlayerResolvingSpeedDice())
+        if (LibrarySpeedDiceService.IsLocalPlayerInResolutionLifecycle())
             return false;
 
         LibrarySpeedDiceRightClickService.CancelActiveSelection();
@@ -348,8 +348,14 @@ internal static class LibrarySpeedDiceEndTurnGuardPatch
     nameof(NEndTurnButton.SecretEndTurnLogicViaFtue))]
 internal static class LibrarySpeedDiceEndTurnFtueGuardPatch
 {
-    private static bool Prefix() =>
-        !LibrarySpeedDiceService.IsLocalPlayerResolvingSpeedDice();
+    private static bool Prefix()
+    {
+        if (LibrarySpeedDiceService.IsLocalPlayerInResolutionLifecycle())
+            return false;
+
+        LibrarySpeedDiceRightClickService.CancelActiveSelection();
+        return true;
+    }
 }
 
 [HarmonyPatch(
@@ -359,7 +365,7 @@ internal static class LibrarySpeedDiceEndTurnEnabledPatch
 {
     private static void Postfix(NEndTurnButton __instance)
     {
-        if (LibrarySpeedDiceService.IsLocalPlayerResolvingSpeedDice())
+        if (LibrarySpeedDiceService.IsLocalPlayerInResolutionLifecycle())
             __instance.Disable();
     }
 }

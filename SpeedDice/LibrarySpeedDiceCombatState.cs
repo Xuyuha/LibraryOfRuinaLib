@@ -8,6 +8,8 @@ namespace LibraryLib.SpeedDice;
 public sealed class LibrarySpeedDiceCombatState
 {
     private readonly List<LibrarySpeedDiceSlot> _slots = [];
+    private readonly object _gameplayNotificationSync = new();
+    private bool _gameplayNotificationBatchActive;
     private int _lifecycleBusy;
 
     internal LibrarySpeedDiceCombatState(
@@ -271,8 +273,55 @@ public sealed class LibrarySpeedDiceCombatState
 
     internal void NotifyGameplayChanged()
     {
-        Revision = Revision == int.MaxValue ? 1 : Revision + 1;
+        lock (_gameplayNotificationSync)
+        {
+            if (_gameplayNotificationBatchActive)
+                return;
+
+            IncrementRevision();
+        }
         NotifyChanged();
+    }
+
+    internal GameplayNotificationBatch BeginGameplayNotificationBatch()
+    {
+        lock (_gameplayNotificationSync)
+        {
+            if (_gameplayNotificationBatchActive)
+            {
+                throw new InvalidOperationException(
+                    "A speed-dice gameplay notification batch is already active.");
+            }
+
+            _gameplayNotificationBatchActive = true;
+        }
+
+        return new GameplayNotificationBatch(this);
+    }
+
+    private void EndGameplayNotificationBatch(bool publish)
+    {
+        bool notify = false;
+        lock (_gameplayNotificationSync)
+        {
+            if (!_gameplayNotificationBatchActive)
+                return;
+
+            _gameplayNotificationBatchActive = false;
+            if (publish)
+            {
+                IncrementRevision();
+                notify = true;
+            }
+        }
+
+        if (notify)
+            NotifyChanged();
+    }
+
+    private void IncrementRevision()
+    {
+        Revision = Revision == int.MaxValue ? 1 : Revision + 1;
     }
 
     internal void NotifyChanged()
@@ -305,6 +354,31 @@ public sealed class LibrarySpeedDiceCombatState
     {
         if (Interlocked.Exchange(ref _lifecycleBusy, 0) != 0)
             NotifyChanged();
+    }
+
+    internal sealed class GameplayNotificationBatch : IDisposable
+    {
+        private LibrarySpeedDiceCombatState? _state;
+
+        internal GameplayNotificationBatch(
+            LibrarySpeedDiceCombatState state)
+        {
+            _state = state;
+        }
+
+        public void Complete()
+        {
+            LibrarySpeedDiceCombatState? state =
+                Interlocked.Exchange(ref _state, null);
+            state?.EndGameplayNotificationBatch(publish: true);
+        }
+
+        public void Dispose()
+        {
+            LibrarySpeedDiceCombatState? state =
+                Interlocked.Exchange(ref _state, null);
+            state?.EndGameplayNotificationBatch(publish: false);
+        }
     }
 
     internal string CreateLeaseId(int slotIndex)
