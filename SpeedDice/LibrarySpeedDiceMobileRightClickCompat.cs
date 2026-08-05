@@ -1,6 +1,7 @@
 using System.Reflection;
 using Godot;
 using HarmonyLib;
+using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Context;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Helpers;
@@ -15,8 +16,10 @@ namespace LibraryLib.SpeedDice;
 internal static class LibrarySpeedDiceMobileRightClickCompat
 {
     private readonly record struct PendingSelection(
+        long Id,
         CardModel Card,
-        string SourceId);
+        string SourceId,
+        LibrarySpeedDiceCombatState StateToken);
 
     private const string LogTag =
         "[LibrarySpeedDiceMobileRightClick]";
@@ -35,6 +38,7 @@ internal static class LibrarySpeedDiceMobileRightClickCompat
 
     private static MethodInfo? _clearAllPinnedMethod;
     private static PendingSelection? _pendingSelection;
+    private static long _nextPendingId;
     private static bool _bridgeInstalled;
 
     public static void TryInstall(Harmony harmony)
@@ -103,6 +107,8 @@ internal static class LibrarySpeedDiceMobileRightClickCompat
                 dispatchMethod,
                 prefix: new HarmonyMethod(prefix));
             _bridgeInstalled = true;
+            CombatManager.Instance.CombatEnded +=
+                _ => ClearPendingSelection("combat-ended");
             Log.Info(
                 $"{LogTag} event=bridge-installed "
                 + $"target={AndroidInputTypeName}.{DispatchMethodName}");
@@ -137,12 +143,23 @@ internal static class LibrarySpeedDiceMobileRightClickCompat
             __result = true;
             if (_pendingSelection is { } pending)
             {
-                Log.Info(
-                    $"{LogTag} event=aborted card={card.Id} "
-                    + $"reason=selection-already-pending "
-                    + $"pendingCard={pending.Card.Id} "
-                    + $"pendingSource={pending.SourceId}");
-                return false;
+                if (IsPendingSelectionStale(pending))
+                {
+                    Log.Info(
+                        $"{LogTag} event=cleared-stale-pending "
+                        + $"card={card.Id} pendingCard={pending.Card.Id} "
+                        + "reason=stale-on-dispatch");
+                    ClearPendingSelection("stale-on-dispatch");
+                }
+                else
+                {
+                    Log.Info(
+                        $"{LogTag} event=aborted card={card.Id} "
+                        + $"reason=selection-already-pending "
+                        + $"pendingCard={pending.Card.Id} "
+                        + $"pendingSource={pending.SourceId}");
+                    return false;
+                }
             }
 
             _pendingSelection = selection;
@@ -212,8 +229,48 @@ internal static class LibrarySpeedDiceMobileRightClickCompat
             return false;
         }
 
-        selection = new PendingSelection(card, sourceId);
+        selection = new PendingSelection(
+            Interlocked.Increment(ref _nextPendingId),
+            card,
+            sourceId,
+            state);
         return true;
+    }
+
+    internal static void ClearPendingSelection(string reason)
+    {
+        try
+        {
+            LibrarySpeedDiceRightClickService.CancelActiveSelection();
+        }
+        catch (Exception exception)
+        {
+            Log.Warn(
+                $"{LogTag} event=clear-warning "
+                + $"reason=cancel-active-failed "
+                + $"error={FormatException(exception)}");
+        }
+
+        if (_pendingSelection is { } pending)
+        {
+            Log.Info(
+                $"{LogTag} event=cleared-pending "
+                + $"card={pending.Card.Id} reason={reason}");
+            _pendingSelection = null;
+        }
+    }
+
+    private static bool IsPendingSelectionStale(PendingSelection pending)
+    {
+        CardModel card = pending.Card;
+        return card.Owner == null
+            || CombatManager.Instance is not { IsInProgress: true }
+            || !LibrarySpeedDiceService.TryGetState(
+                card.Owner,
+                out LibrarySpeedDiceCombatState? state)
+            || state == null
+            || !ReferenceEquals(state, pending.StateToken)
+            || !IsEligibleLocalCard(card, pending.SourceId);
     }
 
     private static bool IsEligibleLocalCard(
@@ -372,11 +429,7 @@ internal static class LibrarySpeedDiceMobileRightClickCompat
         finally
         {
             if (_pendingSelection is { } pending
-                && ReferenceEquals(pending.Card, card)
-                && string.Equals(
-                    pending.SourceId,
-                    sourceId,
-                    StringComparison.Ordinal))
+                && pending.Id == selection.Id)
             {
                 _pendingSelection = null;
             }
