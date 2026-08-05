@@ -60,13 +60,14 @@ public abstract class LibraryTurnsPowerModel : LibraryPowerModel, ISecondaryDisp
     }
     public override Task AfterApplied(Creature? applier, CardModel? cardSource)
     {
-        PowerSecondaryCounterUi.RefreshSecondaryLabel(BoundNPower);
+        if (BoundNPower != null) PowerSecondaryCounterUi.RefreshSecondaryLabel(BoundNPower);
         return Task.CompletedTask;
     }
     public override Task AfterSideTurnStart(CombatSide side, IReadOnlyList<Creature> participants, ICombatState combatState)
     {
         if(side == CombatSide.Player)
-            PowerSecondaryCounterUi.RefreshSecondaryLabel(BoundNPower);
+            if (BoundNPower != null)
+                PowerSecondaryCounterUi.RefreshSecondaryLabel(BoundNPower);
         return Task.CompletedTask;
     }
     //回合结束时改变层数
@@ -94,12 +95,13 @@ public abstract class LibraryTurnsPowerModel : LibraryPowerModel, ISecondaryDisp
     public virtual Task AfterSideTurnStart(CombatSide side, IReadOnlyList<Creature> participants, ICombatState combatState,object? _=null)
     {
         if(side == CombatSide.Player)
-            PowerSecondaryCounterUi.RefreshSecondaryLabel(BoundNPower);
+            if (BoundNPower != null)
+                PowerSecondaryCounterUi.RefreshSecondaryLabel(BoundNPower);
         return Task.CompletedTask;
     }
     public virtual Task AfterApplied(Creature? applier, CardModel? cardSource,object? _=null)
     {
-        PowerSecondaryCounterUi.RefreshSecondaryLabel(BoundNPower);
+        if (BoundNPower != null) PowerSecondaryCounterUi.RefreshSecondaryLabel(BoundNPower);
         return Task.CompletedTask;
     }
     public override void AddVariablesToDescription(LocString description, int? amountOverride = null)
@@ -112,7 +114,7 @@ public abstract class LibraryTurnsPowerModel : LibraryPowerModel, ISecondaryDisp
         string s = "\n";
         foreach(var k in AmountPlan)
         {
-            LocString loc = new LocString("turn_power_prompt","PROPMT");
+            LocString loc = new LocString("powers","LIBRARY_TURN_POWER_PROMPT");
             loc.Add("Amount",k.Value);
             loc.Add("Turns",k.Key - CombatState.RoundNumber + 1);
             s+=loc.GetFormattedText() + "\n";

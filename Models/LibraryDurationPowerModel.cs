@@ -241,6 +241,11 @@ public abstract class LibraryDurationPowerModel : LibraryPowerModel, ISecondaryD
         power.SkipNextDurationTick = power.ShouldSkipInitialDurationTick(applicationSide.Value, decaySide, target);
     }
 
+    internal static bool IsIncomingPermanent(LibraryDurationPowerModel powerModel, int turns)
+    {
+        return powerModel.IsPermanentByDesign || turns <= 0;
+    }
+
     private static int MergeTurns(int current, int incoming)
     {
         if (current <= 0 || incoming <= 0)

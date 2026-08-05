@@ -35,8 +35,8 @@ public static class LibraryPowerCmd
     }
 
     /// <summary>
-    ///     将同类持续 power 的层数和剩余回合精确设置为指定值。
-    ///     <paramref name="turns"/> 小于等于 0 时表示永久。
+    ///     将同类持续 power（Duration/Turns 通用）的层数和剩余回合精确设置为指定值。
+    ///     <paramref name="turns"/> 小于 0 时表示永久；等于 0 时表示当前回合的 DecaySide 回合结束时衰减。
     /// </summary>
     public static async Task<T?> SetAmount<T>(
         Creature target,
@@ -44,25 +44,92 @@ public static class LibraryPowerCmd
         int turns,
         Creature? applier,
         CardModel? cardSource
-    ) where T : LibraryDurationPowerModel
+    ) where T : LibraryPowerModel
     {
-        T? existingPower = LibraryDurationPowerModel.FindStackablePower<T>(target, turns);
-        if (existingPower == null)
-            return await LibraryDurationPowerModel.ApplyWithDuration<T>(target, amount, turns, applier, cardSource);
+        if (typeof(LibraryTurnsPowerModel).IsAssignableFrom(typeof(T)))
+        {
+            LibraryTurnsPowerModel? powerModel = ModelDb.Power<T>() as LibraryTurnsPowerModel;
+            if (powerModel == null)
+            {
+                return null;
+            }
+            LibraryTurnsPowerModel? existingPower = PowerCmd.FindExistingInstanceForStacking(powerModel, target, applier) as LibraryTurnsPowerModel;
+            if (existingPower == null)
+            {
+                if (amount == 0m)
+                {
+                    return null;
+                }
+                LibraryTurnsPowerModel? mutable = powerModel.ToMutable() as LibraryTurnsPowerModel;
+                if (mutable == null)
+                {
+                    return null;
+                }
+                await Apply(new ThrowingPlayerChoiceContext(), mutable, target, amount, turns, turns < 0, applier, cardSource);
+                return mutable as T;
+            }
 
-        decimal amountDelta = amount - existingPower.Amount;
-        existingPower.SetTurnsRemaining(turns, notifyDisplay: amountDelta == 0);
-        LibraryDurationPowerModel.CorrectDurationSkipFlag(existingPower, target);
-        if (amountDelta == 0)
-            return existingPower;
+            decimal amountDelta = amount - existingPower.Amount;
+            existingPower.AmountPlan = turns < 0
+                ? new SortedDictionary<int, int>()
+                : new SortedDictionary<int, int> { [(existingPower.Owner.CombatState?.RoundNumber ?? 0) + turns] = (int)amount };
+            if (amountDelta == 0m)
+            {
+                return existingPower as T;
+            }
 
-        int newAmount = await PowerCmd.ModifyAmount(
+            int newAmount = await PowerCmd.ModifyAmount(
+                new ThrowingPlayerChoiceContext(),
+                existingPower,
+                amountDelta,
+                applier,
+                cardSource);
+            return newAmount == 0 ? null : existingPower as T;
+        }
+
+        LibraryDurationPowerModel? durationModel = ModelDb.Power<T>() as LibraryDurationPowerModel;
+        if (durationModel == null)
+        {
+            throw new InvalidOperationException($"SetAmount<T> 仅支持 LibraryDurationPowerModel / LibraryTurnsPowerModel：{typeof(T).Name}");
+        }
+
+        bool incomingIsPermanent = LibraryDurationPowerModel.IsIncomingPermanent(durationModel, turns);
+        LibraryDurationPowerModel? durationExistingPower = target.GetPowerInstances<T>()
+	        .OfType<LibraryDurationPowerModel?>()
+	        .FirstOrDefault(p => p?.IsPermanent == incomingIsPermanent);
+        if (durationExistingPower == null)
+        {
+            if (amount == 0m)
+            {
+                return null;
+            }
+            LibraryDurationPowerModel? mutable = durationModel.ToMutable() as LibraryDurationPowerModel;
+            if (mutable == null)
+            {
+                return null;
+            }
+            mutable.SetTurnsRemaining(turns, notifyDisplay: false);
+            LibraryDurationPowerModel.CorrectDurationSkipFlag(mutable, target);
+            await PowerCmd.Apply(new ThrowingPlayerChoiceContext(), mutable, target, amount, applier, cardSource);
+            LibraryDurationPowerModel.CorrectDurationSkipFlag(mutable, target);
+            return mutable as T;
+        }
+
+        decimal durationAmountDelta = amount - durationExistingPower.Amount;
+        durationExistingPower.SetTurnsRemaining(turns, notifyDisplay: durationAmountDelta == 0);
+        LibraryDurationPowerModel.CorrectDurationSkipFlag(durationExistingPower, target);
+        if (durationAmountDelta == 0m)
+        {
+            return durationExistingPower as T;
+        }
+
+        int durationNewAmount = await PowerCmd.ModifyAmount(
             new ThrowingPlayerChoiceContext(),
-            existingPower,
-            amountDelta,
+            durationExistingPower,
+            durationAmountDelta,
             applier,
             cardSource);
-        return newAmount == 0 ? null : existingPower;
+        return durationNewAmount == 0 ? null : durationExistingPower as T;
     }
 
     /// <summary>
@@ -79,7 +146,8 @@ public static class LibraryPowerCmd
     }
 
     /// <summary>
-    ///     施加持续 power；已有同类实例时叠加层数，并把剩余回合刷新为 <paramref name="turns"/>。
+    ///     施加持续 power（Duration/Turns 通用）；已有同类实例时叠加层数，并刷新/追加剩余回合。
+    ///     <paramref name="turns"/> 小于 0 时表示永久；等于 0 时表示当前回合的 DecaySide 回合结束时衰减。
     /// </summary>
     public static async Task<T?> Apply<T>(
         Creature target,
@@ -87,25 +155,75 @@ public static class LibraryPowerCmd
         int turns,
         Creature? applier,
         CardModel? cardSource,
-        bool silent = false) where T : LibraryDurationPowerModel
+        bool silent = false) where T : LibraryPowerModel
     {
-        T? existingPower = LibraryDurationPowerModel.FindStackablePower<T>(target, turns);
-        if (existingPower == null)
-            return await LibraryDurationPowerModel.ApplyWithDuration<T>(target, amount, turns, applier, cardSource, silent);
+        if (typeof(LibraryTurnsPowerModel).IsAssignableFrom(typeof(T)))
+        {
+            LibraryTurnsPowerModel? powerModel = ModelDb.Power<T>() as LibraryTurnsPowerModel;
+            if (powerModel == null)
+            {
+                return null;
+            }
+            LibraryTurnsPowerModel? power = PowerCmd.FindExistingInstanceForStacking(powerModel, target, applier) as LibraryTurnsPowerModel;
+            if (power == null)
+            {
+                power = powerModel.ToMutable() as LibraryTurnsPowerModel;
+                if (power == null)
+                {
+                    return null;
+                }
+                await Apply(new ThrowingPlayerChoiceContext(), power, target, amount, turns, turns < 0, applier, cardSource, silent);
+            }
+            else if (await ModifyAmount(new ThrowingPlayerChoiceContext(), power, amount, turns, turns < 0, applier, cardSource, silent) == 0)
+            {
+                power = null;
+            }
+            return power as T;
+        }
 
-        existingPower.SetTurnsRemaining(turns, notifyDisplay: amount == 0m);
-        LibraryDurationPowerModel.CorrectDurationSkipFlag(existingPower, target);
+        LibraryDurationPowerModel? durationModel = ModelDb.Power<T>() as LibraryDurationPowerModel;
+        if (durationModel == null)
+        {
+            throw new InvalidOperationException($"Apply<T> 仅支持 LibraryDurationPowerModel / LibraryTurnsPowerModel：{typeof(T).Name}");
+        }
+
+        bool incomingIsPermanent = LibraryDurationPowerModel.IsIncomingPermanent(durationModel, turns);
+        LibraryDurationPowerModel? durationExistingPower = target.GetPowerInstances<T>()
+	        .OfType<LibraryDurationPowerModel?>()
+	        .FirstOrDefault(p => p?.IsPermanent == incomingIsPermanent);
+        if (durationExistingPower == null)
+        {
+            if (amount == 0m)
+            {
+                return null;
+            }
+            LibraryDurationPowerModel? mutable = durationModel.ToMutable() as LibraryDurationPowerModel;
+            if (mutable == null)
+            {
+                return null;
+            }
+            mutable.SetTurnsRemaining(turns, notifyDisplay: false);
+            LibraryDurationPowerModel.CorrectDurationSkipFlag(mutable, target);
+            await PowerCmd.Apply(new ThrowingPlayerChoiceContext(), mutable, target, amount, applier, cardSource, silent);
+            LibraryDurationPowerModel.CorrectDurationSkipFlag(mutable, target);
+            return mutable as T;
+        }
+
+        durationExistingPower.SetTurnsRemaining(turns, notifyDisplay: amount == 0m);
+        LibraryDurationPowerModel.CorrectDurationSkipFlag(durationExistingPower, target);
         if (amount == 0m)
-            return existingPower;
+        {
+            return durationExistingPower as T;
+        }
 
         int newAmount = await PowerCmd.ModifyAmount(
             new ThrowingPlayerChoiceContext(),
-            existingPower,
+            durationExistingPower,
             amount,
             applier,
             cardSource,
             silent);
-        return newAmount == 0 ? null : existingPower;
+        return newAmount == 0 ? null : durationExistingPower as T;
     }
 
     /// <summary>
@@ -124,8 +242,8 @@ public static class LibraryPowerCmd
     }
 
     /// <summary>
-    ///     调整同类持续 power 的层数，并将剩余回合精确设置为 <paramref name="turns"/>。
-    ///     <paramref name="turns"/> 小于等于 0 时表示永久。
+    ///     调整同类持续 power（Duration/Turns 通用）的层数，并刷新/追加剩余回合。
+    ///     <paramref name="turns"/> 小于 0 时表示永久；等于 0 时表示当前回合的 DecaySide 回合结束时衰减。
     /// </summary>
     public static async Task<int> ModifyAmount<T>(
         Creature target,
@@ -133,17 +251,43 @@ public static class LibraryPowerCmd
         int turns,
         Creature? applier,
         CardModel? cardSource,
-        bool silent = false) where T : LibraryDurationPowerModel
+        bool silent = false) where T : LibraryPowerModel
     {
-        T? existingPower = LibraryDurationPowerModel.FindStackablePower<T>(target, turns);
-        if (existingPower == null)
-            return 0;
+        if (typeof(LibraryTurnsPowerModel).IsAssignableFrom(typeof(T)))
+        {
+            LibraryTurnsPowerModel? powerModel = ModelDb.Power<T>() as LibraryTurnsPowerModel;
+            if (powerModel == null)
+            {
+                return 0;
+            }
+            LibraryTurnsPowerModel? power = PowerCmd.FindExistingInstanceForStacking(powerModel, target, applier) as LibraryTurnsPowerModel;
+            if (power == null)
+            {
+                return 0;
+            }
+            return await ModifyAmount(new ThrowingPlayerChoiceContext(), power, offset, turns, turns < 0, applier, cardSource, silent);
+        }
 
-        existingPower.SetTurnsRemaining(turns);
-        LibraryDurationPowerModel.CorrectDurationSkipFlag(existingPower, target);
+        LibraryDurationPowerModel? durationModel = ModelDb.Power<T>() as LibraryDurationPowerModel;
+        if (durationModel == null)
+        {
+            throw new InvalidOperationException($"ModifyAmount<T> 仅支持 LibraryDurationPowerModel / LibraryTurnsPowerModel：{typeof(T).Name}");
+        }
+
+        bool incomingIsPermanent = LibraryDurationPowerModel.IsIncomingPermanent(durationModel, turns);
+        LibraryDurationPowerModel? durationExistingPower = target.GetPowerInstances<T>()
+            .Select(p => p as LibraryDurationPowerModel)
+            .FirstOrDefault(p => p != null && p.IsPermanent == incomingIsPermanent);
+        if (durationExistingPower == null)
+        {
+            return 0;
+        }
+
+        durationExistingPower.SetTurnsRemaining(turns);
+        LibraryDurationPowerModel.CorrectDurationSkipFlag(durationExistingPower, target);
         return await PowerCmd.ModifyAmount(
             new ThrowingPlayerChoiceContext(),
-            existingPower,
+            durationExistingPower,
             offset,
             applier,
             cardSource,
@@ -192,7 +336,7 @@ public static class LibraryPowerCmd
 		}
 		if (CombatManager.Instance.IsInProgress && owner != null && owner.IsMonster && owner.IsAlive)
 		{
-			NCreature nCreature = NCombatRoom.Instance?.GetCreatureNode(owner);
+			NCreature? nCreature = NCombatRoom.Instance?.GetCreatureNode(owner);
 			if (nCreature != null)
 			{
 				try

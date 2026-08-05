@@ -81,5 +81,6 @@
   "LIBRARY_SMOKE_POWER.smartDescription": "自身が与える攻撃ダメージと受ける攻撃ダメージ*{Multiplier}",
   "LIBRARY_DECAY_POWER.title.ja": "腐食",
   "LIBRARY_DECAY_POWER.description.ja": "ダメージを受けた時、自身に追加でダメージと混乱ダメージを与える。ターン終了時、自身にダメージを与える。",
-  "LIBRARY_DECAY_POWER.smartDescription.ja": "ダメージを受けた時、自身に追加で{Amount}ダメージと混乱ダメージを与える。ターン終了時、自身に{Amount}ダメージを与え、このスタックを1減らす。"
+  "LIBRARY_DECAY_POWER.smartDescription.ja": "ダメージを受けた時、自身に追加で{Amount}ダメージと混乱ダメージを与える。ターン終了時、自身に{Amount}ダメージを与え、このスタックを1減らす。",
+  "LIBRARY_TURN_POWER_PROMPT": "この効果は[blue]{Turns}[/blue]ターン後に[blue]{Amount}[/blue]層減少する。"
 }
