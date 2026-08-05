@@ -22,16 +22,34 @@ public enum LibraryResistanceLevel
 /// </summary>
 public static class LibraryResistanceLevelExtensions
 {
-    public static decimal GetMultiplier(this LibraryResistanceLevel level) => level switch
-    {
-        LibraryResistanceLevel.Immune => 0m,
-        LibraryResistanceLevel.Resist => 0.25m,
-        LibraryResistanceLevel.Endure => 0.5m,
-        LibraryResistanceLevel.Normal => 1m,
-        LibraryResistanceLevel.Vulnerable => 1.5m,
-        LibraryResistanceLevel.Fatal => 2.0m,
-        _ => 1m
-    };
+    public static decimal GetMultiplier(this LibraryResistanceLevel level) =>
+        LibraryResistanceModeState.Current switch
+        {
+            LibraryResistanceMode.Ignore => 1m,
+            LibraryResistanceMode.Weak => level switch
+            {
+                LibraryResistanceLevel.Immune => 0.25m,
+                LibraryResistanceLevel.Resist => 0.5m,
+                LibraryResistanceLevel.Endure => 0.75m,
+                LibraryResistanceLevel.Normal => 1m,
+                LibraryResistanceLevel.Vulnerable => 1.25m,
+                LibraryResistanceLevel.Fatal => 1.5m,
+                _ => 1m
+            },
+            _ => level switch
+            {
+                LibraryResistanceLevel.Immune => 0m,
+                LibraryResistanceLevel.Resist => 0.25m,
+                LibraryResistanceLevel.Endure => 0.5m,
+                LibraryResistanceLevel.Normal => 1m,
+                LibraryResistanceLevel.Vulnerable => 1.5m,
+                LibraryResistanceLevel.Fatal => 2.0m,
+                _ => 1m
+            }
+        };
+
+    public static string GetMultiplierText(this LibraryResistanceLevel level) =>
+        level.GetMultiplier().ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
 
     public static string GetLocKeySuffix(this LibraryResistanceLevel level) => level switch
     {

@@ -315,8 +315,9 @@ internal static class LibraryPhysicalResistanceIconsUi//TODO:你们来做物理�
 
         string typeName = damageType == LibraryDamageType.None?"" :new LocString("powers", $"DAMAGE_TYPE_RESISTANCE.{damageType.String()}_physical").GetRawText();
 
-        string levelText = new LocString("powers",
-            $"DAMAGE_TYPE_RESISTANCE.{level.GetLocKeySuffix()}").GetRawText();
+        var levelLoc = new LocString("powers", $"DAMAGE_TYPE_RESISTANCE.{level.GetLocKeySuffix()}");
+        levelLoc.Add("Multiplier", level.GetMultiplierText());
+        string levelText = levelLoc.GetFormattedText();
 
         string format = new LocString("powers", "DAMAGE_TYPE_RESISTANCE.tooltip_format").GetRawText();
         string description = string.Format(format, typeName, levelText);

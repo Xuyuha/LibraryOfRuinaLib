@@ -317,8 +317,9 @@ internal static class LibraryChaosResistanceIconsUi
 
         string typeName = new LocString("powers", $"DAMAGE_TYPE_RESISTANCE.{damageType.String()}_chaos").GetRawText();
 
-        string levelText = new LocString("powers",
-            $"DAMAGE_TYPE_RESISTANCE.{level.GetLocKeySuffix()}").GetRawText();
+        var levelLoc = new LocString("powers", $"DAMAGE_TYPE_RESISTANCE.{level.GetLocKeySuffix()}");
+        levelLoc.Add("Multiplier", level.GetMultiplierText());
+        string levelText = levelLoc.GetFormattedText();
 
         string format = new LocString("powers", "DAMAGE_TYPE_RESISTANCE.tooltip_format").GetRawText();
         string description = string.Format(format, typeName, levelText);

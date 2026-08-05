@@ -275,7 +275,9 @@ internal sealed partial class LibraryRuinaDamageNumberVfx : Node2D
 
     private static string GetResistanceName(LibraryResistanceLevel level)
     {
-        string raw = new LocString("powers", $"DAMAGE_TYPE_RESISTANCE.{level.GetLocKeySuffix()}").GetRawText();
+        var loc = new LocString("powers", $"DAMAGE_TYPE_RESISTANCE.{level.GetLocKeySuffix()}");
+        loc.Add("Multiplier", level.GetMultiplierText());
+        string raw = loc.GetFormattedText();
         string plainText = LocColorTagRegex.Replace(raw, "");
         plainText = ResistanceMultiplierRegex.Replace(plainText, "");
         return string.IsNullOrWhiteSpace(plainText) ? level.GetLocKeySuffix() : plainText;
