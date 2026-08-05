@@ -20,10 +20,8 @@ public abstract class LibraryDurationPowerModel : LibraryPowerModel, ISecondaryD
         public int TurnsRemaining = 1;
     }
 
-    private sealed class TurnsVar : DynamicVar
+    private sealed class TurnsVar() : DynamicVar("Turns", 0m)
     {
-        public TurnsVar() : base("Turns", 0m) {}
-
         protected override decimal GetBaseValueForIConvertible()
         {
             if (_owner is LibraryDurationPowerModel power && !power.IsPermanentByDesign)
