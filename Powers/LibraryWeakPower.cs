@@ -7,7 +7,7 @@ using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.ValueProps;
 
 namespace LibraryLib.Powers;
-public sealed class LibraryWeakPower : LibraryDurationPowerModel//虚弱，造成的伤害与混乱伤害-1
+public sealed class LibraryWeakPower : LibraryTurnsPowerModel//虚弱，造成的伤害与混乱伤害-1
 {
     public override PowerType Type => PowerType.Debuff;
     public override PowerStackType StackType => PowerStackType.Counter;

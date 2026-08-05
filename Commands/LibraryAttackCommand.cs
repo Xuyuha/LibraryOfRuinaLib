@@ -23,8 +23,7 @@ using MegaCrit.Sts2.Core.ValueProps;
 
 namespace LibraryLib.Commands;
 
-public class LibraryAttackCommand//重置了原版的AttackCommand,经我研究，AttackCommand几乎没有与任何其他类交互，可以放心重置
-//todo：骰子相关的方法
+public class LibraryAttackCommand
 {
 	private const int MaxAdditionalDiceRolls = 32;
 	private const int MaxAdditionalDiceUses = 32;

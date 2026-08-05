@@ -6,35 +6,13 @@ using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.ValueProps;
 
 namespace LibraryLib.Powers;
-public sealed class LibraryBindingPower : LibraryDurationPowerModel
+public sealed class LibraryBindingPower : LibraryTurnsPowerModel
 {
     public override PowerType Type => PowerType.Debuff;
     public override PowerStackType StackType => PowerStackType.Counter;
     public override PowerInstanceType InstanceType => PowerInstanceType.None;
     public override bool AllowNegative => true;
-
-    // 束缚的层数表示伤害下限，持续回合数单独存放在 LibraryDurationPowerModel。
-    public static Task<LibraryBindingPower?> ApplyWithDuration(
-        Creature target,
-        decimal amount,
-        int turns,
-        Creature? applier,
-        CardModel? cardSource,
-        bool silent = false)
-    {
-        return LibraryDurationPowerModel.ApplyWithDuration<LibraryBindingPower>(
-            target,
-            amount,
-            turns,
-            applier,
-            cardSource,
-            silent);
-    }
-
-    protected override CombatSide GetDecaySide(Creature owner)
-    {
-        return OppositeSideOf(owner);
-    }
+    protected override CombatSide DecaySide => OppositeSideOf(Owner);
 
 	public override decimal ModifyHpLostAfterOstyLate(Creature target, decimal amount, ValueProp props, Creature? dealer, CardModel? cardSource)
 	{

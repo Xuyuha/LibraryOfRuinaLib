@@ -8,16 +8,13 @@ using MegaCrit.Sts2.Core.ValueProps;
 
 namespace LibraryLib.Powers;
 
-public sealed class LibraryDefensePowerUpPower : LibraryDurationPowerModel
+public sealed class LibraryDefensePowerUpPower : LibraryTurnsPowerModel
 {
     public override PowerType Type => PowerType.Buff;
     
     public override PowerStackType StackType => PowerStackType.Counter;
 
-    protected override CombatSide GetDecaySide(Creature owner)
-    {
-        return owner.IsPlayer ? OppositeSideOf(owner) : owner.Side;
-    }
+    protected override CombatSide DecaySide => Owner.IsPlayer ? OppositeSideOf(Owner) : Owner.Side;
 
     public override decimal ModifyBlockAdditive(Creature target, decimal block, ValueProp props, CardModel? cardSource, CardPlay? cardPlay)
     {

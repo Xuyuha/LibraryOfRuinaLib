@@ -8,15 +8,12 @@ using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.ValueProps;
 
 namespace LibraryLib.Powers;
-public sealed class LibraryStrongBluntPower : LibraryDurationPowerModel//打击威力增强，若本次伤害是打击伤害，则所造成的伤害与混乱伤害+1
+public sealed class LibraryStrongBluntPower : LibraryTurnsPowerModel//打击威力增强，若本次伤害是打击伤害，则所造成的伤害与混乱伤害+1
 {
     public override PowerType Type => PowerType.Buff;
     public override PowerStackType StackType => PowerStackType.Counter;
 
-    protected override CombatSide GetDecaySide(Creature owner)
-    {
-        return owner.IsPlayer ? OppositeSideOf(owner) : owner.Side;
-    }
+    protected override CombatSide DecaySide => Owner.IsPlayer ? OppositeSideOf(Owner) : Owner.Side;
 
     public override decimal ModifyDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay,LibraryDamageType type){
 		if (base.Owner != dealer)

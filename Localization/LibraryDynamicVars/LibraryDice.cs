@@ -22,10 +22,6 @@ namespace LibraryLib.Localization.LibraryDynamicVars;
 public class LibraryDice : DynamicVar
 {
     public const ValueProp Props = ValueProp.Move;
-    public LibraryDice(decimal minValue, decimal floatValue, LibraryDiceType diceType, LibraryCardModel sourceCard, string name)
-        : this(minValue, floatValue, diceType, (CardModel)sourceCard, name)
-    {
-    }
     public LibraryDice(decimal minValue, decimal floatValue, LibraryDiceType diceType, CardModel sourceCard, string name):
     base(name , minValue)
     {
@@ -34,11 +30,15 @@ public class LibraryDice : DynamicVar
         FloatValue = floatValue;
     }
     public override string ToString()=>$"[img]{DescriptionIconPath}[/img]{Value}{DamageAdditive}{DamageResistance}{ChaoAdditive}{ChaoResistance}\n";
-    public  bool ShouldUseDefaultTip {get;set;} = true;
+    
+	/// <summary>
+	///     表示骰子是否该关闭默认提示，从而启用自定义提示
+	/// </summary>
+    public bool ShouldUseDefaultTip {get;set;} = true;
     public string Value => $"{Colour1}{checked((int)PreviewValue)} - {checked((int)PreviewValue + FloatValue)}{Colour2}";
-    public string Colour1 => _colour == "" ? "" : $"[{_colour}]";
-    public string Colour2 => _colour == "" ? "" : $"[/{_colour}]";
-    public string _colour = "";
+    private string Colour1 => _colour == "" ? "" : $"[{_colour}]";
+    private string Colour2 => _colour == "" ? "" : $"[/{_colour}]";
+    protected string _colour = "";
     public decimal DamageResistanceValue = 1m;
     public decimal ChaoResistanceValue = 0m;
     private int DamageAdditiveValue = 0;
@@ -58,26 +58,43 @@ public class LibraryDice : DynamicVar
     public static LocString DefaultDescription => new("dice","DICE_DEFAULT");
     public LocString Description =>  ShouldUseDefaultTip ? DefaultDescription:new("cards",DescriptionPath);
     public string DescriptionIconPath => $"res://LibraryOfRuinaLib/images/dice/{DiceType.String()}.png";
+	/// <summary>
+	///     骰子的自定义提示路径，可重写
+	/// </summary>
     public virtual string DescriptionPath =>SourceCard.Id.Entry+"_"+Name.ToUpperInvariant()+ ".description";
     private Func<PlayerChoiceContext, CardPlay, int ,Task>? _diceEffct ;
     public string PackedIconPath => $"res://LibraryOfRuinaLib/images/dice/big_icon/{DiceType.String()}.tres";
     public LocString Title => new("dice",DiceType.String().ToUpper()+"_DICE");
 	public Texture2D PackedIcon=> ResourceLoader.Load<Texture2D>(PackedIconPath, null, ResourceLoader.CacheMode.Reuse);
     public LibraryDamageType DamageType => (LibraryDamageType)DiceType;
+    
+	/// <summary>
+	///     表示骰子的使用次数，默认1次
+	/// </summary>
     public int UseTimes = 1;
     public bool EnableCustomUseTimes = false;
+    
+	/// <summary>
+	///     表示本骰子这一次攻击或防御中使用的次数
+	/// </summary>
     public int HasUseTimes = 0;
+    
+	/// <summary>
+	///     表示本次骰子投出的值
+	/// </summary>
     public int CurrentBaseValue {
         get;
         private set;
     }
-    public LibraryAttackCommand? Command = null;
     public override void SetOwner(AbstractModel owner)
     {
         base.SetOwner(owner);
         if (owner is CardModel card)
             SourceCard = card;
     }
+	/// <summary>
+	///     设置骰子的使用次数
+	/// </summary>
     public LibraryDice WithUseTimes (int useTimes)
     {
         if (useTimes < 1)
@@ -104,9 +121,8 @@ public class LibraryDice : DynamicVar
         {
             throw new InvalidOperationException($"Dice {Name} cannot have a negative range.");
         }
-
         int minValue = checked((int)BaseValue);
-        int maxExclusive = checked((int)(BaseValue + FloatValue + 1));
+        int maxExclusive = Math.Max(minValue, checked((int)(BaseValue + FloatValue + 1)));
         CurrentBaseValue = runState.Rng.Niche.NextInt(minValue, maxExclusive);
     }
     public async Task TriggerDiceEffect(PlayerChoiceContext choiceContext, CardPlay? cardPlay)
@@ -128,6 +144,9 @@ public class LibraryDice : DynamicVar
         await _diceEffct(choiceContext, cardPlay, CurrentBaseValue);
         await LibraryHooks.AfterDiceEffect(combatState, choiceContext, targets, cardPlay.Card, this);
     }
+	/// <summary>
+	///     可将标签为Task Function (PlayerChoiceContext , CardPlay)的方法作为骰子特殊效果，使用后，骰子将启用自定义描述；
+	/// </summary>
     public LibraryDice WithDiceEffect(Func<PlayerChoiceContext, CardPlay, int ,Task>? diceEffct){
 		if (_diceEffct != null)
 		{
@@ -137,10 +156,19 @@ public class LibraryDice : DynamicVar
         HasUniqueDescriptionTip();
 		return this;
     }
+	/// <summary>
+	///     启用自定义描述
+	/// </summary>
+    
     public LibraryDice HasUniqueDescriptionTip(){
         ShouldUseDefaultTip = false;
         return this;
     }
+    //由于骰子附属于卡牌，所以table与卡牌描述一致，为card.
+	/// <summary>
+	///     骰子的提示，设置了WithDiceEffect或HasUniqueDescriptionTip会显示自定义提示，反之则显示默认提示。
+    ///     自定义提示在卡牌描述中定义，如CARD1需给Name为Dice1的骰子添加自定义,则key为CARD1_DICE1.description。
+	/// </summary>
     public HoverTip DiceTip {
         get
         {

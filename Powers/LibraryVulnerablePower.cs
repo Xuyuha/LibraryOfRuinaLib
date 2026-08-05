@@ -6,15 +6,12 @@ using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.ValueProps;
 
 namespace LibraryLib.Powers;
-public sealed class LibraryVulnerablePower : LibraryDurationPowerModel//易损，受到生命值伤害+1
+public sealed class LibraryVulnerablePower : LibraryTurnsPowerModel//易损，受到生命值伤害+1
 {
     public override PowerType Type => PowerType.Debuff;
     public override PowerStackType StackType => PowerStackType.Counter;
 
-    protected override CombatSide GetDecaySide(Creature owner)
-    {
-        return OppositeSideOf(owner);
-    }
+    protected override CombatSide DecaySide => OppositeSideOf(Owner);
 
     public override decimal ModifyHpLostAfterOstyLate(Creature target, decimal amount, ValueProp props, Creature? dealer, CardModel? cardSource){
         if(Owner == target && amount > 0m)
