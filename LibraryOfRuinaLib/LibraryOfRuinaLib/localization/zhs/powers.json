@@ -81,5 +81,6 @@
   "LIBRARY_SMOKE_POWER.smartDescription": "使自身造成与受到的攻击伤害*{Multiplier}",
   "LIBRARY_DECAY_POWER.title": "腐蚀",
   "LIBRARY_DECAY_POWER.description":"受伤时额外对自身造成伤害与混乱伤害，回合结束时对自身造成伤害",
-  "LIBRARY_DECAY_POWER.smartDescription": "受伤时额外对自身造成{Amount}点伤害与混乱伤害，回合结束时对自身造成{Amount}点伤害并使该层数-1"
+  "LIBRARY_DECAY_POWER.smartDescription": "受伤时额外对自身造成{Amount}点伤害与混乱伤害，回合结束时对自身造成{Amount}点伤害并使该层数-1",
+  "LIBRARY_TURN_POWER_PROMPT": "该效果将在[blue]{Turns}[/blue]回合后减少[blue]{Amount}[/blue]层"
 }

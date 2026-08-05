@@ -81,5 +81,6 @@
   "LIBRARY_SMOKE_POWER.smartDescription": "자신이 주는 공격 피해와 받는 공격 피해*{Multiplier}",
   "LIBRARY_DECAY_POWER.title.ko": "부식",
   "LIBRARY_DECAY_POWER.description.ko": "피해를 받을 때 추가로 자신에게 피해와 혼란 피해를 줍니다. 턴 종료 시 자신에게 피해를 줍니다.",
-  "LIBRARY_DECAY_POWER.smartDescription.ko": "피해를 받을 때 추가로 자신에게 {Amount} 피해와 혼란 피해를 줍니다. 턴 종료 시 자신에게 {Amount} 피해를 주고 이 중첩을 1 감소시킵니다."
+  "LIBRARY_DECAY_POWER.smartDescription.ko": "피해를 받을 때 추가로 자신에게 {Amount} 피해와 혼란 피해를 줍니다. 턴 종료 시 자신에게 {Amount} 피해를 주고 이 중첩을 1 감소시킵니다.",
+  "LIBRARY_TURN_POWER_PROMPT": "이 효과는 [blue]{Turns}[/blue]턴 후에 [blue]{Amount}[/blue]층 감소한다."
 }

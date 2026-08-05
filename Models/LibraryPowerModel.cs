@@ -122,7 +122,7 @@ public abstract class LibraryPowerModel : PowerModel,ILibraryAbstractModel
     ///     将此 power model 绑定到 NPower UI 节点以支持动态图标刷新。
     ///     由 <see cref="Library.Patches.ModelSetterPatch"/> 自动设置。
     /// </summary>
-    public NPower BoundNPower
+    public NPower? BoundNPower
     {
         get => _boundNPower;
         set

@@ -11,7 +11,7 @@ public sealed class LibraryProtectionPower : LibraryTurnsPowerModel//保护，�
     public override PowerType Type => PowerType.Buff;
     public override PowerStackType StackType => PowerStackType.Counter;
 
-    protected override CombatSide DecaySide => OppositeSideOf(Owner);
+    protected override CombatSide DecaySide => Owner.IsPlayer ? OppositeSideOf(Owner) : Owner.Side;
 
     public override decimal ModifyHpLostAfterOstyLate(Creature target, decimal amount, ValueProp props, Creature? dealer, CardModel? cardSource){
         if(Owner == target)
