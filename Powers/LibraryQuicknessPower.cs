@@ -7,12 +7,12 @@ using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.ValueProps;
 
 namespace LibraryLib.Powers;
-public sealed class LibraryQuicknessPower : LibraryTurnsPowerModel
+public sealed class LibraryQuicknessPower : LibraryPowerModel
 {
     public override PowerType Type => PowerType.Buff;
     public override PowerStackType StackType => PowerStackType.Counter;
     public override bool AllowNegative => false;
-    public override async Task AfterSideTurnEnd(PlayerChoiceContext choiceContext, CombatSide side, IEnumerable<Creature> participants,object? _ = null)
+    public override async Task AfterSideTurnEnd(PlayerChoiceContext choiceContext, CombatSide side, IEnumerable<Creature> participants)
     {
         if (Owner.Side == side && side == CombatSide.Enemy)
         {
