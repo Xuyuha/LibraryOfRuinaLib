@@ -270,7 +270,7 @@ internal sealed partial class LibraryRuinaDamageNumberVfx : Node2D
     {
         string levelStr = level.GetLocKeySuffix();
         string chaosPart = isChaos ? "_chaos" : "";
-        return $"res://images/resistance/{type.String()}{chaosPart}_{levelStr}.png";
+        return $"res://LibraryOfRuinaLib/images/resistance/{type.String()}{chaosPart}_{levelStr}.png";
     }
 
     private static string GetResistanceName(LibraryResistanceLevel level)
