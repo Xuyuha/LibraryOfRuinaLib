@@ -1,7 +1,7 @@
 [gd_resource type="AtlasTexture" load_steps=2 format=3 uid="uid://wgu4ndtw717o"]
 
-[ext_resource type="Texture2D" uid="uid://brpabfd8mgvsr" path="res://LibraryOfRuinaLib/images/powers/library_decay_power.png" id="1_qxyos"]
+[ext_resource type="Texture2D" uid="uid://x3k6hwnqf3vx" path="res://LibraryOfRuinaLib/images/powers/library_decay_power.png" id="1_irdqv"]
 
 [resource]
-atlas = ExtResource("1_qxyos")
+atlas = ExtResource("1_irdqv")
 region = Rect2(0, 0, 128, 128)

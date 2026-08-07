@@ -1,7 +1,7 @@
-[gd_resource type="AtlasTexture" load_steps=2 format=3]
+[gd_resource type="AtlasTexture" load_steps=2 format=3 uid="uid://ckehl1om6agcj"]
 
-[ext_resource type="Texture2D" path="res://LibraryOfRuinaLib/images/powers/library_defense_power_up_power.png" id="1_defense"]
+[ext_resource type="Texture2D" uid="uid://d4eeytw8lcyvk" path="res://LibraryOfRuinaLib/images/powers/library_defense_power_up_power.png" id="1_m1c1p"]
 
 [resource]
-atlas = ExtResource("1_defense")
+atlas = ExtResource("1_m1c1p")
 region = Rect2(0, 0, 128, 119)
