@@ -185,6 +185,7 @@ public class LibraryCreature : Creature//扩展Creature，添加Chao值属性
         if (CombatState != null && !IsDead)
         {
             SaveAndSetStunResistance();
+            SetCurrentChaoValueInternal(0m);
             nextMoveId = ResolvePostStunMoveId(Monster, nextMoveId);
             MoveState state = new MoveState("STUNNED", stunMove, new StunIntent())
             {

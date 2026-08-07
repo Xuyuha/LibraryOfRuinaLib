@@ -32,11 +32,11 @@ public abstract class LibraryMonsterModel : MonsterModel,ILibraryAbstractModel
     /// <summary>混乱抗性等级数据（斩/刺/打）。null = 全部 Normal。</summary>
     public virtual LibraryCreatureResistanceData.Resistance? DefaultChaoResistanceData => null;
 
-    // TODO: 恢复时机改为下一个玩家回合结束（不确定要不要这样做）
+    
     public sealed override async Task AfterSideTurnEnd(PlayerChoiceContext choiceContext, CombatSide side, IEnumerable<Creature> participants)
     {
         await AfterSideTurnEndInternal(choiceContext, side, participants);
-        if (side == CombatSide.Player) return;
+        if (side != CombatSide.Enemy) return;
         foreach (Creature creature in CombatState.Creatures)
         {
             if (creature is not LibraryCreature lc || lc.Side != CombatSide.Enemy || !lc.RestoreChaoOnNextOwnerTurn)
