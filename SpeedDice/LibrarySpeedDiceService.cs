@@ -1499,11 +1499,10 @@ internal static class LibrarySpeedDiceService
             return false;
         }
 
-        if (state.IsLocked
-            || state.IsResolving
-            || !state.TryBeginLifecycle())
+        if (state.IsLocked || state.IsResolving)
             return false;
 
+        bool lifecycleAcquired = state.TryBeginLifecycle();
         try
         {
             LibrarySpeedDiceSlot? retargetedSlot = null;
@@ -1550,7 +1549,8 @@ internal static class LibrarySpeedDiceService
         }
         finally
         {
-            state.EndLifecycle();
+            if (lifecycleAcquired)
+                state.EndLifecycle();
         }
     }
 

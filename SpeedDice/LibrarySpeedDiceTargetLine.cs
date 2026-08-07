@@ -8,9 +8,9 @@ internal sealed partial class LibrarySpeedDiceTargetLine : Node2D
 {
     private const int SegmentCount = 50;
     private const string ArrowTexturePath =
-        "res://LibraryOfRuinaLib/images/vfx/targeted_intent/arrow.png";
+        "res://LibraryOfRuinaLib/LibraryOfRuinaLib/images/vfx/targeted_intent/arrow.png";
     private const string ArrowStartTexturePath =
-        "res://LibraryOfRuinaLib/images/vfx/targeted_intent/arrowstart.png";
+        "res://LibraryOfRuinaLib/LibraryOfRuinaLib/images/vfx/targeted_intent/arrowstart.png";
 
     private static readonly Color AllySoftColor =
         new(0.35f, 0.72f, 1f, 0.78f);

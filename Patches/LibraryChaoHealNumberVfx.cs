@@ -22,7 +22,7 @@ internal sealed partial class LibraryChaoHealNumberVfx : Node2D
     private const float NumberWidth = 120f;
     private const float Height = 76f;
     private const float FontSize = 58f;
-    private const string IconPath = "res://LibraryOfRuinaLib/images/vfx/library_chao_heal.png";
+    private const string IconPath = "res://LibraryOfRuinaLib/LibraryOfRuinaLib/images/vfx/library_chao_heal.png";
     private const string FontPath = "res://themes/kreon_regular_glyph_space_two.tres";
 
     private static readonly Vector2 PositionOffset = new(0f, -105f);

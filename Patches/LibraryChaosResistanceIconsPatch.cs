@@ -302,7 +302,7 @@ internal static class LibraryChaosResistanceIconsUi
     private static string GetChaosIconPath(LibraryDamageType type, LibraryResistanceLevel level)
     {
         string levelStr = level.GetLocKeySuffix();
-        return $"res://LibraryOfRuinaLib/images/resistance/{type.String()}_chaos_{levelStr}.png";
+        return $"res://LibraryOfRuinaLib/LibraryOfRuinaLib/images/resistance/{type.String()}_chaos_{levelStr}.png";
     }
 
     private static void OnIconHovered(NHealthBar healthBar, LibraryDamageType damageType, Control hitbox)

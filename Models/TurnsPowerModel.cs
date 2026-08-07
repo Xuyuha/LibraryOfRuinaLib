@@ -72,7 +72,8 @@ public abstract class LibraryTurnsPowerModel : LibraryPowerModel, ISecondaryDisp
         {
             SetAmount(Amount - AmountPlan.First().Value);
             AmountPlan.Remove(AmountPlan.First().Key);
-            if(AmountPlan.Count == 0)
+            
+            if(AmountPlan.Count == 0 && ShouldRemoveDueToAmount())
             {
                 await PowerCmd.Remove(this);
                 BoundNPower = null;

@@ -15,13 +15,13 @@ namespace LibraryLib.SpeedDice;
 internal sealed partial class LibrarySpeedDiceUi : Control
 {
     private const string DiceAtlasPath =
-        "res://LibraryOfRuinaLib/images/ui/library_speed_dice_atlas.png";
+        "res://LibraryOfRuinaLib/LibraryOfRuinaLib/images/ui/library_speed_dice_atlas.png";
     private const string RoulettePath =
-        "res://LibraryOfRuinaLib/images/ui/speed_dice_roulette.png";
+        "res://LibraryOfRuinaLib/LibraryOfRuinaLib/images/ui/speed_dice_roulette.png";
     private const string BrokenDicePath =
-        "res://LibraryOfRuinaLib/images/ui/speed_dice_broken.png";
+        "res://LibraryOfRuinaLib/LibraryOfRuinaLib/images/ui/speed_dice_broken.png";
     private const string BrokenLinePath =
-        "res://LibraryOfRuinaLib/images/ui/speed_dice_broken_line.png";
+        "res://LibraryOfRuinaLib/LibraryOfRuinaLib/images/ui/speed_dice_broken_line.png";
     private const string FontPath =
         "res://themes/kreon_bold_glyph_space_one.tres";
     private const float SlotWidth = 68f;
