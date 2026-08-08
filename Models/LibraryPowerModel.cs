@@ -13,6 +13,7 @@ using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Nodes.Combat;
+using LibraryLib.Localization.Dice;
 using MegaCrit.Sts2.Core.ValueProps;
 
 namespace LibraryLib.Models;
@@ -148,6 +149,14 @@ public abstract class LibraryPowerModel : PowerModel,ILibraryAbstractModel
         if (_powerFlashAccessor != null)
             _powerFlashAccessor(_boundNPower).Texture = BigIcon;
     }    
+    public virtual decimal ModifyDiceMaxValue(LibraryDice dice, decimal maxValue)
+    {
+        return maxValue;
+    }
+    public virtual decimal ModifyDiceMinValue(LibraryDice dice, decimal minValue)
+    {
+        return minValue;
+    }
     public virtual Creature ModifyDamageTarget(Creature creature, decimal amount, ValueProp props, Creature? dealer,LibraryDamageType type)
     {
         return creature;
@@ -156,11 +165,11 @@ public abstract class LibraryPowerModel : PowerModel,ILibraryAbstractModel
     {
         return creature;    
     }
-    public virtual bool ShouldReroll(IEnumerable<Creature>? target, LibraryDice dice)
+    public virtual bool ShouldReroll(IEnumerable<Creature>? target, LibraryDice dice, DiceRollResult result)
     {
         return false;
     }
-    public virtual bool ShouldReuse(IEnumerable<Creature>? targets, LibraryDice dice)
+    public virtual bool ShouldReuse(IEnumerable<Creature>? targets, LibraryDice dice, DiceRollResult result)
     {
         return false;
     }
@@ -169,15 +178,15 @@ public abstract class LibraryPowerModel : PowerModel,ILibraryAbstractModel
         return Task.CompletedTask;
     }
 
-    public virtual Task AfterReusing(PlayerChoiceContext choiceContext, IEnumerable<Creature>? target, LibraryDice dice)
+    public virtual Task AfterReusing(PlayerChoiceContext choiceContext, IEnumerable<Creature>? target, LibraryDice dice, DiceRollResult result)
     {
         return Task.CompletedTask;
     }
-    public virtual Task BeforeDiceEffect(PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, CardModel cardSource, LibraryDice dice)
+    public virtual Task BeforeDiceEffect(PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, CardModel cardSource, LibraryDice dice, DiceRollResult result)
     {
         return Task.CompletedTask;
     }
-    public virtual Task AfterDiceEffect(PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, CardModel cardSource, LibraryDice dice)
+    public virtual Task AfterDiceEffect(PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, CardModel cardSource, LibraryDice dice, DiceRollResult result)
     {
         return Task.CompletedTask;
     }
@@ -205,7 +214,7 @@ public abstract class LibraryPowerModel : PowerModel,ILibraryAbstractModel
     {
         return Task.CompletedTask;
     }
-    public virtual bool TryDiceEffect(PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, CardModel cardSource, LibraryDice dice)
+    public virtual bool TryDiceEffect(PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, CardModel cardSource, LibraryDice dice, DiceRollResult result)
     {
         return true;
     }
@@ -376,16 +385,12 @@ public abstract class LibraryPowerModel : PowerModel,ILibraryAbstractModel
     {
         return true;
     }
-    public virtual Task AfterDiceRoll(PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, LibraryDice dice)
+    public virtual Task AfterDiceRoll(PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, LibraryDice dice, DiceRollResult result)
     {
         return Task.CompletedTask;
     }
-    public virtual Task AfterRerolling(PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, LibraryDice dice)
+    public virtual Task AfterRerolling(PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, LibraryDice dice, DiceRollResult result)
     {
         return Task.CompletedTask;
-    }
-    public virtual bool ShouldReroll(PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, LibraryDice dice)
-    {
-        return false;
     }
 }

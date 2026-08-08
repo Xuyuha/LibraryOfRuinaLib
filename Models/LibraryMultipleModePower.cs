@@ -1,6 +1,7 @@
 using LibraryLib.Commands;
 using LibraryLib.Entities.Creatures;
 using LibraryLib.Hooks;
+using LibraryLib.Localization.Dice;
 using LibraryLib.Localization.LibraryDynamicVars;
 using LibraryLib.Powers.LibraryPowerMode;
 using LibraryLib.Utils.Resistance;
@@ -52,10 +53,10 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
         Mode = mode;
         await LibraryHooks.AfterSetPowerMode(combatState, choiceContext, this, dealer, cardSource, mode);
     }
-    public sealed override bool ShouldReuse(IEnumerable<Creature>? targets, LibraryDice dice)
+    public sealed override bool ShouldReuse(IEnumerable<Creature>? targets, LibraryDice dice, DiceRollResult result)
     {
-		bool flag = Mode.ShouldReuse(targets,dice);
-		flag |= ShouldReuse(targets,dice,null);
+		bool flag = Mode.ShouldReuse(targets,dice,result);
+		flag |= ShouldReuse(targets,dice,result,null);
 		return flag;
     }
     public override Creature ModifyDamageTarget(Creature creature, decimal amount, ValueProp props, Creature? dealer,LibraryDamageType type){
@@ -68,31 +69,31 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
 		creature = ModifyChaoDamageTarget(creature, amount, props, dealer, type, null);
 		return creature;
 	}
-    public sealed override async Task AfterReusing(PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, LibraryDice dice)
+    public sealed override async Task AfterReusing(PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, LibraryDice dice, DiceRollResult result)
     {
-        await Mode.AfterReusing(choiceContext, targets, dice);
-        await AfterReusing(choiceContext, targets, dice , null);
+        await Mode.AfterReusing(choiceContext, targets, dice, result);
+        await AfterReusing(choiceContext, targets, dice, result, null);
     }
     public sealed override async Task BeforeDiceRoll(PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, LibraryDice dice)
     {
 		await Mode.BeforeDiceRoll(choiceContext, targets, dice);
         await BeforeDiceRoll(choiceContext, targets, dice , null);
     }
-    public sealed override bool ShouldReroll(IEnumerable<Creature>? targets, LibraryDice dice)
+    public sealed override bool ShouldReroll(IEnumerable<Creature>? targets, LibraryDice dice, DiceRollResult result)
 	{
-		bool flag = Mode.ShouldReroll(targets,dice);
-		flag |= ShouldReroll(targets,dice,null);
+		bool flag = Mode.ShouldReroll(targets,dice,result);
+		flag |= ShouldReroll(targets,dice,result,null);
 		return flag;
 	}
-    public sealed override async Task BeforeDiceEffect(PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, CardModel cardSource, LibraryDice dice)
+    public sealed override async Task BeforeDiceEffect(PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, CardModel cardSource, LibraryDice dice, DiceRollResult result)
     {
-        await Mode.BeforeDiceEffect(choiceContext, targets, cardSource, dice);
-        await BeforeDiceEffect(choiceContext, targets, cardSource, dice , null);
+        await Mode.BeforeDiceEffect(choiceContext, targets, cardSource, dice, result);
+        await BeforeDiceEffect(choiceContext, targets, cardSource, dice, result, null);
     }
-    public sealed override async Task AfterDiceEffect(PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, CardModel cardSource, LibraryDice dice)
+    public sealed override async Task AfterDiceEffect(PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, CardModel cardSource, LibraryDice dice, DiceRollResult result)
     {
-        await Mode.AfterDiceEffect(choiceContext, targets, cardSource, dice);
-        await AfterDiceEffect(choiceContext, targets, cardSource, dice , null);	
+        await Mode.AfterDiceEffect(choiceContext, targets, cardSource, dice, result);
+        await AfterDiceEffect(choiceContext, targets, cardSource, dice, result, null);	
     }
     public sealed override async Task BeforeSetChaoResistance(PlayerChoiceContext choiceContext,LibraryCreature target,Creature? dealer, LibraryDamageType type,LibraryResistanceLevel resistanceValue)
     {
@@ -126,11 +127,23 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
         await Mode.AfterSetPhysicalResistance(choiceContext, target, dealer, type);
         await AfterSetPhysicalResistance(choiceContext, target, dealer, type , null);
     }
-    public sealed override bool TryDiceEffect(PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, CardModel cardSource, LibraryDice dice)
+    public sealed override bool TryDiceEffect(PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, CardModel cardSource, LibraryDice dice, DiceRollResult result)
     {
-        bool flag = Mode.TryDiceEffect(choiceContext, targets, cardSource, dice);
-        flag &= TryDiceEffect(choiceContext, targets, cardSource, dice , null);
+        bool flag = Mode.TryDiceEffect(choiceContext, targets, cardSource, dice, result);
+        flag &= TryDiceEffect(choiceContext, targets, cardSource, dice, result, null);
         return flag;
+    }
+    public sealed override decimal ModifyDiceMaxValue(LibraryDice dice, decimal maxValue)
+    {
+        maxValue = Mode.ModifyDiceMaxValue(dice, maxValue);
+        maxValue = ModifyDiceMaxValue(dice, maxValue, null);
+        return maxValue;
+    }
+    public sealed override decimal ModifyDiceMinValue(LibraryDice dice, decimal minValue)
+    {
+        minValue = Mode.ModifyDiceMinValue(dice, minValue);
+        minValue = ModifyDiceMinValue(dice, minValue, null);
+        return minValue;
     }
     public sealed override async Task AfterAttack(PlayerChoiceContext choiceContext, LibraryAttackCommand command)
     {
@@ -1379,27 +1392,21 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
 		return flag;
 	}
 #endif
-    public sealed override async Task AfterDiceRoll(PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, LibraryDice dice)
+    public sealed override async Task AfterDiceRoll(PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, LibraryDice dice, DiceRollResult result)
     {
-		await Mode.AfterDiceRoll(choiceContext, targets , dice);
-		await AfterDiceRoll(choiceContext, targets , dice);
+		await Mode.AfterDiceRoll(choiceContext, targets, dice, result);
+		await AfterDiceRoll(choiceContext, targets, dice, result, null);
     }
-    public sealed override async Task AfterRerolling(PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, LibraryDice dice)
+    public sealed override async Task AfterRerolling(PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, LibraryDice dice, DiceRollResult result)
     {
-		await Mode.AfterRerolling(choiceContext, targets , dice);
-		await AfterRerolling(choiceContext, targets , dice);
+		await Mode.AfterRerolling(choiceContext, targets, dice, result);
+		await AfterRerolling(choiceContext, targets, dice, result, null);
     }
-    public sealed override bool ShouldReroll(PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, LibraryDice dice)
-    {
-        bool flag = Mode.ShouldReroll(choiceContext, targets, dice);
-        flag |= ShouldReroll(choiceContext, targets, dice);
-		return flag;
-    }
-    public virtual Task BeforeDiceEffect(PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, CardModel cardSource, LibraryDice dice, object? _ = null)
+    public virtual Task BeforeDiceEffect(PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, CardModel cardSource, LibraryDice dice, DiceRollResult result, object? _ = null)
     {
         return Task.CompletedTask;
     }
-    public virtual Task AfterDiceEffect(PlayerChoiceContext choiceContext, IEnumerable<Creature>? target, CardModel cardSource, LibraryDice dice, object? _ = null)
+    public virtual Task AfterDiceEffect(PlayerChoiceContext choiceContext, IEnumerable<Creature>? target, CardModel cardSource, LibraryDice dice, DiceRollResult result, object? _ = null)
     {
         return Task.CompletedTask;
     }
@@ -1428,7 +1435,7 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
         return Task.CompletedTask;
     }
 
-    public virtual bool TryDiceEffect(PlayerChoiceContext choiceContext,IEnumerable<Creature>? target, CardModel cardSource, LibraryDice dice, object? _ = null)
+    public virtual bool TryDiceEffect(PlayerChoiceContext choiceContext,IEnumerable<Creature>? target, CardModel cardSource, LibraryDice dice, DiceRollResult result, object? _ = null)
     {
         return true;
     }
@@ -2394,29 +2401,37 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
 	{
 		return false;
 	}
-    public virtual Task AfterDiceRoll(PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, LibraryDice dice, object? _ =null)
+    public virtual Task AfterDiceRoll(PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, LibraryDice dice, DiceRollResult result, object? _ =null)
     {
         return Task.CompletedTask;
     }
-    public virtual Task AfterRerolling(PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, LibraryDice dice, object? _ =null)
+    public virtual Task AfterRerolling(PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, LibraryDice dice, DiceRollResult result, object? _ =null)
     {
         return Task.CompletedTask;
     }
-    public virtual bool ShouldReroll( IEnumerable<Creature>? targets, LibraryDice dice, object? _ =null)
+    public virtual bool ShouldReroll( IEnumerable<Creature>? targets, LibraryDice dice, DiceRollResult result, object? _ =null)
     {
         return false;
     }
-    public virtual bool ShouldReuse(IEnumerable<Creature>? targets, LibraryDice dice,object? _ = null)
+    public virtual bool ShouldReuse(IEnumerable<Creature>? targets, LibraryDice dice, DiceRollResult result, object? _ = null)
     {
         return false;
     }
-    public virtual Task AfterReusing(PlayerChoiceContext choiceContext, IEnumerable<Creature>? target, LibraryDice dice,object? _ = null)
+    public virtual Task AfterReusing(PlayerChoiceContext choiceContext, IEnumerable<Creature>? target, LibraryDice dice, DiceRollResult result, object? _ = null)
     {
         return Task.CompletedTask;
     }
     public virtual Task BeforeDiceRoll(PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, LibraryDice dice,object? _ = null)
     {
         return Task.CompletedTask;
+    }
+    public virtual decimal ModifyDiceMaxValue(LibraryDice dice, decimal maxValue, object? _ = null)
+    {
+        return maxValue;
+    }
+    public virtual decimal ModifyDiceMinValue(LibraryDice dice, decimal minValue, object? _ = null)
+    {
+        return minValue;
     }
     public virtual Creature ModifyDamageTarget(Creature creature, decimal amount, ValueProp props, Creature? dealer,LibraryDamageType type,object? _ = null)=>creature;
     public virtual Creature ModifyChaoDamageTarget(Creature creature, decimal amount, ValueProp props, Creature? dealer,LibraryDamageType type,object? _ = null)=>creature;

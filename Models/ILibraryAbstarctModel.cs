@@ -1,5 +1,6 @@
 using LibraryLib.Commands;
 using LibraryLib.Entities.Creatures;
+using LibraryLib.Localization.Dice;
 using LibraryLib.Localization.LibraryDynamicVars;
 using LibraryLib.Powers.LibraryPowerMode;
 using LibraryLib.Utils.Resistance;
@@ -12,6 +13,10 @@ using MegaCrit.Sts2.Core.ValueProps;
 namespace LibraryLib.Models;
 public interface ILibraryAbstractModel//库模型接口，定义了库里的钩子
 {
+	//自定义骰子最大值
+	public decimal ModifyDiceMaxValue(LibraryDice dice,decimal maxValue);
+	//自定义骰子最小值
+	public decimal ModifyDiceMinValue(LibraryDice dice,decimal minValue);
 	/// <summary>
 	///     改变攻击目标为...  ,原版怪物也可作用。
 	/// </summary>
@@ -24,16 +29,16 @@ public interface ILibraryAbstractModel//库模型接口，定义了库里的钩�
 	/// <summary>
 	///     骰子生效前触发
 	/// </summary>
-    public Task BeforeDiceEffect(PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, CardModel cardSource, LibraryDice dice);
+    public Task BeforeDiceEffect(PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, CardModel cardSource, LibraryDice dice,DiceRollResult result);
     
 	/// <summary>
 	///     骰子生效后触发
 	/// </summary>
-    public Task AfterDiceEffect(PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, CardModel cardSource, LibraryDice dice);
+    public Task AfterDiceEffect(PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, CardModel cardSource, LibraryDice dice,DiceRollResult result);
 	/// <summary>
 	///     骰子投出后触发
 	/// </summary>
-    public Task AfterDiceRoll(PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, LibraryDice dice);
+    public Task AfterDiceRoll(PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, LibraryDice dice,DiceRollResult result);
 	/// <summary>
 	///     骰子投出前触发
 	/// </summary>
@@ -41,19 +46,19 @@ public interface ILibraryAbstractModel//库模型接口，定义了库里的钩�
 	/// <summary>
 	///     本实例若在ShouldReroll中返回true则触发
 	/// </summary>
-    public Task AfterRerolling(PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, LibraryDice dice);
+    public Task AfterRerolling(PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, LibraryDice dice,DiceRollResult result);
 	/// <summary>
 	///     骰子投出后触发，询问是否需要重新投掷（不是重新使用），若返回true则触发AfterRerolling
 	/// </summary>
-    public bool ShouldReroll(IEnumerable<Creature>? targets, LibraryDice dice);
+    public bool ShouldReroll(IEnumerable<Creature>? targets, LibraryDice dice,DiceRollResult result);
 	/// <summary>
 	///     骰子投出后触发（在reroll后），询问是否需要重新使用，若返回true则触发AfterReusing
 	/// </summary>
-    public bool ShouldReuse(IEnumerable<Creature>? targets, LibraryDice dice);
+    public bool ShouldReuse(IEnumerable<Creature>? targets, LibraryDice dice,DiceRollResult result);
 	/// <summary>
 	///     本实例若在ShouldReuse中返回true则触发
 	/// </summary>
-    public Task AfterReusing(PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, LibraryDice dice);
+    public Task AfterReusing(PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, LibraryDice dice,DiceRollResult result);
 	/// <summary>
 	///     设置混乱抗性前
 	/// </summary>
@@ -81,7 +86,7 @@ public interface ILibraryAbstractModel//库模型接口，定义了库里的钩�
 	/// <summary>
 	///     即将触发骰子效果，询问是否允许触发
 	/// </summary>
-    public bool TryDiceEffect(PlayerChoiceContext choiceContext,IEnumerable<Creature>? targets, CardModel cardSource, LibraryDice dice);
+    public bool TryDiceEffect(PlayerChoiceContext choiceContext,IEnumerable<Creature>? targets, CardModel cardSource, LibraryDice dice,DiceRollResult result);
 	/// <summary>
 	///     攻击后，仅使用LibraryAttackCommand才会触发
 	/// </summary>
