@@ -271,7 +271,7 @@ public class LibraryDice : DynamicVar
     {
         if(dice == null) return null;
         decimal maxValue = LibraryHooks.ModifyDiceMaxValue(combatState,dice,dice.BaseValue + dice.FloatValue);
-        decimal minValue = LibraryHooks.ModifyDiceMaxValue(combatState,dice,dice.BaseValue);
+        decimal minValue = LibraryHooks.ModifyDiceMinValue(combatState, dice, dice.BaseValue);
         DiceRollResult rollResult = new DiceRollResult
         {
             MaxValue = checked((int)maxValue),
