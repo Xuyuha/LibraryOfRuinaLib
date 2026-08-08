@@ -2,6 +2,7 @@ using Godot;
 using LibraryLib.Combat;
 using LibraryLib.Entities.Creatures;
 using LibraryLib.Hooks;
+using LibraryLib.Localization.Dice;
 using LibraryLib.Localization.LibraryDynamicVars;
 using LibraryLib.Models;
 using LibraryLib.Patches;
@@ -28,7 +29,6 @@ namespace LibraryLib.Commands;
 
 public static class LibraryCreatureCmd
 {
-	private const int MaxAdditionalDiceRolls = 32;
 	private const int MaxAdditionalDiceUses = 32;
 
 	public static async Task GainBlock(Creature creature, CardPlay cardPlay, LibraryDice dice, bool fast = false)
@@ -36,34 +36,14 @@ public static class LibraryCreatureCmd
 		ArgumentNullException.ThrowIfNull(cardPlay);
 		int blockTimes = dice.EnableCustomUseTimes? dice.UseTimes : 1;
 		ICombatState combatState = cardPlay.Card.CombatState!;
-		dice.HasUseTimes = 0;
 		int additionalUses = 0;
 		for(int i = 0 ; i < blockTimes ; i++)
 		{
-			dice.HasUseTimes = i + 1;
-			int additionalRolls = 0;
-			while (true)
-			{
-				await LibraryHooks.BeforeDiceRoll(combatState, new BlockingPlayerChoiceContext(), [creature] , dice);
-				dice.Roll(cardPlay.Card.Owner);
-				await LibraryHooks.AfterDiceRoll(combatState, new BlockingPlayerChoiceContext(), [creature] , dice);
-				if(!LibraryHooks.ShouldReroll(combatState,[creature],dice,out ILibraryAbstractModel? trigger))
-				{
-					break;
-				}
-				if (additionalRolls >= MaxAdditionalDiceRolls)
-				{
-					Log.Warn($"[LibraryOfRuinaLib.Dice] Reroll limit reached for {dice.Name}.");
-					break;
-				}
-				additionalRolls++;
-				if(trigger != null)
-					await trigger.AfterRerolling(new BlockingPlayerChoiceContext(),[creature],dice);
-			}
-			int amount = dice.CurrentBaseValue;
+			DiceRollResult rollResult = await LibraryDice.GetResultWithRoll(combatState,new BlockingPlayerChoiceContext(),dice,[creature]);
+			int amount = rollResult.CurrentValue;
 			await CreatureCmd.GainBlock(creature, amount, ValueProp.Move, cardPlay, fast);
-			await dice.TriggerDiceEffect(new BlockingPlayerChoiceContext(), cardPlay, [creature]);
-			if (LibraryHooks.ShouldReuse(combatState,[creature],dice,out ILibraryAbstractModel? trigger1))
+			await dice.TriggerDiceEffect(new BlockingPlayerChoiceContext(), cardPlay,rollResult, [creature]);
+			if (LibraryHooks.ShouldReuse(combatState,[creature],dice,rollResult,out ILibraryAbstractModel? trigger1))
 			{
 				if (additionalUses >= MaxAdditionalDiceUses)
 				{
@@ -74,7 +54,7 @@ public static class LibraryCreatureCmd
 					additionalUses++;
 					blockTimes++;
 					if(trigger1 != null)
-						await trigger1.AfterReusing(new BlockingPlayerChoiceContext(), [creature] ,dice);
+						await trigger1.AfterReusing(new BlockingPlayerChoiceContext(), [creature] ,dice,rollResult);
 				}
 			}
 		}

@@ -1,6 +1,7 @@
 using LibraryLib.Combat;
 using LibraryLib.Commands;
 using LibraryLib.Entities.Creatures;
+using LibraryLib.Localization.Dice;
 using LibraryLib.Localization.LibraryDynamicVars;
 using LibraryLib.Models;
 using LibraryLib.Powers.LibraryPowerMode;
@@ -106,6 +107,28 @@ public static class LibraryHooks
             remainingDamage,
             interceptedDamage,
             interceptedDamage > 0m && remainingDamage <= 0m);
+    }
+    public static decimal ModifyDiceMaxValue(ICombatState combatState,LibraryDice dice, decimal maxValue)
+    {
+        foreach (AbstractModel item in combatState.IterateHookListeners())
+        {
+            if(item is ILibraryAbstractModel lm)
+            {
+                maxValue = lm.ModifyDiceMaxValue(dice, maxValue);
+            }
+        }
+        return maxValue;
+    }
+    public static decimal ModifyDiceMinValue(ICombatState combatState,LibraryDice dice, decimal minValue)
+    {
+        foreach (AbstractModel item in combatState.IterateHookListeners())
+        {
+            if(item is ILibraryAbstractModel lm)
+            {
+                minValue = lm.ModifyDiceMinValue(dice, minValue);
+            }
+        }
+        return minValue;
     }
     public static List<Creature> ModifyDamageTarget(ICombatState combatState, List<Creature> originalTargets, decimal amount, ValueProp props, Creature? dealer,LibraryDamageType type = LibraryDamageType.None)
     {
@@ -349,22 +372,22 @@ public static class LibraryHooks
             model.InvokeExecutionFinished();
         }
     }
-    public static async Task BeforeDiceEffect(ICombatState combatState, PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, CardModel cardSource,LibraryDice dice){
+    public static async Task BeforeDiceEffect(ICombatState combatState, PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, CardModel cardSource,LibraryDice dice,DiceRollResult result){
         foreach (var model in combatState.IterateHookListeners())
         {
             if (model is ILibraryAbstractModel libraryModel)
             {
-                await libraryModel.BeforeDiceEffect(choiceContext,targets, cardSource,dice);
+                await libraryModel.BeforeDiceEffect(choiceContext,targets, cardSource,dice,result);
                 model.InvokeExecutionFinished();
             }
         }
     }
-    public static async Task AfterDiceEffect(ICombatState combatState, PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, CardModel cardSource,LibraryDice dice){
+    public static async Task AfterDiceEffect(ICombatState combatState, PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, CardModel cardSource,LibraryDice dice,DiceRollResult result){
         foreach (var model in combatState.IterateHookListeners())
         {
             if (model is ILibraryAbstractModel libraryModel)
             {
-                await libraryModel.AfterDiceEffect(choiceContext,targets, cardSource,dice);
+                await libraryModel.AfterDiceEffect(choiceContext,targets, cardSource,dice,result);
                 model.InvokeExecutionFinished();
             }
         }
@@ -628,13 +651,13 @@ public static class LibraryHooks
             }
         }
     }
-    public static async Task AfterDiceRoll(ICombatState combatState,PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, LibraryDice dice)
+    public static async Task AfterDiceRoll(ICombatState combatState,PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, LibraryDice dice,DiceRollResult result)
     {
         foreach (var model in combatState.IterateHookListeners())
         {
             if (model is ILibraryAbstractModel libraryModel)    
             {
-                await libraryModel.AfterDiceRoll(choiceContext,targets,dice);
+                await libraryModel.AfterDiceRoll(choiceContext,targets,dice,result);
                 model.InvokeExecutionFinished();
             }
         }
@@ -1083,12 +1106,12 @@ public static class LibraryHooks
         }
         return creature;
     }
-    public static bool ShouldReroll(ICombatState combatState,IEnumerable<Creature>? targets,LibraryDice dice,out ILibraryAbstractModel? trigger)
+    public static bool ShouldReroll(ICombatState combatState,IEnumerable<Creature>? targets,LibraryDice dice,out ILibraryAbstractModel? trigger,DiceRollResult result)
     {
         foreach (var item in combatState.IterateHookListeners())
         {
             if (item is ILibraryAbstractModel libraryAbstractModel 
-                && libraryAbstractModel.ShouldReroll(targets,dice)){
+                && libraryAbstractModel.ShouldReroll(targets,dice,result)){
                 trigger = libraryAbstractModel;
                 return true;
             }
@@ -1096,12 +1119,12 @@ public static class LibraryHooks
         trigger = null;
         return false;
     }
-    public static bool ShouldReuse(ICombatState combatState,IEnumerable<Creature>? targets,LibraryDice dice,out ILibraryAbstractModel? trigger)
+    public static bool ShouldReuse(ICombatState combatState,IEnumerable<Creature>? targets,LibraryDice dice,DiceRollResult result,out ILibraryAbstractModel? trigger)
     {
         foreach (var item in combatState.IterateHookListeners())
         {
             if (item is ILibraryAbstractModel libraryAbstractModel 
-                && libraryAbstractModel.ShouldReuse(targets,dice)){
+                && libraryAbstractModel.ShouldReuse(targets,dice,result)){
                 trigger = libraryAbstractModel;
                 return true;
             }
@@ -1109,13 +1132,13 @@ public static class LibraryHooks
         trigger = null;
         return false;
     }
-    public static bool TryDiceEffect(ICombatState combatState,PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, CardModel cardSource,LibraryDice dice)
+    public static bool TryDiceEffect(ICombatState combatState,PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, CardModel cardSource,LibraryDice dice,DiceRollResult result)
     {
         foreach (var model in combatState.IterateHookListeners())
         {
             if (model is ILibraryAbstractModel libraryModel)
             {
-                if (!libraryModel.TryDiceEffect(choiceContext, targets, cardSource,dice))
+                if (!libraryModel.TryDiceEffect(choiceContext, targets, cardSource,dice,result))
                 {
                     return false;
                 }

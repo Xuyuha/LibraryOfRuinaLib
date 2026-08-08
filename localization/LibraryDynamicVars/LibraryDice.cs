@@ -2,6 +2,7 @@ using Godot;
 using LibraryLib.Commands;
 using LibraryLib.Entities.Creatures;
 using LibraryLib.Hooks;
+using LibraryLib.Localization.Dice;
 using LibraryLib.Models;
 using LibraryLib.Utils.Resistance;
 using MegaCrit.Sts2.Core.Combat;
@@ -14,6 +15,7 @@ using MegaCrit.Sts2.Core.Hooks;
 using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Localization.DynamicVars;
+using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.ValueProps;
@@ -21,6 +23,7 @@ using MegaCrit.Sts2.Core.ValueProps;
 namespace LibraryLib.Localization.LibraryDynamicVars;
 public class LibraryDice : DynamicVar
 {
+	private const int _maxAdditionalDiceRolls = 32;
     public const ValueProp Props = ValueProp.Move;
     public LibraryDice(decimal minValue, decimal floatValue, LibraryDiceType diceType, CardModel sourceCard, string name):
     base(name , minValue)
@@ -73,19 +76,10 @@ public class LibraryDice : DynamicVar
 	/// </summary>
     public int UseTimes = 1;
     public bool EnableCustomUseTimes = false;
-    
-	/// <summary>
-	///     表示本骰子这一次攻击或防御中使用的次数
-	/// </summary>
-    public int HasUseTimes = 0;
-    
+        
 	/// <summary>
 	///     表示本次骰子投出的值
 	/// </summary>
-    public int CurrentBaseValue {
-        get;
-        private set;
-    }
     public override void SetOwner(AbstractModel owner)
     {
         base.SetOwner(owner);
@@ -105,12 +99,12 @@ public class LibraryDice : DynamicVar
         EnableCustomUseTimes = true;
         return this;
     }
-    public void Roll(Player player)
+    public DiceRollResult Roll(DiceRollResult result,Player player)
     {
         ArgumentNullException.ThrowIfNull(player);
-        Roll(player.RunState);
+        return Roll(result,player.RunState);
     }
-    public void Roll(IRunState runState)
+    public DiceRollResult Roll(DiceRollResult result,IRunState runState)
     {
         ArgumentNullException.ThrowIfNull(runState);
         if (BaseValue != decimal.Truncate(BaseValue) || FloatValue != decimal.Truncate(FloatValue))
@@ -121,31 +115,31 @@ public class LibraryDice : DynamicVar
         {
             throw new InvalidOperationException($"Dice {Name} cannot have a negative range.");
         }
-        int minValue = checked((int)BaseValue);
-        int maxExclusive = Math.Max(minValue, checked((int)(BaseValue + FloatValue + 1)));
-        CurrentBaseValue = runState.Rng.Niche.NextInt(minValue, maxExclusive);
+        result.CurrentValue = runState.Rng.Niche.NextInt(result.MinValue, result.MaxValue);
+        return result;
     }
-    public async Task TriggerDiceEffect(PlayerChoiceContext choiceContext, CardPlay? cardPlay)
+    public async Task TriggerDiceEffect(PlayerChoiceContext choiceContext, CardPlay? cardPlay,DiceRollResult result)
     {
         if (cardPlay == null)
         {
             return;
         }
         IEnumerable<Creature> targets = cardPlay.Target == null ? [] : [cardPlay.Target];
-        await TriggerDiceEffect(choiceContext, cardPlay, targets);
+        await TriggerDiceEffect(choiceContext, cardPlay, result, targets);
     }
-    public async Task TriggerDiceEffect(PlayerChoiceContext choiceContext, CardPlay? cardPlay, IEnumerable<Creature>? targets)
+    public async Task TriggerDiceEffect(PlayerChoiceContext choiceContext, CardPlay? cardPlay,DiceRollResult result,IEnumerable<Creature>? targets)
     {
         if(_diceEffct == null || cardPlay == null)return;
         ICombatState? combatState = cardPlay.Card.CombatState;
         if(combatState == null)return;
-        if(!LibraryHooks.TryDiceEffect(combatState, choiceContext, targets, cardPlay.Card,this)) return;
-        await LibraryHooks.BeforeDiceEffect(combatState, choiceContext, targets, cardPlay.Card, this);
-        await _diceEffct(choiceContext, cardPlay, CurrentBaseValue);
-        await LibraryHooks.AfterDiceEffect(combatState, choiceContext, targets, cardPlay.Card, this);
+        if(!LibraryHooks.TryDiceEffect(combatState, choiceContext, targets, cardPlay.Card,this,result)) return;
+        await LibraryHooks.BeforeDiceEffect(combatState, choiceContext, targets, cardPlay.Card, this,result);
+        await _diceEffct(choiceContext, cardPlay, result.CurrentValue);
+        await LibraryHooks.AfterDiceEffect(combatState, choiceContext, targets, cardPlay.Card, this,result);
     }
 	/// <summary>
 	///     可将标签为Task Function (PlayerChoiceContext , CardPlay)的方法作为骰子特殊效果，使用后，骰子将启用自定义描述；
+    ///     注意该方法中调用的card的子属性一定得从cardplay中获取
 	/// </summary>
     public LibraryDice WithDiceEffect(Func<PlayerChoiceContext, CardPlay, int ,Task>? diceEffct){
 		if (_diceEffct != null)
@@ -272,5 +266,34 @@ public class LibraryDice : DynamicVar
 			0,
 			Props,
 			DamageType);
+    }
+    public static async Task<DiceRollResult?> GetResultWithRoll(ICombatState combatState,PlayerChoiceContext? choiceContext,LibraryDice? dice,List<Creature> targets)
+    {
+        if(dice == null) return null;
+        decimal maxValue = LibraryHooks.ModifyDiceMaxValue(combatState,dice,dice.BaseValue + dice.FloatValue);
+        decimal minValue = LibraryHooks.ModifyDiceMaxValue(combatState,dice,dice.BaseValue);
+        DiceRollResult rollResult = new DiceRollResult
+        {
+            MaxValue = checked((int)maxValue),
+            MinValue = Math.Min(checked((int)minValue),checked((int)maxValue))
+        };
+        int j;
+        for(j=0;j<32;j++)
+        {
+            await LibraryHooks.BeforeDiceRoll(combatState, choiceContext ?? new BlockingPlayerChoiceContext(), targets, dice);
+            rollResult = dice.Roll(rollResult,combatState.RunState);
+            await LibraryHooks.AfterDiceRoll(combatState, choiceContext ?? new BlockingPlayerChoiceContext(), targets, dice,rollResult);
+            if(!LibraryHooks.ShouldReroll(combatState,targets,dice,out ILibraryAbstractModel? trigger,rollResult))
+            {
+                break;
+            }
+            if(trigger != null)
+                await trigger.AfterRerolling(choiceContext ?? new BlockingPlayerChoiceContext(),targets,dice,rollResult);
+        }
+        if(j == _maxAdditionalDiceRolls)
+        {
+            Log.Warn($"[LibraryOfRuinaLib.Dice] Reroll limit reached for {dice.Name}.");
+        }
+        return rollResult;
     }
 }

@@ -6,13 +6,17 @@ using MegaCrit.Sts2.Core.Entities.Powers;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.ValueProps;
 
-namespace LibraryLib.Powers;
-public sealed class LibraryDisarmPower : LibraryTurnsPowerModel//破防，玩家获得护盾减少，怪物受到伤害增加
+
+namespace Library.Powers;
+public sealed class LibraryDisarmPower : LibraryDurationPowerModel//破防，玩家获得护盾减少，怪物受到伤害增加
 {
     public override PowerType Type => PowerType.Debuff;
     public override PowerStackType StackType => PowerStackType.Counter;
 
-    protected override CombatSide DecaySide => Owner.IsPlayer ? OppositeSideOf(Owner) : Owner.Side;
+    protected override CombatSide GetDecaySide(Creature owner)
+    {
+        return owner.IsPlayer ? owner.Side : OppositeSideOf(owner);
+    }
 
     public override decimal ModifyBlockAdditive(Creature target, decimal block, ValueProp props, CardModel? cardSource, CardPlay? cardPlay)
     {

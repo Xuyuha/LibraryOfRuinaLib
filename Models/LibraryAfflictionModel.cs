@@ -7,12 +7,15 @@ using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Models;
+using LibraryLib.Localization.Dice;
 using MegaCrit.Sts2.Core.ValueProps;
 
 namespace LibraryLib.Models;
 
 public abstract class LibraryAfflictionModel : AfflictionModel,ILibraryAbstractModel
 {
+    public virtual decimal ModifyDiceMaxValue(LibraryDice dice,decimal maxValue) => maxValue;
+    public virtual decimal ModifyDiceMinValue(LibraryDice dice,decimal minValue) => minValue;
     public virtual Creature ModifyDamageTarget(Creature creature, decimal amount, ValueProp props, Creature? dealer,LibraryDamageType type)
     {
         return creature;
@@ -25,28 +28,28 @@ public abstract class LibraryAfflictionModel : AfflictionModel,ILibraryAbstractM
     {
         return Task.CompletedTask;
     }
-    public virtual bool ShouldReuse(IEnumerable<Creature>? targets, LibraryDice dice)
+    public virtual bool ShouldReuse(IEnumerable<Creature>? targets, LibraryDice dice, DiceRollResult result)
     {
         return false;
     }
 
-    public virtual Task AfterReusing(PlayerChoiceContext choiceContext, IEnumerable<Creature>? target, LibraryDice dice)
+    public virtual Task AfterReusing(PlayerChoiceContext choiceContext, IEnumerable<Creature>? target, LibraryDice dice, DiceRollResult result)
     {
         return Task.CompletedTask;
     }
-    public virtual bool ShouldReroll(IEnumerable<Creature>? target, LibraryDice dice)
+    public virtual bool ShouldReroll(IEnumerable<Creature>? target, LibraryDice dice, DiceRollResult result)
     {
         return false;
     }
-    public virtual Task AfterDiceRoll(PlayerChoiceContext choiceContext, IEnumerable<Creature>? target, LibraryDice dice)
+    public virtual Task AfterDiceRoll(PlayerChoiceContext choiceContext, IEnumerable<Creature>? target, LibraryDice dice, DiceRollResult result)
     {
         return Task.CompletedTask;
     }
-    public virtual Task BeforeDiceEffect(PlayerChoiceContext choiceContext, IEnumerable<Creature>? target, CardModel cardSource, LibraryDice dice)
+    public virtual Task BeforeDiceEffect(PlayerChoiceContext choiceContext, IEnumerable<Creature>? target, CardModel cardSource, LibraryDice dice, DiceRollResult result)
     {
         return Task.CompletedTask;
     }
-    public virtual Task AfterDiceEffect(PlayerChoiceContext choiceContext, IEnumerable<Creature>? target, CardModel cardSource, LibraryDice dice)
+    public virtual Task AfterDiceEffect(PlayerChoiceContext choiceContext, IEnumerable<Creature>? target, CardModel cardSource, LibraryDice dice, DiceRollResult result)
     {
         return Task.CompletedTask;
     }
@@ -75,7 +78,7 @@ public abstract class LibraryAfflictionModel : AfflictionModel,ILibraryAbstractM
         return Task.CompletedTask;
     }
 
-    public virtual bool TryDiceEffect(PlayerChoiceContext choiceContext, IEnumerable<Creature>? target, CardModel cardSource, LibraryDice dice)
+    public virtual bool TryDiceEffect(PlayerChoiceContext choiceContext, IEnumerable<Creature>? target, CardModel cardSource, LibraryDice dice, DiceRollResult result)
     {
         return true;
     }
@@ -247,7 +250,7 @@ public abstract class LibraryAfflictionModel : AfflictionModel,ILibraryAbstractM
     {
         return true;
     }
-    public virtual Task AfterRerolling(PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, LibraryDice dice)
+    public virtual Task AfterRerolling(PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, LibraryDice dice, DiceRollResult result)
     {
         return Task.CompletedTask;
     }

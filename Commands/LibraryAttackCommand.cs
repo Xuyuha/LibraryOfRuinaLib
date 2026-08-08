@@ -2,6 +2,7 @@
 using Godot;
 using LibraryLib.Entities.Creatures;
 using LibraryLib.Hooks;
+using LibraryLib.Localization.Dice;
 using LibraryLib.Localization.LibraryDynamicVars;
 using LibraryLib.Models;
 using LibraryLib.Utils.Resistance;
@@ -18,6 +19,7 @@ using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Monsters;
+using MegaCrit.Sts2.Core.Multiplayer.Transport.ENet;
 using MegaCrit.Sts2.Core.Random;
 using MegaCrit.Sts2.Core.ValueProps;
 
@@ -25,8 +27,7 @@ namespace LibraryLib.Commands;
 
 public class LibraryAttackCommand
 {
-	private const int MaxAdditionalDiceRolls = 32;
-	private const int MaxAdditionalDiceUses = 32;
+	private const int _maxAdditionalDiceUses = 32;
 
 	private enum SourceType
 	{
@@ -447,11 +448,9 @@ public class LibraryAttackCommand
 			throw new InvalidOperationException("No targets set.");
 		}
 		await LibraryHooks.BeforeAttack(combatState, this);
-		if(Dice != null)
-			Dice.HasUseTimes = 0;
 		decimal attackCount = LibraryHooks.ModifyAttackHitCount(combatState, this, (Dice?.EnableCustomUseTimes ?? false) ? Dice.UseTimes : _hitCount);
-		int additionalUses = 0;
-		for (int i = 0; i < attackCount; i++)
+		int i;
+		for (i = 0; i < _maxAdditionalDiceUses; i++)
 		{
 			if (Attacker.IsDead)
 			{
@@ -576,31 +575,9 @@ public class LibraryAttackCommand
 			{
 				await PlayAttackPresentationAsync();
 			}
-			IReadOnlyList<LibraryCreature> targets = singleTarget != null ? [singleTarget] : validTargets;
-			if(Dice != null)
-			{
-				Dice.HasUseTimes = i + 1;
-				int additionalRolls = 0;
-				while (true)
-				{
-					await LibraryHooks.BeforeDiceRoll(combatState, choiceContext ?? new BlockingPlayerChoiceContext(), targets, Dice);
-					Dice.Roll(combatState.RunState);
-					await LibraryHooks.AfterDiceRoll(combatState, choiceContext ?? new BlockingPlayerChoiceContext(), targets, Dice);
-					if(!LibraryHooks.ShouldReroll(combatState,targets,Dice,out ILibraryAbstractModel? trigger))
-					{
-						break;
-					}
-					if (additionalRolls >= MaxAdditionalDiceRolls)
-					{
-						Log.Warn($"[LibraryOfRuinaLib.Dice] Reroll limit reached for {Dice.Name}.");
-						break;
-					}
-					additionalRolls++;
-					if(trigger != null)
-						await trigger.AfterRerolling(choiceContext ?? new BlockingPlayerChoiceContext(),targets,Dice);
-				}
-			}
-			decimal damage = Dice != null ? Dice.CurrentBaseValue:((_calculatedDamageVar == null) ?_damagePerHit : _calculatedDamageVar.Calculate(singleTarget));
+			IReadOnlyList<Creature> targets = singleTarget != null ? [singleTarget] : validTargets;
+			DiceRollResult? rollResult = await LibraryDice.GetResultWithRoll(combatState,choiceContext,Dice,targets.ToList());
+			decimal damage = Dice != null ? rollResult.CurrentValue:((_calculatedDamageVar == null) ?_damagePerHit : _calculatedDamageVar.Calculate(singleTarget));
 			List<int> Blocks = targets.Select(c => c.Block).ToList();
 			Func<Task>? beforeApplyingDamage = null;
 			if (deferAttackPresentation)
@@ -628,23 +605,22 @@ public class LibraryAttackCommand
 			}
 			if (Dice != null && cardPlay != null)
 			{
-				await Dice.TriggerDiceEffect(choiceContext ?? new BlockingPlayerChoiceContext(), cardPlay, targets);
+				await Dice.TriggerDiceEffect(choiceContext ?? new BlockingPlayerChoiceContext(), cardPlay, rollResult, targets);
 			}
-			if (Dice != null && LibraryHooks.ShouldReuse(combatState,targets,Dice,out ILibraryAbstractModel? trigger1))
+			if (Dice != null)
 			{
-				if (additionalUses >= MaxAdditionalDiceUses)
+				if ( LibraryHooks.ShouldReuse(combatState,targets,Dice,rollResult,out ILibraryAbstractModel? trigger1))
 				{
-					Log.Warn($"[LibraryOfRuinaLib.Dice] Reuse limit reached for {Dice.Name}.");
-				}
-				else
-				{
-					additionalUses++;
 					attackCount++;
 					if(trigger1 != null)
-						await trigger1.AfterReusing(choiceContext ?? new BlockingPlayerChoiceContext(),targets,Dice);
+						await trigger1.AfterReusing(choiceContext ?? new BlockingPlayerChoiceContext(),targets,Dice,rollResult);
 				}
+				else
+					break;
 			}
 		}
+		if(i == _maxAdditionalDiceUses)
+			Log.Warn($"[LibraryOfRuinaLib.Dice] Reuse limit reached for {Dice.Name}.");
 		CombatManager.Instance.History.CreatureAttacked(combatState, Attacker, _damageResults.SelectMany((List<DamageResult> r) => r).ToList());
 		await LibraryHooks.AfterAttack(combatState, choiceContext ?? new BlockingPlayerChoiceContext(), this);
 		return this;
