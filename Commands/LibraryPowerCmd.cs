@@ -66,7 +66,10 @@ public static class LibraryPowerCmd
                     return null;
                 }
                 await Apply(new ThrowingPlayerChoiceContext(), mutable, target, amount, turns, turns < 0, applier, cardSource);
-                return mutable as T;
+                return target.GetPowerInstances<T>()
+                    .Any(instance => ReferenceEquals(instance, mutable))
+                    ? mutable as T
+                    : null;
             }
 
             decimal amountDelta = amount - existingPower.Amount;
@@ -173,6 +176,11 @@ public static class LibraryPowerCmd
                     return null;
                 }
                 await Apply(new ThrowingPlayerChoiceContext(), power, target, amount, turns, turns < 0, applier, cardSource, silent);
+                if (!target.GetPowerInstances<T>()
+                        .Any(instance => ReferenceEquals(instance, power)))
+                {
+                    power = null;
+                }
             }
             else if (await ModifyAmount(new ThrowingPlayerChoiceContext(), power, amount, turns, turns < 0, applier, cardSource, silent) == 0)
             {
@@ -317,21 +325,30 @@ public static class LibraryPowerCmd
 		}
 		modifiedOffset = Hook.ModifyPowerAmountReceived(combatState, power, owner, modifiedOffset, applier, out IEnumerable<AbstractModel> receivedModifiers);
 		CombatManager.Instance.History.PowerReceived(combatState, power, modifiedOffset, applier);
-		int newAmount = power.Amount + (int)modifiedOffset;
+		int previousAmount = power.Amount;
+		long rawNewAmount = (long)previousAmount + (int)modifiedOffset;
+		int newAmount = (int)Math.Clamp(rawNewAmount, -999_999_999L, 999_999_999L);
+		if (!power.AllowNegative && newAmount < 0)
+		{
+			newAmount = 0;
+		}
 		power.SetAmount(newAmount, silent);
-        if (!IsPermanent)
-            power.AddPlan((int)modifiedOffset,turns);
+		int actualDelta = power.Amount - previousAmount;
+		bool shouldRemove = power.ShouldRemoveDueToAmount();
+        if (!IsPermanent && actualDelta != 0 && !shouldRemove)
+            power.AddPlan(actualDelta,turns);
 		if (modifiers != null)
 		{
 			await Hook.AfterModifyingPowerAmountGiven(combatState, modifiers, power);
 		}
 		await Hook.AfterModifyingPowerAmountReceived(combatState, receivedModifiers, power);
-		if ((int)modifiedOffset != 0)
+		if (actualDelta != 0)
 		{
-			await Hook.AfterPowerAmountChanged(combatState, choiceContext, power, modifiedOffset, applier, cardSource);
+			await Hook.AfterPowerAmountChanged(combatState, choiceContext, power, actualDelta, applier, cardSource);
 		}
-		if (power.ShouldRemoveDueToAmount())
+		if (shouldRemove)
 		{
+			power.AmountPlan.Clear();
 			await PowerCmd.Remove(power);
 		}
 		if (CombatManager.Instance.IsInProgress && owner != null && owner.IsMonster && owner.IsAlive)
@@ -353,7 +370,7 @@ public static class LibraryPowerCmd
 		{
 			await Cmd.CustomScaledWait(0.1f, 0.25f);
 		}
-		return newAmount;
+		return power.Amount;
 	}
 	/// <summary>
 	/// 	turns代表持续回合数（0表示该回合减少），IsPermanent代表是否永久性改变
@@ -392,30 +409,37 @@ public static class LibraryPowerCmd
 		await power.BeforeApplied(target, modifiedAmount, applier, cardSource);
 		if (target.CanReceivePowers)
 		{
-			power.ApplyInternal(target, modifiedAmount, silent);
-			if (modifiedAmount != 0m)
+			int appliedAmount = (int)modifiedAmount;
+			bool shouldApply = appliedAmount != 0
+				&& (power.AllowNegative || appliedAmount > 0);
+			if (shouldApply)
 			{
-				CombatManager.Instance.History.PowerReceived(combatState, power, modifiedAmount, applier);
-			}
-			if (power.IsVisible && CombatManager.Instance.IsInProgress)
-			{
-				await Cmd.CustomScaledWait(0.1f, 0.25f);
-			}
-			if (target.Side == CombatSide.Player && power.Type == PowerType.Debuff)
-			{
-				power.SkipNextDurationTick = true;
+				power.ApplyInternal(target, appliedAmount, silent);
+				CombatManager.Instance.History.PowerReceived(
+					combatState,
+					power,
+					appliedAmount,
+					applier);
+				if (power.IsVisible && CombatManager.Instance.IsInProgress)
+				{
+					await Cmd.CustomScaledWait(0.1f, 0.25f);
+				}
+				if (target.Side == CombatSide.Player && power.Type == PowerType.Debuff)
+				{
+					power.SkipNextDurationTick = true;
+				}
 			}
 			if (givenModifiers != null)
 			{
 				await Hook.AfterModifyingPowerAmountGiven(combatState, givenModifiers, power);
 			}
-            if(!IsPermanent)
-                power.AddPlan((int)modifiedAmount,turns);
+			if (shouldApply && !IsPermanent)
+				power.AddPlan(power.Amount,turns);
 			await Hook.AfterModifyingPowerAmountReceived(combatState, receivedModifiers, power);
-			if (modifiedAmount != 0m)
+			if (shouldApply)
 			{
 				await power.AfterApplied(applier, cardSource);
-				await Hook.AfterPowerAmountChanged(combatState, choiceContext, power, modifiedAmount, applier, cardSource);
+				await Hook.AfterPowerAmountChanged(combatState, choiceContext, power, appliedAmount, applier, cardSource);
 			}
 		}
 	}
@@ -458,6 +482,11 @@ public static class LibraryPowerCmd
 		{
 			power = powerModel.ToMutable() as LibraryTurnsPowerModel;
 			await Apply(choiceContext, power, target, amount, turns, IsPermanent, applier, cardSource, silent);
+			if (!target.GetPowerInstances<T>()
+					.Any(instance => ReferenceEquals(instance, power)))
+			{
+				power = null;
+			}
 		}
 		else if (await ModifyAmount(choiceContext, power, amount, turns, IsPermanent, applier, cardSource, silent) == 0)
 		{

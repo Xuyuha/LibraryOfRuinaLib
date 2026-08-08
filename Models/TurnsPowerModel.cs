@@ -40,17 +40,40 @@ public abstract class LibraryTurnsPowerModel : LibraryPowerModel, ISecondaryDisp
         }
     }
     //持续回合数
-    public int TurnsRemaining => AmountPlan.Count > 0 ? AmountPlan.Keys.Max() - CombatState.RoundNumber + 1 : 0;
-    private bool ShouldDecayThisTurn => AmountPlan.Count > 0 && AmountPlan.First().Key == CombatState.RoundNumber;
+    public int TurnsRemaining => AmountPlan.Count > 0
+        ? Math.Max(0, AmountPlan.Keys.Max() - CombatState.RoundNumber + 1)
+        : 0;
 	/// <summary>
 	///     表示在谁的回合结束时消耗，默认为自己回合结束时消耗
 	/// </summary>
     protected virtual CombatSide DecaySide => Owner.Side;
     public void AddPlan(int amount,int turns)
     {
-        int decayRound = CombatState.RoundNumber + turns;
+        if (amount == 0)
+        {
+            return;
+        }
+
+        Creature? owner = Owner;
+        ICombatState? combatState = owner?.CombatState;
+        if (combatState == null)
+        {
+            return;
+        }
+
+        int decayRound = combatState.RoundNumber + turns;
         AmountPlan.TryGetValue(decayRound,out int existing);
-        AmountPlan[decayRound] = existing + amount;
+        int merged = (int)Math.Clamp(
+            (long)existing + amount,
+            -999_999_999L,
+            999_999_999L);
+        if (merged == 0)
+        {
+            AmountPlan.Remove(decayRound);
+            return;
+        }
+
+        AmountPlan[decayRound] = merged;
     }
     public override Task AfterApplied(Creature? applier, CardModel? cardSource)
     {
@@ -68,17 +91,42 @@ public abstract class LibraryTurnsPowerModel : LibraryPowerModel, ISecondaryDisp
     public sealed override async Task AfterSideTurnEnd(PlayerChoiceContext choiceContext, CombatSide side, IEnumerable<Creature> participants)
     { 
         await AfterSideTurnEnd(choiceContext,side,participants,null);
-        if(side == DecaySide && AmountPlan.Count != 0 && ShouldDecayThisTurn)
+        await ExpireDuePlans(side, CombatState.RoundNumber);
+    }
+    internal async Task ExpireDuePlans(CombatSide side, int currentRound)
+    {
+        if (!AllowNegative && Amount < 0)
         {
-            SetAmount(Amount - AmountPlan.First().Value);
-            AmountPlan.Remove(AmountPlan.First().Key);
-            
-            if(AmountPlan.Count == 0 && ShouldRemoveDueToAmount())
+            AmountPlan.Clear();
+            SetAmount(0);
+            await PowerCmd.Remove(this);
+            BoundNPower = null;
+            return;
+        }
+
+        if (side == DecaySide
+            && AmountPlan.Count != 0
+            && AmountPlan.First().Key <= currentRound)
+        {
+            LibraryTurnsPowerPlanResolution resolution =
+                LibraryTurnsPowerPlan.ExpireDueEntries(
+                    AmountPlan,
+                    currentRound,
+                    Amount,
+                    AllowNegative);
+            if (resolution.Amount != Amount)
+            {
+                SetAmount(resolution.Amount);
+            }
+
+            if (resolution.ShouldRemove)
             {
                 await PowerCmd.Remove(this);
                 BoundNPower = null;
+                return;
             }
         }
+
         if(BoundNPower != null)
             PowerSecondaryCounterUi.RefreshSecondaryLabel(BoundNPower);
     }
@@ -111,7 +159,7 @@ public abstract class LibraryTurnsPowerModel : LibraryPowerModel, ISecondaryDisp
         {
             LocString loc = new LocString("powers","LIBRARY_TURN_POWER_PROMPT");
             loc.Add("Amount",k.Value);
-            loc.Add("Turns",k.Key - CombatState.RoundNumber + 1);
+            loc.Add("Turns",Math.Max(0, k.Key - CombatState.RoundNumber + 1));
             s+=loc.GetFormattedText() + "\n";
         }
         return s;
