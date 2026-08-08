@@ -12,6 +12,12 @@ internal static class LibrarySpeedDiceAudio
     private static AudioStream? _fingerSnap;
     private static bool _missingAssetLogged;
     private static int _nextPlayerId;
+    private static float _volumeDb;
+
+    internal static void SetVolumeDb(float volumeDb)
+    {
+        _volumeDb = volumeDb;
+    }
 
     public static void PlayAdvance()
     {
@@ -41,6 +47,7 @@ internal static class LibrarySpeedDiceAudio
             Name = $"LibrarySpeedDiceFingerSnap{_nextPlayerId++}",
             Bus = "SFX",
             Stream = _fingerSnap,
+            VolumeDb = _volumeDb,
         };
         host.AddChild(player);
         player.Finished += () =>

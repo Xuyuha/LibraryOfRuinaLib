@@ -8,6 +8,15 @@ namespace LibraryLib.SpeedDice;
 
 public static class LibrarySpeedDice
 {
+    /// <summary>
+    /// Sets the volume (dB) of the finger-snap SFX played when speed dice
+    /// advance. The default is 0 dB; negative values are quieter.
+    /// </summary>
+    public static void SetFingerSnapVolumeDb(float volumeDb)
+    {
+        LibrarySpeedDiceAudio.SetVolumeDb(volumeDb);
+    }
+
     public static LibrarySpeedDiceRegistrationBuilder<TCharacter>
         ForCharacter<TCharacter>(
             string id,
