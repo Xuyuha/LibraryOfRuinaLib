@@ -7,7 +7,7 @@ namespace LibraryLib.SpeedDice;
 internal static class LibrarySpeedDiceAudio
 {
     private const string FingerSnapPath =
-        "res://LibraryOfRuinaLib/LibraryOfRuinaLib/audio/sfx/finger_snap.ogg";
+        "res://LibraryOfRuinaLib/audio/sfx/finger_snap.ogg";
 
     private static AudioStream? _fingerSnap;
     private static bool _missingAssetLogged;

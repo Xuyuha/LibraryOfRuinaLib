@@ -4,8 +4,8 @@ using LibraryLib.Commands;
 using LibraryLib.Entities.Creatures;
 using LibraryLib.Localization.LibraryDynamicVars;
 using LibraryLib.Powers.LibraryPowerMode;
+using LibraryLib.Utils;
 using LibraryLib.Utils.Resistance;
-using MegaCrit.Sts2.Core.Assets;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
@@ -36,6 +36,11 @@ public abstract class LibraryPowerModel : PowerModel,ILibraryAbstractModel
     private string LowSuffix => Suffix.ToLowerInvariant();
     private static AccessTools.FieldRef<NPower, TextureRect>? _iconAccessor;
     private static AccessTools.FieldRef<NPower, CpuParticles2D>? _powerFlashAccessor;
+
+    // Dynamic subclasses need their current suffix-specific icon. Static icon
+    // overrides are limited to models whose assets are owned by this library.
+    internal bool ShouldOverrideBaseIcon =>
+        IsDynamic || GetType().Assembly == typeof(LibraryPowerModel).Assembly;
 
     /// <summary>
     ///     重写此属性可提供自定义本地化键前缀，替代模型的 Id.Entry。
@@ -81,28 +86,46 @@ public abstract class LibraryPowerModel : PowerModel,ILibraryAbstractModel
     {
         get
         {
-            if (IsDynamic)
-                return ImageHelper.GetImagePath($"atlases/power_atlas.sprites/{base.Id.Entry.ToLowerInvariant()}_{LowSuffix}.tres");
-            return base.PackedIconPath;
+            string fileName = base.Id.Entry.ToLowerInvariant()
+                + (IsDynamic ? $"_{LowSuffix}" : string.Empty)
+                + ".png";
+
+            if (GetType().Assembly != typeof(LibraryPowerModel).Assembly)
+            {
+                return ImageHelper.GetImagePath($"powers/{fileName}");
+            }
+
+            return $"res://LibraryOfRuinaLib/images/powers/{fileName}";
         }
     }
 
     /// <inheritdoc cref="PowerModel.ResolvedBigIconPath" />
     public new virtual string ResolvedBigIconPath
     {
-        get
-        {
-            if (IsDynamic)
-                return ImageHelper.GetImagePath($"powers/{base.Id.Entry.ToLowerInvariant()}_{LowSuffix}.png");
-            return base.PackedIconPath;
-        }
+        get => PackedIconPath;
     }
 
     /// <inheritdoc cref="PowerModel.BigIcon" />
-    public new virtual Texture2D BigIcon => PreloadManager.Cache.GetTexture2D(ResolvedBigIconPath);
+    public new virtual Texture2D? BigIcon => LoadTexture(ResolvedBigIconPath);
 
     /// <inheritdoc cref="PowerModel.Icon" />
-    public new virtual Texture2D Icon => ResourceLoader.Load<Texture2D>(PackedIconPath, null, ResourceLoader.CacheMode.Reuse);
+    public new virtual Texture2D? Icon => LoadTexture(PackedIconPath);
+
+    private static Texture2D? LoadTexture(string path)
+    {
+        try
+        {
+            Texture2D? texture = ResourceLoader.Load<Texture2D>(
+                path,
+                null,
+                ResourceLoader.CacheMode.Reuse);
+            return LibraryTextureSafety.IsValid(texture) ? texture : null;
+        }
+        catch (Exception)
+        {
+            return null;
+        }
+    }
 
     /// <summary>
     ///     当前动态模式索引。设置时会触发绑定 NPower 节点的图标刷新。
@@ -141,12 +164,17 @@ public abstract class LibraryPowerModel : PowerModel,ILibraryAbstractModel
     {
         if (_boundNPower == null || !GodotObject.IsInstanceValid(_boundNPower))
             return;
-        if (Icon == null)
+
+        Texture2D? icon = Icon;
+        if (!LibraryTextureSafety.IsValid(icon))
             return;
+
         if (_iconAccessor != null)
-            _iconAccessor(_boundNPower).Texture = Icon;
-        if (_powerFlashAccessor != null)
-            _powerFlashAccessor(_boundNPower).Texture = BigIcon;
+            _iconAccessor(_boundNPower).Texture = icon;
+
+        Texture2D? bigIcon = BigIcon;
+        if (_powerFlashAccessor != null && LibraryTextureSafety.IsValid(bigIcon))
+            _powerFlashAccessor(_boundNPower).Texture = bigIcon;
     }    
     public virtual Creature ModifyDamageTarget(Creature creature, decimal amount, ValueProp props, Creature? dealer,LibraryDamageType type)
     {

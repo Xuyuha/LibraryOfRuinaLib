@@ -15,13 +15,13 @@ namespace LibraryLib.SpeedDice;
 internal sealed partial class LibrarySpeedDiceUi : Control
 {
     private const string DiceAtlasPath =
-        "res://LibraryOfRuinaLib/LibraryOfRuinaLib/images/ui/library_speed_dice_atlas.png";
+        "res://LibraryOfRuinaLib/images/ui/library_speed_dice_atlas.png";
     private const string RoulettePath =
-        "res://LibraryOfRuinaLib/LibraryOfRuinaLib/images/ui/speed_dice_roulette.png";
+        "res://LibraryOfRuinaLib/images/ui/speed_dice_roulette.png";
     private const string BrokenDicePath =
-        "res://LibraryOfRuinaLib/LibraryOfRuinaLib/images/ui/speed_dice_broken.png";
+        "res://LibraryOfRuinaLib/images/ui/speed_dice_broken.png";
     private const string BrokenLinePath =
-        "res://LibraryOfRuinaLib/LibraryOfRuinaLib/images/ui/speed_dice_broken_line.png";
+        "res://LibraryOfRuinaLib/images/ui/speed_dice_broken_line.png";
     private const string FontPath =
         "res://themes/kreon_bold_glyph_space_one.tres";
     private const float SlotWidth = 68f;
@@ -46,6 +46,7 @@ internal sealed partial class LibrarySpeedDiceUi : Control
     private readonly List<SlotView> _slotViews = [];
     private NCreature? _creatureNode;
     private LibrarySpeedDiceCombatState? _state;
+    private bool _isStateChangedSubscribed;
     private double _rouletteTimer;
 
     private sealed class SlotView
@@ -72,23 +73,48 @@ internal sealed partial class LibrarySpeedDiceUi : Control
         NCreature creatureNode,
         LibrarySpeedDiceCombatState state)
     {
+        UnsubscribeFromStateChanged();
         _creatureNode = creatureNode;
         _state = state;
         MouseFilter = MouseFilterEnum.Ignore;
         ZIndex = 0;
         ZAsRelative = true;
         ProcessMode = ProcessModeEnum.Always;
-        state.Changed += OnStateChanged;
+        SubscribeToStateChanged();
         RebuildSlots();
+    }
+
+    public override void _EnterTree()
+    {
+        base._EnterTree();
+        SubscribeToStateChanged();
     }
 
     public override void _ExitTree()
     {
-        if (_state != null)
-            _state.Changed -= OnStateChanged;
+        UnsubscribeFromStateChanged();
         ClearAllTargetLines();
         NHoverTipSet.Remove(this);
         base._ExitTree();
+    }
+
+    private void SubscribeToStateChanged()
+    {
+        if (_isStateChangedSubscribed || _state == null)
+            return;
+
+        _state.Changed += OnStateChanged;
+        _isStateChangedSubscribed = true;
+    }
+
+    private void UnsubscribeFromStateChanged()
+    {
+        if (!_isStateChangedSubscribed)
+            return;
+
+        if (_state != null)
+            _state.Changed -= OnStateChanged;
+        _isStateChangedSubscribed = false;
     }
 
     public override void _Process(double delta)

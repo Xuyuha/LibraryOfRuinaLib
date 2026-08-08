@@ -92,7 +92,7 @@ internal static class LibraryResistanceLocalization
     {
         string resourceName = $"LibraryOfRuinaLib.Localization.{language}.dice.json";
         return LoadEntries(resourceName)
-            ?? LoadResourceEntries($"res://LibraryOfRuinaLib/localization/{language}/dice.json");
+            ?? LoadResourceEntries($"res://localization/{language}/dice.json");
     }
 
     private static Dictionary<string, string>? LoadResourceEntries(string resourcePath)

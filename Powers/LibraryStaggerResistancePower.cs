@@ -1,7 +1,6 @@
 #nullable enable
 using LibraryLib.Models;
 using MegaCrit.Sts2.Core.Entities.Powers;
-using MegaCrit.Sts2.Core.Helpers;
 
 namespace LibraryLib.Powers;
 
@@ -11,8 +10,8 @@ namespace LibraryLib.Powers;
 /// </summary>
 public sealed class LibraryStaggerResistancePower : LibraryPowerModel
 {
-    private static readonly string StaggerIconPath =
-        ImageHelper.GetImagePath("powers/library_stagger_resistance.png");
+    private const string StaggerIconPath =
+        "res://LibraryOfRuinaLib/images/powers/library_stagger_resistance.png";
 
     protected override string LegacyPowerId => "LIBRARY_OF_RUINA_STAGGER_RESISTANCE_POWER";
 

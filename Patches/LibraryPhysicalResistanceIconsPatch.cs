@@ -300,7 +300,7 @@ internal static class LibraryPhysicalResistanceIconsUi//TODO:你们来做物理�
     private static string GetPhysicalIconPath(LibraryDamageType type, LibraryResistanceLevel level)
     {
         string levelStr = level.GetLocKeySuffix();
-        return $"res://LibraryOfRuinaLib/LibraryOfRuinaLib/images/resistance/{type.String()}_{levelStr}.png";
+        return $"res://LibraryOfRuinaLib/images/resistance/{type.String()}_{levelStr}.png";
     }
 
     private static void OnIconHovered(NHealthBar healthBar, LibraryDamageType damageType, Control hitbox)

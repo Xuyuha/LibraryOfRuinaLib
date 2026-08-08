@@ -11,7 +11,7 @@ internal static class LibraryEmotionBarUi
 {
     private const string ContainerName = "LibraryEmotionBarContainer";
     private const string BorderPath =
-        "res://LibraryOfRuinaLib/LibraryOfRuinaLib/images/ui/library_emotion_level_border.png";
+        "res://LibraryOfRuinaLib/images/ui/library_emotion_level_border.png";
     private const string FontPath =
         "res://themes/kreon_bold_glyph_space_one.tres";
     private const float BarHeight = 14f;

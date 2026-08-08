@@ -57,13 +57,13 @@ public class LibraryDice : DynamicVar
     private int IdNumber = 0;
     public static LocString DefaultDescription => new("dice","DICE_DEFAULT");
     public LocString Description =>  ShouldUseDefaultTip ? DefaultDescription:new("cards",DescriptionPath);
-    public string DescriptionIconPath => $"res://LibraryOfRuinaLib/LibraryOfRuinaLib/images/dice/{DiceType.String()}.png";
+    public string DescriptionIconPath => $"res://LibraryOfRuinaLib/images/dice/{DiceType.String()}.png";
 	/// <summary>
 	///     骰子的自定义提示路径，可重写
 	/// </summary>
     public virtual string DescriptionPath =>SourceCard.Id.Entry+"_"+Name.ToUpperInvariant()+ ".description";
     private Func<PlayerChoiceContext, CardPlay, int ,Task>? _diceEffct ;
-    public string PackedIconPath => $"res://LibraryOfRuinaLib/LibraryOfRuinaLib/images/dice/big_icon/{DiceType.String()}.tres";
+    public string PackedIconPath => $"res://LibraryOfRuinaLib/images/dice/big_icon/{DiceType.String()}.tres";
     public LocString Title => new("dice",DiceType.String().ToUpper()+"_DICE");
 	public Texture2D PackedIcon=> ResourceLoader.Load<Texture2D>(PackedIconPath, null, ResourceLoader.CacheMode.Reuse);
     public LibraryDamageType DamageType => (LibraryDamageType)DiceType;
