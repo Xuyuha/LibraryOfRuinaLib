@@ -115,7 +115,8 @@ public class LibraryDice : DynamicVar
         {
             throw new InvalidOperationException($"Dice {Name} cannot have a negative range.");
         }
-        result.CurrentValue = runState.Rng.Niche.NextInt(result.MinValue, result.MaxValue);
+        int maxExclusive = checked(result.MaxValue + 1);
+        result.CurrentValue = runState.Rng.Niche.NextInt(result.MinValue, maxExclusive);
         return result;
     }
     public async Task TriggerDiceEffect(PlayerChoiceContext choiceContext, CardPlay? cardPlay,DiceRollResult result)
@@ -270,16 +271,14 @@ public class LibraryDice : DynamicVar
     public static async Task<DiceRollResult?> GetResultWithRoll(ICombatState combatState,PlayerChoiceContext? choiceContext,LibraryDice? dice,List<Creature> targets)
     {
         if(dice == null) return null;
-        decimal maxValue = LibraryHooks.ModifyDiceMaxValue(combatState,dice,dice.BaseValue + dice.FloatValue);
-        decimal minValue = LibraryHooks.ModifyDiceMinValue(combatState, dice, dice.BaseValue);
-        DiceRollResult rollResult = new DiceRollResult
+        DiceRollResult rollResult = new();
+        int additionalRolls = 0;
+        while (true)
         {
-            MaxValue = checked((int)maxValue),
-            MinValue = Math.Min(checked((int)minValue),checked((int)maxValue))
-        };
-        int j;
-        for(j=0;j<32;j++)
-        {
+            decimal maxValue = LibraryHooks.ModifyDiceMaxValue(combatState,dice,dice.BaseValue + dice.FloatValue);
+            decimal minValue = LibraryHooks.ModifyDiceMinValue(combatState, dice, dice.BaseValue);
+            rollResult.MaxValue = checked((int)maxValue);
+            rollResult.MinValue = Math.Min(checked((int)minValue),rollResult.MaxValue);
             await LibraryHooks.BeforeDiceRoll(combatState, choiceContext ?? new BlockingPlayerChoiceContext(), targets, dice);
             rollResult = dice.Roll(rollResult,combatState.RunState);
             await LibraryHooks.AfterDiceRoll(combatState, choiceContext ?? new BlockingPlayerChoiceContext(), targets, dice,rollResult);
@@ -287,12 +286,14 @@ public class LibraryDice : DynamicVar
             {
                 break;
             }
+            if (additionalRolls >= _maxAdditionalDiceRolls)
+            {
+                Log.Warn($"[LibraryOfRuinaLib.Dice] Reroll limit reached for {dice.Name}.");
+                break;
+            }
+            additionalRolls++;
             if(trigger != null)
                 await trigger.AfterRerolling(choiceContext ?? new BlockingPlayerChoiceContext(),targets,dice,rollResult);
-        }
-        if(j == _maxAdditionalDiceRolls)
-        {
-            Log.Warn($"[LibraryOfRuinaLib.Dice] Reroll limit reached for {dice.Name}.");
         }
         return rollResult;
     }

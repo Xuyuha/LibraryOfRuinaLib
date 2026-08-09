@@ -449,8 +449,8 @@ public class LibraryAttackCommand
 		}
 		await LibraryHooks.BeforeAttack(combatState, this);
 		decimal attackCount = LibraryHooks.ModifyAttackHitCount(combatState, this, (Dice?.EnableCustomUseTimes ?? false) ? Dice.UseTimes : _hitCount);
-		int i;
-		for (i = 0; i < _maxAdditionalDiceUses; i++)
+		int additionalUses = 0;
+		for (int i = 0; i < attackCount; i++)
 		{
 			if (Attacker.IsDead)
 			{
@@ -607,20 +607,21 @@ public class LibraryAttackCommand
 			{
 				await Dice.TriggerDiceEffect(choiceContext ?? new BlockingPlayerChoiceContext(), cardPlay, rollResult, targets);
 			}
-			if (Dice != null)
+			if (Dice != null && LibraryHooks.ShouldReuse(combatState,targets,Dice,rollResult,out ILibraryAbstractModel? trigger1))
 			{
-				if ( LibraryHooks.ShouldReuse(combatState,targets,Dice,rollResult,out ILibraryAbstractModel? trigger1))
+				if (additionalUses >= _maxAdditionalDiceUses)
 				{
+					Log.Warn($"[LibraryOfRuinaLib.Dice] Reuse limit reached for {Dice.Name}.");
+				}
+				else
+				{
+					additionalUses++;
 					attackCount++;
 					if(trigger1 != null)
 						await trigger1.AfterReusing(choiceContext ?? new BlockingPlayerChoiceContext(),targets,Dice,rollResult);
 				}
-				else
-					break;
 			}
 		}
-		if(i == _maxAdditionalDiceUses)
-			Log.Warn($"[LibraryOfRuinaLib.Dice] Reuse limit reached for {Dice.Name}.");
 		CombatManager.Instance.History.CreatureAttacked(combatState, Attacker, _damageResults.SelectMany((List<DamageResult> r) => r).ToList());
 		await LibraryHooks.AfterAttack(combatState, choiceContext ?? new BlockingPlayerChoiceContext(), this);
 		return this;
