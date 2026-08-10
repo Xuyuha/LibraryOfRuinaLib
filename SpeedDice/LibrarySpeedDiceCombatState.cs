@@ -271,6 +271,23 @@ public sealed class LibrarySpeedDiceCombatState
             NotifyGameplayChanged();
     }
 
+    public void MarkSlotSpent(LibrarySpeedDiceSlot slot)
+    {
+        ArgumentNullException.ThrowIfNull(slot);
+        if (!_slots.Contains(slot))
+        {
+            throw new ArgumentException(
+                "The speed-die slot does not belong to this combat state.",
+                nameof(slot));
+        }
+
+        if (slot.IsSpent)
+            return;
+
+        slot.IsSpent = true;
+        NotifyGameplayChanged();
+    }
+
     internal void NotifyGameplayChanged()
     {
         lock (_gameplayNotificationSync)
