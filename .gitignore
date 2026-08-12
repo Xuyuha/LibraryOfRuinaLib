@@ -18,6 +18,8 @@ libs/sts2.dll
 *.pck
 build/
 .codex-tmp/
+.tests/
+.tests/**/obj/
 .claude*
 CLAUDE.md
 LibraryOfRuinaLib.sln.DotSettings.user

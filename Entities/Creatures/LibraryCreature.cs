@@ -42,6 +42,11 @@ public class LibraryCreature : Creature//扩展Creature，添加Chao值属性
     public int StunPlayerTurnsRemaining => _stunPlayerTurnsRemaining;
     public LibraryCreatureResistanceData ResistanceData => _resistanceData ??= new();
 
+    // Stun owns the visible Fatal layer. Resistance changes made while stunned
+    // must update the state that will become effective after recovery instead.
+    private LibraryCreatureResistanceData PostStunResistanceData =>
+        _preStunResistanceData ?? ResistanceData;
+
     public void SaveAndSetStunResistance()
     {
         _preStunResistanceData ??= new LibraryCreatureResistanceData(ResistanceData);
@@ -243,18 +248,33 @@ public class LibraryCreature : Creature//扩展Creature，添加Chao值属性
         _=>LibraryResistanceLevel.Normal
     } ;
 
+    // Temporary effects must snapshot these values so an active stun Fatal
+    // overlay is not mistaken for the creature's recoverable resistance.
+    public LibraryResistanceLevel GetPostStunChaosResistanceLevel(LibraryDamageType type) => type switch{
+        LibraryDamageType.Blunt=>PostStunResistanceData.ChaosResistance.Blunt,
+        LibraryDamageType.Slash=>PostStunResistanceData.ChaosResistance.Slash,
+        LibraryDamageType.Pierce=>PostStunResistanceData.ChaosResistance.Pierce,
+        _=>LibraryResistanceLevel.Normal
+    } ;
+    public LibraryResistanceLevel GetPostStunPhysicalResistanceLevel(LibraryDamageType type) => type switch{
+        LibraryDamageType.Blunt=>PostStunResistanceData.PhysicalResistance.Blunt,
+        LibraryDamageType.Slash=>PostStunResistanceData.PhysicalResistance.Slash,
+        LibraryDamageType.Pierce=>PostStunResistanceData.PhysicalResistance.Pierce,
+        _=>LibraryResistanceLevel.Normal
+    } ;
+
     public void SetPhysicalResistance(LibraryDamageType type,LibraryResistanceLevel resistanceValue) 
     {
         switch (type)
         {
             case LibraryDamageType.Blunt:
-                ResistanceData.PhysicalResistance.Blunt = resistanceValue;
+                PostStunResistanceData.PhysicalResistance.Blunt = resistanceValue;
                 break;
             case LibraryDamageType.Slash:
-                ResistanceData.PhysicalResistance.Slash = resistanceValue;
+                PostStunResistanceData.PhysicalResistance.Slash = resistanceValue;
                 break;
             case LibraryDamageType.Pierce:
-                ResistanceData.PhysicalResistance.Pierce = resistanceValue;
+                PostStunResistanceData.PhysicalResistance.Pierce = resistanceValue;
                 break;
         }
         LibraryPhysicalResistanceIconsUi.Refresh(HealthBar);
@@ -264,13 +284,13 @@ public class LibraryCreature : Creature//扩展Creature，添加Chao值属性
         switch (type)
         {
             case LibraryDamageType.Blunt:
-                ResistanceData.ChaosResistance.Blunt = resistanceValue;
+                PostStunResistanceData.ChaosResistance.Blunt = resistanceValue;
                 break;
             case LibraryDamageType.Slash:
-                ResistanceData.ChaosResistance.Slash = resistanceValue;
+                PostStunResistanceData.ChaosResistance.Slash = resistanceValue;
                 break;
             case LibraryDamageType.Pierce:
-                ResistanceData.ChaosResistance.Pierce = resistanceValue;
+                PostStunResistanceData.ChaosResistance.Pierce = resistanceValue;
                 break;
         }
         LibraryChaosResistanceIconsUi.Refresh(HealthBar);
