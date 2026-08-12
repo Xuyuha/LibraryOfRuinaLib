@@ -1131,7 +1131,11 @@ internal static class LibrarySpeedDiceService
                         expectedRevision)
                     || card.Owner != player
                     || state.Slots[slotIndex].Card != null
-                    || !CanEquipCard(state, card, sourceId)
+                    || !CanEquipCard(
+                        state,
+                        card,
+                        sourceId,
+                        ignoreLocalInteractionState: true)
                     || card.RequiresSpeedDiceTarget()
                     && !card.IsValidSpeedDiceTarget(target))
                 {
@@ -2363,14 +2367,16 @@ internal static class LibrarySpeedDiceService
     private static bool CanEquipCard(
         LibrarySpeedDiceCombatState state,
         CardModel card,
-        string sourceId)
+        string sourceId,
+        bool ignoreLocalInteractionState = false)
     {
         if (!IsStateUsable(state)
             || state.Player.PlayerCombatState?.Phase != PlayerTurnPhase.Play
             || !state.HasRolled
             || state.IsLocked
             || state.IsResolving
-            || state.IsSelectingTarget
+            || !ignoreLocalInteractionState
+            && state.IsSelectingTarget
             || card.Owner != state.Player
             || card.EnergyCost.CostsX
             || card.HasStarCostX
