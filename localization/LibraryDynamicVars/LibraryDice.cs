@@ -131,7 +131,9 @@ public class LibraryDice : DynamicVar
     public async Task TriggerDiceEffect(PlayerChoiceContext choiceContext, CardPlay? cardPlay,DiceRollResult result,IEnumerable<Creature>? targets)
     {
         if(_diceEffct == null || cardPlay == null)return;
-        ICombatState? combatState = cardPlay.Card.CombatState;
+        ICombatState? combatState =
+            cardPlay.Card.CombatState
+            ?? cardPlay.Card.Owner.Creature.CombatState;
         if(combatState == null)return;
         if(!LibraryHooks.TryDiceEffect(combatState, choiceContext, targets, cardPlay.Card,this,result)) return;
         await LibraryHooks.BeforeDiceEffect(combatState, choiceContext, targets, cardPlay.Card, this,result);

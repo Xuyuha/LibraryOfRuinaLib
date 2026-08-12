@@ -35,7 +35,11 @@ public static class LibraryCreatureCmd
 	{
 		ArgumentNullException.ThrowIfNull(cardPlay);
 		int blockTimes = dice.EnableCustomUseTimes? dice.UseTimes : 1;
-		ICombatState combatState = cardPlay.Card.CombatState!;
+		ICombatState combatState =
+			cardPlay.Card.CombatState
+			?? cardPlay.Card.Owner.Creature.CombatState
+			?? throw new InvalidOperationException(
+				$"Cannot resolve combat state for {cardPlay.Card.Id.Entry}.");
 		int additionalUses = 0;
 		for(int i = 0 ; i < blockTimes ; i++)
 		{
