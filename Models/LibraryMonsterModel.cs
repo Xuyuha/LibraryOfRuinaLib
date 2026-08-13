@@ -1,4 +1,5 @@
 using LibraryLib.Commands;
+using LibraryLib.Combat;
 using LibraryLib.Entities.Creatures;
 using LibraryLib.Localization.LibraryDynamicVars;
 using LibraryLib.Powers.LibraryPowerMode;
@@ -12,8 +13,33 @@ using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.ValueProps;
 
 namespace LibraryLib.Models;
-public abstract class LibraryMonsterModel : MonsterModel,ILibraryAbstractModel
+public abstract class LibraryMonsterModel : MonsterModel, ILibraryAbstractModel,
+    ILibraryCombatValueResolutionPolicy
 {
+    /// <summary>
+    /// Fraction of maximum Chao restored when this monster leaves stagger.
+    /// Existing monsters retain the original full recovery behavior.
+    /// </summary>
+    public virtual decimal ChaoRecoveryRatio => 1m;
+
+    /// <summary>
+    /// Computes the post-stagger Chao value. Override this method when the
+    /// recovery rule cannot be represented by <see cref="ChaoRecoveryRatio"/>.
+    /// </summary>
+    public virtual decimal GetChaoRecoveryValue(int maxChaoValue)
+    {
+        decimal ratio = Math.Clamp(ChaoRecoveryRatio, 0m, 1m);
+        return Math.Floor(maxChaoValue * ratio);
+    }
+
+    /// <summary>
+    /// Default numerical-resolution policy. Encounter monsters can override
+    /// this once and affect vanilla and LibraryLib preview/live paths alike.
+    /// </summary>
+    public virtual LibraryCombatValueResolution GetCombatValueResolution(
+        in LibraryCombatValueContext context) =>
+        LibraryCombatValueResolution.Default;
+
     public virtual decimal ModifyDiceMaxValue(LibraryDice dice, decimal maxValue)
     {
         return maxValue;
@@ -57,7 +83,10 @@ public abstract class LibraryMonsterModel : MonsterModel,ILibraryAbstractModel
             }
             lc.RestoreChaoOnNextOwnerTurn = false;
             lc.RestorePreStunResistance();
-            lc.SetCurrentChaoValueInternal(lc.MaxChaoValue);
+            decimal recoveryValue = lc.Monster is LibraryMonsterModel model
+                ? model.GetChaoRecoveryValue(lc.MaxChaoValue)
+                : lc.MaxChaoValue;
+            lc.SetCurrentChaoValueInternal(recoveryValue);
         }
     }
     //子类重写不会覆盖父类方法了

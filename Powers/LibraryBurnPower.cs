@@ -1,5 +1,6 @@
 using LibraryLib.Models;
 using LibraryLib.Powers.LibraryPowerMode;
+using System.Threading;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Creatures;
@@ -10,6 +11,8 @@ using MegaCrit.Sts2.Core.ValueProps;
 namespace LibraryLib.Powers;
 public sealed class LibraryBurnPower : LibraryBasePowerModel
 {
+    private static readonly AsyncLocal<Creature?> ResolvingDamageTarget = new();
+
     protected override LibraryPowerMode.LibraryPowerMode DefaultMode => new LibraryBurnModeDefault(this);
     public LibraryBurnMode CurrentMode => Mode as LibraryBurnMode;
     public override bool IsDynamic => true;
@@ -27,8 +30,20 @@ public sealed class LibraryBurnPower : LibraryBasePowerModel
     {
         if (Owner.IsDead) return;
         Flash();
-        await CreatureCmd.Damage(choiceContext, Owner, effectiveAmount, ValueProp.Unpowered, null, null);
+        Creature? previousTarget = ResolvingDamageTarget.Value;
+        ResolvingDamageTarget.Value = Owner;
+        try
+        {
+            await CreatureCmd.Damage(choiceContext, Owner, effectiveAmount, ValueProp.Unpowered, null, null);
+        }
+        finally
+        {
+            ResolvingDamageTarget.Value = previousTarget;
+        }
     }
+
+    public static bool IsResolvingDamageFor(Creature target) =>
+        ReferenceEquals(ResolvingDamageTarget.Value, target); //传回烧伤自己的damageCmd的来源
     public override async Task AfterSideTurnEnd(PlayerChoiceContext choiceContext, CombatSide side, IEnumerable<Creature> participants,object?_ = null)
     {
         if (side != Owner.Side) return;

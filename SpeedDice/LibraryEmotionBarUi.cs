@@ -7,7 +7,7 @@ using MegaCrit.Sts2.Core.Nodes.Combat;
 
 namespace LibraryLib.SpeedDice;
 
-internal static class LibraryEmotionBarUi
+public static class LibraryEmotionBarUi
 {
     private const string ContainerName = "LibraryEmotionBarContainer";
     private const string BorderPath =
@@ -39,6 +39,7 @@ internal static class LibraryEmotionBarUi
         public TextureRect? Badge;
         public Label? BadgeLabel;
         public LibrarySpeedDiceCombatState? CombatState;
+        public ILibraryEmotionBarSource? ExternalSource;
         public Action? ChangedHandler;
         public float MaxFillWidth;
     }
@@ -46,11 +47,16 @@ internal static class LibraryEmotionBarUi
     public static void Refresh(NHealthBar healthBar)
     {
         Creature? creature = CreatureField?.GetValue(healthBar) as Creature;
-        if (creature?.Player == null
-            || !LibrarySpeedDiceService.TryGetState(
+        LibrarySpeedDiceCombatState? combatState = null;
+        if (creature?.Player != null)
+        {
+            LibrarySpeedDiceService.TryGetState(
                 creature.Player,
-                out LibrarySpeedDiceCombatState? combatState)
-            || combatState == null)
+                out combatState);
+        }
+        ILibraryEmotionBarSource? externalSource =
+            creature?.Monster as ILibraryEmotionBarSource;
+        if (combatState == null && externalSource == null)
         {
             if (States.TryGetValue(healthBar, out UiState? hidden)
                 && hidden.BarContainer != null)
@@ -66,30 +72,53 @@ internal static class LibraryEmotionBarUi
         if (state.BarContainer == null)
             return;
 
-        Subscribe(healthBar, state, combatState);
-        state.BarContainer.Visible = creature.IsAlive;
+        Subscribe(healthBar, state, combatState, externalSource);
+        state.BarContainer.Visible = creature?.IsAlive == true;
         SyncLayout(healthBar, state);
-        UpdateValues(state, combatState);
+        if (combatState != null)
+        {
+            UpdateValues(
+                state,
+                combatState.Emotion.Level,
+                combatState.Emotion.Units,
+                combatState.Registration.Emotion.UnitThresholds);
+        }
+        else if (externalSource != null)
+        {
+            UpdateValues(
+                state,
+                externalSource.EmotionLevel,
+                externalSource.EmotionUnits,
+                externalSource.EmotionUnitThresholds);
+        }
     }
 
     private static void Subscribe(
         NHealthBar healthBar,
         UiState state,
-        LibrarySpeedDiceCombatState combatState)
+        LibrarySpeedDiceCombatState? combatState,
+        ILibraryEmotionBarSource? externalSource)
     {
-        if (state.CombatState == combatState)
+        if (state.CombatState == combatState
+            && state.ExternalSource == externalSource)
             return;
 
         if (state.CombatState != null && state.ChangedHandler != null)
             state.CombatState.Changed -= state.ChangedHandler;
+        if (state.ExternalSource != null && state.ChangedHandler != null)
+            state.ExternalSource.EmotionChanged -= state.ChangedHandler;
 
         state.CombatState = combatState;
+        state.ExternalSource = externalSource;
         state.ChangedHandler = () => Callable.From(() =>
         {
             if (GodotObject.IsInstanceValid(healthBar))
                 Refresh(healthBar);
         }).CallDeferred();
-        combatState.Changed += state.ChangedHandler;
+        if (combatState != null)
+            combatState.Changed += state.ChangedHandler;
+        if (externalSource != null)
+            externalSource.EmotionChanged += state.ChangedHandler;
     }
 
     private static void CreateNodes(NHealthBar healthBar, UiState state)
@@ -263,18 +292,18 @@ internal static class LibraryEmotionBarUi
 
     private static void UpdateValues(
         UiState state,
-        LibrarySpeedDiceCombatState combatState)
+        int emotionLevel,
+        int emotionUnits,
+        IReadOnlyList<int> thresholds)
     {
-        IReadOnlyList<int> thresholds =
-            combatState.Registration.Emotion.UnitThresholds;
         int level = Math.Clamp(
-            combatState.Emotion.Level,
+            emotionLevel,
             0,
             thresholds.Count - 1);
         int required = thresholds[level];
-        int current = combatState.Emotion.Level >= thresholds.Count
+        int current = emotionLevel >= thresholds.Count
             ? required
-            : Math.Clamp(combatState.Emotion.Units, 0, required);
+            : Math.Clamp(emotionUnits, 0, required);
         if (state.Fill != null)
         {
             state.Fill.Visible = current > 0;
@@ -290,9 +319,9 @@ internal static class LibraryEmotionBarUi
         if (state.ValueLabel != null)
             state.ValueLabel.Text = $"{current}/{required}";
         if (state.Badge != null)
-            state.Badge.Visible = combatState.Emotion.Level > 0;
+            state.Badge.Visible = emotionLevel > 0;
         if (state.BadgeLabel != null)
-            state.BadgeLabel.Text = ToRoman(combatState.Emotion.Level);
+            state.BadgeLabel.Text = ToRoman(emotionLevel);
     }
 
     private static string ToRoman(int level)

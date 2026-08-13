@@ -25,3 +25,5 @@ CLAUDE.md
 LibraryOfRuinaLib.sln.DotSettings.user
 libs/sts2.dll
 obj/
+/tests/
+Directory.Build.targets

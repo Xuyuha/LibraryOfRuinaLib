@@ -45,7 +45,7 @@ public class LibraryAttackCommand
 
 	private ICombatState? _combatState;
 
-	private LibraryCreature? _singleTarget;
+	private Creature? _singleTarget;
 
 	private bool _spawnVfxOnEachCreature;
 
@@ -154,7 +154,13 @@ public class LibraryAttackCommand
 		Attacker = monster.Creature as LibraryCreature;
 		_attackerAnimName = "Attack";
 		_sourceType = SourceType.Monster;
-		return TargetingAllOpponents(monster.Creature.CombatState);
+		// AttackCommand.FromMonster already configures all-opponent targeting.
+		// Mirror that state locally without calling its targeting method twice.
+		_combatState = monster.Creature.CombatState;
+		TargetSide = monster.Creature.Side == CombatSide.Enemy
+			? CombatSide.Player
+			: CombatSide.Enemy;
+		return this;
 	}
 
 	public LibraryAttackCommand Targeting(Creature target )
@@ -168,7 +174,7 @@ public class LibraryAttackCommand
 		{
 			throw new InvalidOperationException("Already set to target opponents of attacker");
 		}
-		_singleTarget = target as LibraryCreature;
+		_singleTarget = target;
 		TargetSide = target.Side;
 		return this;
 	}
@@ -456,14 +462,14 @@ public class LibraryAttackCommand
 			{
 				break;
 			}
-			List<LibraryCreature> validTargets = (from c in GetPossibleTargets()
+			List<Creature> validTargets = (from c in GetPossibleTargets()
 				where c.IsAlive
-				select c as LibraryCreature).ToList();
+				select c).ToList();
 			if (validTargets.Count == 0 && combatState.IsLiveCombat())
 			{
 				break;
 			}
-			LibraryCreature? singleTarget;
+			Creature? singleTarget;
 			if (!IsRandomlyTargeted)
 			{
 				singleTarget = (validTargets.Count != 1) ? null : validTargets[0];
@@ -472,7 +478,7 @@ public class LibraryAttackCommand
 			{
 				if (!_doesRandomTargetingAllowDuplicates)
 				{
-					validTargets = validTargets.Where((LibraryCreature c) => _damageResults.SelectMany((List<DamageResult> r) => r).All((DamageResult r) => r.Receiver != c)).ToList();
+					validTargets = validTargets.Where((Creature c) => _damageResults.SelectMany((List<DamageResult> r) => r).All((DamageResult r) => r.Receiver != c)).ToList();
 					if (validTargets.Count == 0)
 					{
 						throw new InvalidOperationException("No valid targets for attack with duplicates disallowed. If you're in a test, you probably need to add more enemies. If you're in real gameplay, something is wrong.");

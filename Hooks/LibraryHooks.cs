@@ -110,6 +110,25 @@ public static class LibraryHooks
     }
     public static decimal ModifyDiceMaxValue(ICombatState combatState,LibraryDice dice, decimal maxValue)
     {
+        LibraryCombatValueResolution resolution =
+            LibraryCombatValueResolver.Resolve(
+                combatState,
+                dice.DiceType == LibraryDiceType.Block
+                    ? LibraryCombatValueKind.Block
+                    : LibraryCombatValueKind.PhysicalDamage,
+                maxValue,
+                null,
+                null,
+                LibraryDice.Props,
+                dice.SourceCard,
+                null,
+                dice.DamageType);
+        if (resolution != LibraryCombatValueResolution.Default)
+        {
+            return LibraryCombatValueResolver.ResolveBaseValue(
+                resolution,
+                maxValue);
+        }
         foreach (AbstractModel item in combatState.IterateHookListeners())
         {
             if(item is ILibraryAbstractModel lm)
@@ -121,6 +140,25 @@ public static class LibraryHooks
     }
     public static decimal ModifyDiceMinValue(ICombatState combatState,LibraryDice dice, decimal minValue)
     {
+        LibraryCombatValueResolution resolution =
+            LibraryCombatValueResolver.Resolve(
+                combatState,
+                dice.DiceType == LibraryDiceType.Block
+                    ? LibraryCombatValueKind.Block
+                    : LibraryCombatValueKind.PhysicalDamage,
+                minValue,
+                null,
+                null,
+                LibraryDice.Props,
+                dice.SourceCard,
+                null,
+                dice.DamageType);
+        if (resolution != LibraryCombatValueResolution.Default)
+        {
+            return LibraryCombatValueResolver.ResolveBaseValue(
+                resolution,
+                minValue);
+        }
         foreach (AbstractModel item in combatState.IterateHookListeners())
         {
             if(item is ILibraryAbstractModel lm)
@@ -764,6 +802,25 @@ public static class LibraryHooks
     }
     public static decimal ModifyDamage(IRunState runState, ICombatState combatState, Creature? target, Creature? dealer, decimal damage, ValueProp props, CardModel? cardSource, CardPlay? cardPlay, ModifyDamageHookType modifyDamageHookType, CardPreviewMode previewMode, out IEnumerable<AbstractModel> modifiers,LibraryDamageType type)
     {
+        LibraryCombatValueResolution resolution =
+            LibraryCombatValueResolver.Resolve(
+                combatState,
+                LibraryCombatValueKind.PhysicalDamage,
+                damage,
+                target,
+                dealer,
+                props,
+                cardSource,
+                cardPlay,
+                type,
+                previewMode);
+        if (resolution != LibraryCombatValueResolution.Default)
+        {
+            modifiers = Array.Empty<AbstractModel>();
+            return LibraryCombatValueResolver.ResolveBaseValue(
+                resolution,
+                damage);
+        }
         var modifiers2 = new List<AbstractModel>();
         var num = damage;
         if (cardSource != null && cardSource.Enchantment != null)
@@ -899,6 +956,24 @@ public static class LibraryHooks
     }
     public static decimal ModifyHpLostAfterOsty(IRunState runState, ICombatState combatState, Creature target, decimal amount, ValueProp props, Creature? dealer, CardModel? cardSource, out IEnumerable<AbstractModel> modifiers,LibraryDamageType type)
     {
+        LibraryCombatValueResolution resolution =
+            LibraryCombatValueResolver.Resolve(
+                combatState,
+                LibraryCombatValueKind.HpLoss,
+                amount,
+                target,
+                dealer,
+                props,
+                cardSource,
+                null,
+                type);
+        if (resolution != LibraryCombatValueResolution.Default)
+        {
+            modifiers = Array.Empty<AbstractModel>();
+            return LibraryCombatValueResolver.ResolveBaseValue(
+                resolution,
+                amount);
+        }
         var num = amount;
         var list = new List<AbstractModel>();
         foreach (var item in runState.IterateHookListeners(combatState))
@@ -928,6 +1003,24 @@ public static class LibraryHooks
     }
     public static decimal ModifyHpLostBeforeOsty(IRunState runState, ICombatState combatState, Creature target, decimal amount, ValueProp props, Creature? dealer, CardModel? cardSource, out IEnumerable<AbstractModel> modifiers,LibraryDamageType type)
     {
+        LibraryCombatValueResolution resolution =
+            LibraryCombatValueResolver.Resolve(
+                combatState,
+                LibraryCombatValueKind.HpLoss,
+                amount,
+                target,
+                dealer,
+                props,
+                cardSource,
+                null,
+                type);
+        if (resolution != LibraryCombatValueResolution.Default)
+        {
+            modifiers = Array.Empty<AbstractModel>();
+            return LibraryCombatValueResolver.ResolveBaseValue(
+                resolution,
+                amount);
+        }
         var num = amount;
 		var d = num;
         var list = new List<AbstractModel>();
@@ -955,12 +1048,35 @@ public static class LibraryHooks
         modifiers = list;
         return num;
     }
-    public static decimal ModifyChaoDamage(IRunState runState, ICombatState combatState, Creature target, Creature? dealer, decimal chaoDamage, ValueProp props, CardModel? cardSource, CardPlay? cardPlay, ModifyChaoDamageHookType modifyChaoDamageHookType, CardPreviewMode previewMode, out IEnumerable<AbstractModel> modifiers,LibraryDamageType type)
+    public static decimal ModifyChaoDamage(IRunState runState, ICombatState combatState, Creature? target, Creature? dealer, decimal chaoDamage, ValueProp props, CardModel? cardSource, CardPlay? cardPlay, ModifyChaoDamageHookType modifyChaoDamageHookType, CardPreviewMode previewMode, out IEnumerable<AbstractModel> modifiers,LibraryDamageType type)
     {
-        if(target is not LibraryCreature libraryCreature)
+        LibraryCombatValueResolution resolution =
+            LibraryCombatValueResolver.Resolve(
+                combatState,
+                LibraryCombatValueKind.ChaoDamage,
+                chaoDamage,
+                target,
+                dealer,
+                props,
+                cardSource,
+                cardPlay,
+                type,
+                previewMode);
+        bool isPolicyControlledMultiTargetPreview =
+            target == null
+            && previewMode == CardPreviewMode.MultiCreatureTargeting
+            && resolution != LibraryCombatValueResolution.Default;
+        if(target is not LibraryCreature && !isPolicyControlledMultiTargetPreview)
         {
             modifiers = Array.Empty<AbstractModel>();
             return 0m;
+        }
+        if (resolution != LibraryCombatValueResolution.Default)
+        {
+            modifiers = Array.Empty<AbstractModel>();
+            return LibraryCombatValueResolver.ResolveBaseValue(
+                resolution,
+                chaoDamage);
         }
         var modifiers2 = new List<AbstractModel>();
         var num = chaoDamage;
