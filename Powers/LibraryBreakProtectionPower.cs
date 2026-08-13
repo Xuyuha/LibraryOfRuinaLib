@@ -13,7 +13,7 @@ public sealed class LibraryBreakProtectionPower : LibraryTurnsPowerModel//振奋
     public override PowerType Type => PowerType.Buff;
     public override PowerStackType StackType => PowerStackType.Counter;
 
-    protected override CombatSide DecaySide => OppositeSideOf(Owner);
+    protected override CombatSide DecaySide => Owner.IsPlayer ? OppositeSideOf(Owner) : Owner.Side;
 
     public override decimal ModifyChaoDamageAdditive(Creature? target, decimal amount, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay, LibraryDamageType type)
     {
