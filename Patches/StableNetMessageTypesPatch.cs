@@ -1,5 +1,6 @@
 #nullable enable
 using HarmonyLib;
+using LibraryLib.Multiplayer;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Logging;
@@ -24,21 +25,35 @@ internal static class StableNetMessageTypesPatch
         if (_normalized)
             return;
 
-        _normalized = true;
-
         try
         {
+            LibraryManagedNetTypeRegistry.Initialize();
             bool normalizedMessages = TryNormalizeMessages(out int vanillaMessageCount, out int modMessageCount);
             bool normalizedActions = TryNormalizeActions(out int vanillaActionCount, out int modActionCount);
-            if (!normalizedMessages && !normalizedActions)
-                return;
+            if (!normalizedMessages || !normalizedActions)
+            {
+                throw new InvalidOperationException(
+                    "STS2 network type caches were not both initialized: "
+                    + $"messages={normalizedMessages}, actions={normalizedActions}.");
+            }
 
-            Log.Info("[LibraryOfRuinaLib.Multiplayer] Stable net type IDs applied. "
-                + $"messages={vanillaMessageCount}/{modMessageCount} actions={vanillaActionCount}/{modActionCount}");
+            int patchedMessageSerializers = LibraryManagedNetMessagePatchInstaller.Install(
+                new Harmony("LibraryOfRuinaLib.ManagedNetMessageEnvelope"));
+
+            _normalized = true;
+            LibraryManagedNetTypeCatalog catalog = LibraryManagedNetTypeRegistry.Catalog;
+            Log.Info("[LibraryOfRuinaLib.Multiplayer] Stable gameplay net type table ready. "
+                + $"messages={vanillaMessageCount}/{modMessageCount} "
+                + $"actions={vanillaActionCount}/{modActionCount} "
+                + $"envelopeId={LibraryManagedNetTypeRegistry.EnvelopeMessageId} "
+                + $"serializers={patchedMessageSerializers} "
+                + $"excludedNonGameplay={catalog.ExcludedMessageCount}/{catalog.ExcludedActionCount} "
+                + $"registry={catalog.Fingerprint}");
         }
         catch (Exception e)
         {
-            Log.Warn("[LibraryOfRuinaLib.Multiplayer] Failed to stabilize net type IDs: " + e);
+            Log.Error("[LibraryOfRuinaLib.Multiplayer] Managed net protocol initialization failed: " + e);
+            throw;
         }
     }
 
@@ -56,24 +71,32 @@ internal static class StableNetMessageTypesPatch
         if (typeToId == null || idToType == null)
             return false;
 
-        var vanillaTypes = INetMessageSubtypes.All
-            .OrderBy(static t => t.Name, StringComparer.Ordinal)
-            .ToList();
+        IReadOnlyList<Type> vanillaTypes = GetOriginalVanillaMessageWireOrder();
 
-        var vanillaSet = new HashSet<Type>(vanillaTypes);
-        var modTypes = ReflectionHelper.GetSubtypesInMods<INetMessage>()
-            .Where(t => !vanillaSet.Contains(t))
-            .OrderBy(static t => t.FullName ?? t.Name, StringComparer.Ordinal)
-            .ToList();
+        IReadOnlyList<Type> modTypes =
+            LibraryManagedNetTypeRegistry.Catalog.GameplayMessageTypesInWireOrder;
 
         idToType.Clear();
         typeToId.Clear();
 
-        foreach (var type in vanillaTypes)
+        foreach (Type type in vanillaTypes)
             AddType(typeToId, idToType, type);
 
-        foreach (var type in modTypes)
-            AddType(typeToId, idToType, type);
+        AddType(typeToId, idToType, typeof(LibraryManagedNetMessageEnvelope));
+        int envelopeId = typeToId[typeof(LibraryManagedNetMessageEnvelope)];
+        if (envelopeId != LibraryManagedNetTypeRegistry.EnvelopeMessageId)
+        {
+            throw new InvalidOperationException(
+                "Managed message envelope did not receive the first post-vanilla message ID.");
+        }
+        if (envelopeId > byte.MaxValue)
+        {
+            throw new InvalidOperationException(
+                $"Managed message envelope ID {envelopeId} does not fit in the game's byte-sized message ID.");
+        }
+
+        foreach (Type type in modTypes)
+            AddAliasedType(typeToId, type, envelopeId);
 
         vanillaCount = vanillaTypes.Count;
         modCount = modTypes.Count;
@@ -94,29 +117,28 @@ internal static class StableNetMessageTypesPatch
         if (typeToId == null || idToType == null)
             return false;
 
-        var vanillaTypes = INetActionSubtypes.All
-            .OrderBy(static t => t.Name, StringComparer.Ordinal)
-            .ToList();
-
-        var vanillaSet = new HashSet<Type>(vanillaTypes);
-        var modTypes = ReflectionHelper.GetSubtypesInMods<INetAction>()
-            .Where(t => !vanillaSet.Contains(t))
-            .OrderBy(static t => t.FullName ?? t.Name, StringComparer.Ordinal)
-            .ToList();
+        IReadOnlyList<Type> vanillaTypes = GetOriginalVanillaActionWireOrder();
 
         idToType.Clear();
         typeToId.Clear();
 
-        foreach (var type in vanillaTypes)
-            AddType(typeToId, idToType, type);
-
-        foreach (var type in modTypes)
+        foreach (Type type in vanillaTypes)
             AddType(typeToId, idToType, type);
 
         vanillaCount = vanillaTypes.Count;
-        modCount = modTypes.Count;
+        modCount = LibraryManagedNetTypeRegistry.Catalog.ActionCount;
         return true;
     }
+
+    internal static IReadOnlyList<Type> GetOriginalVanillaMessageWireOrder() =>
+        INetMessageSubtypes.All
+            .OrderBy(static type => type.Name)
+            .ToArray();
+
+    internal static IReadOnlyList<Type> GetOriginalVanillaActionWireOrder() =>
+        INetActionSubtypes.All
+            .OrderBy(static type => type.Name)
+            .ToArray();
 
     private static void AddType(Dictionary<Type, int> typeToId, List<Type> idToType, Type type)
     {
@@ -125,5 +147,17 @@ internal static class StableNetMessageTypesPatch
 
         typeToId[type] = idToType.Count;
         idToType.Add(type);
+    }
+
+    private static void AddAliasedType(
+        Dictionary<Type, int> typeToId,
+        Type type,
+        int sharedId)
+    {
+        if (!typeToId.TryAdd(type, sharedId))
+        {
+            throw new InvalidOperationException(
+                "Duplicate managed message type in wire table: " + type.FullName);
+        }
     }
 }

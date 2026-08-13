@@ -1,0 +1,131 @@
+#nullable enable
+using System.Reflection;
+using HarmonyLib;
+using LibraryLib.Multiplayer;
+using MegaCrit.Sts2.Core.Helpers;
+using MegaCrit.Sts2.Core.Logging;
+using MegaCrit.Sts2.Core.Multiplayer;
+using MegaCrit.Sts2.Core.Multiplayer.Messages.Game;
+using MegaCrit.Sts2.Core.Multiplayer.Serialization;
+
+namespace LibraryLib.Patches;
+
+internal static class LibraryManagedNetDiagnostics
+{
+    private static readonly HashSet<string> WarnedFailures = new(StringComparer.Ordinal);
+    private static readonly object Sync = new();
+    private static Action<string> _warningSink = static message => Log.Warn(message);
+
+    public static void WarnOnce(LibraryManagedNetDecodeFailure failure)
+    {
+        string key = failure.Code;
+        lock (Sync)
+        {
+            if (!WarnedFailures.Add(key))
+            {
+                return;
+            }
+        }
+
+        _warningSink("[LibraryOfRuinaLib.Multiplayer] Dropped managed network payload. " + failure);
+    }
+
+    internal static void SetWarningSinkForTesting(Action<string> warningSink) =>
+        _warningSink = warningSink;
+}
+
+[HarmonyPatch]
+internal static class LibraryManagedNetDecodeSafetyPatch
+{
+    [HarmonyTargetMethod]
+    private static MethodBase TargetMethod() =>
+        AccessTools.GetDeclaredMethods(typeof(NetMessageBus)).Single(static method =>
+            method.Name == nameof(NetMessageBus.TryDeserializeMessage));
+
+    [HarmonyPostfix]
+    private static void Postfix(ref INetMessage? message, ref bool __result)
+    {
+        if (!__result || message is not LibraryManagedNetMessageEnvelope envelope)
+        {
+            return;
+        }
+
+        if (envelope.InnerMessage == null)
+        {
+            message = null;
+            __result = false;
+            LibraryManagedNetDiagnostics.WarnOnce(new LibraryManagedNetDecodeFailure(
+                "empty_message_envelope",
+                "Managed message envelope completed without an inner message."));
+            return;
+        }
+
+        message = envelope.InnerMessage;
+    }
+
+    [HarmonyFinalizer]
+    private static Exception? Finalizer(
+        Exception? __exception,
+        byte[] packetBytes,
+        ref INetMessage? message,
+        ref ulong? overrideSenderId,
+        ref bool __result)
+    {
+        LibraryManagedNetDecodeFailure? failure = __exception switch
+        {
+            null => null,
+            LibraryManagedNetDecodeException managedException => managedException.Failure,
+            _ when IsGameplayModMessagePacket(packetBytes, out Type? messageType) =>
+                new LibraryManagedNetDecodeFailure(
+                    "malformed_mod_message",
+                    (messageType?.FullName ?? "unknown")
+                    + ": "
+                    + __exception.GetType().Name
+                    + ": "
+                    + __exception.Message),
+            _ when IsActionCarrierPacket(packetBytes, out Type? carrierType) =>
+                new LibraryManagedNetDecodeFailure(
+                    "malformed_action_carrier",
+                    (carrierType?.FullName ?? "unknown")
+                    + ": "
+                    + __exception.GetType().Name
+                    + ": "
+                    + __exception.Message),
+            _ => null,
+        };
+        if (!failure.HasValue)
+        {
+            return __exception;
+        }
+
+        message = null;
+        overrideSenderId = null;
+        __result = false;
+        LibraryManagedNetDiagnostics.WarnOnce(failure.Value);
+        return null;
+    }
+
+    private static bool IsGameplayModMessagePacket(
+        byte[] packetBytes,
+        out Type? messageType)
+    {
+        messageType = null;
+        return LibraryManagedNetTypeRegistry.IsReady
+               && packetBytes.Length > 0
+               && MessageTypes.TryGetMessageType(packetBytes[0], out messageType)
+               && messageType != null
+               && !LibraryManagedNetTypeRegistry.IsVanillaMessage(messageType);
+    }
+
+    private static bool IsActionCarrierPacket(
+        byte[] packetBytes,
+        out Type? messageType)
+    {
+        messageType = null;
+        return LibraryManagedNetTypeRegistry.IsReady
+               && packetBytes.Length > 0
+               && MessageTypes.TryGetMessageType(packetBytes[0], out messageType)
+               && (messageType == typeof(RequestEnqueueActionMessage)
+                   || messageType == typeof(ActionEnqueuedMessage));
+    }
+}
