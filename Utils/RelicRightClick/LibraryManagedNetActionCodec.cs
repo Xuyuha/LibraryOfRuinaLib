@@ -10,6 +10,9 @@ internal static class LibraryManagedNetActionCodec
     internal const ulong Magic = 0x4C_4F_52_41_43_54_4E_41UL; // ANTCAROL
     internal const byte LegacyVersion = 1;
     internal const byte CurrentVersion = 2;
+    private const string RitsuLibAssemblyName = "STS2-RitsuLib";
+    private const string RitsuLibManagedActionTypeName =
+        "STS2RitsuLib.Networking.ManagedActions.RitsuLibManagedNetAction";
 
     private enum LibraryManagedActionKind : byte
     {
@@ -19,6 +22,10 @@ internal static class LibraryManagedNetActionCodec
     public static bool CanWrite(INetAction action)
     {
         Type actionType = action.GetType();
+        if (IsHandledByExternalStableCodec(actionType))
+        {
+            return false;
+        }
         if (LibraryManagedNetTypeRegistry.IsVanillaAction(actionType))
         {
             return false;
@@ -44,6 +51,20 @@ internal static class LibraryManagedNetActionCodec
         }
 
         return true;
+    }
+
+    internal static bool IsHandledByExternalStableCodec(Type actionType)
+    {
+        for (Type? current = actionType; current != null; current = current.BaseType)
+        {
+            if (current.FullName == RitsuLibManagedActionTypeName
+                && current.Assembly.GetName().Name == RitsuLibAssemblyName)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public static bool TryWrite(PacketWriter writer, INetAction action) =>
