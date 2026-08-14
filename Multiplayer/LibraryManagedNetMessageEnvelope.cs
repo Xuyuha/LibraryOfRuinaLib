@@ -85,7 +85,11 @@ internal sealed class LibraryManagedNetMessageEnvelope : INetMessage
                 "invalid_message_payload_length",
                 $"Managed message payload bit length {payloadBitLength} is outside the allowed range.");
         }
-        if (paddingBits is < 0 or > 7)
+        bool hasRecognizedTransportTrailer = paddingBits > 7
+            && LibraryManagedNetTransportTrailerCompatibility.IsRecognizedTrailingData(
+                reader.Buffer,
+                checked(reader.BitPosition + payloadBitLength));
+        if (paddingBits < 0 || (paddingBits > 7 && !hasRecognizedTransportTrailer))
         {
             throw DecodeException(
                 paddingBits < 0
