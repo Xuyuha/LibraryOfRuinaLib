@@ -456,8 +456,7 @@ public static class LibraryCreatureCmd
 	}
 	public static async Task SetChaoResistance(PlayerChoiceContext choiceContext, LibraryCreature target, Creature? dealer ,LibraryDamageType type ,LibraryResistanceLevel resistanceValue)
 	{
-		if(!target.HasChaoResistance)return;
-		ICombatState combatState = target.CombatState;
+		if(!target.HasChaoResistance || target.CombatState is not { } combatState)return;
 		if(!LibraryHooks.TrySetChaoResistance(combatState,choiceContext, target, dealer,type,resistanceValue))return;
 		await LibraryHooks.BeforeSetChaoResistance(combatState, choiceContext, target, dealer, type, resistanceValue);
 		target.SetChaoResistance(type,resistanceValue);
@@ -465,7 +464,7 @@ public static class LibraryCreatureCmd
 	}
 	public static async Task SetPhysicalResistance(PlayerChoiceContext choiceContext, LibraryCreature target, Creature? dealer ,LibraryDamageType type,LibraryResistanceLevel resistanceValue)
 	{
-		ICombatState combatState = target.CombatState;
+		if(target.CombatState is not { } combatState)return;
 		if(!LibraryHooks.TrySetPhysicalResistance(combatState,choiceContext, target, dealer,type,resistanceValue))return;
 		await LibraryHooks.BeforeSetPhysicalResistance(combatState, choiceContext, target, dealer, type, resistanceValue);
 		target.SetPhysicalResistance(type,resistanceValue);
