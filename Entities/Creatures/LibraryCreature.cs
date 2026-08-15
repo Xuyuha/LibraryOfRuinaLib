@@ -178,7 +178,7 @@ public class LibraryCreature : Creature//扩展Creature，添加Chao值属性
         {
 		    OverStunChaoValue = flag ? Math.Max(num - currentChaoValue, 0) : 0,
             ChaoValueAmount = currentChaoValue - CurrentChaoValue,
-            WasStun = CurrentChaoValue == 0 && !IsStunned,
+            WasStun = CurrentChaoValue == 0 && !IsStunPending,
         };
     }
     public new void StunInternal(Func<IReadOnlyList<Creature>, Task> stunMove, string? nextMoveId)

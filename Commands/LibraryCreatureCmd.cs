@@ -481,7 +481,7 @@ public static class LibraryCreatureCmd
 		{
 			await LibraryHooks.AfterCurrentChaoValueChanged(creature.Player?.RunState ?? creature.CombatState.RunState, creature.CombatState, creature, changedAmount,LibraryDamageType.None);
 		}
-		if (creature.CurrentChaoValue == 0 && !creature.IsStunned && creature.MaxChaoValue!=0)
+		if (creature.CurrentChaoValue == 0 && !creature.IsStunPending && creature.MaxChaoValue!=0)
 		{
 			await Stun(creature);
 		}
