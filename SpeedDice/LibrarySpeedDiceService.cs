@@ -3176,6 +3176,10 @@ internal static class LibrarySpeedDiceService
                     PileType.Hand);
                 if (result.success)
                 {
+                    // 卡因无有效目标而无法打出、退回手牌时，该速度骰子
+                    // 必须碎裂，否则玩家可以反复装备同一张带“使用时”
+                    // 效果的卡，无限触发其效果。
+                    slot.IsSpent = true;
                     ReleaseSlotCard(state, slot);
                     changed = true;
                 }
