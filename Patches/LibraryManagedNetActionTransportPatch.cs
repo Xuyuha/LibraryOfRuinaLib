@@ -267,17 +267,18 @@ internal static class LibraryManagedNetActionTransport
         byte[] packetBytes,
         int payloadEndBit)
     {
+        // The carrier must contain everything the codec declared; trailing bytes
+        // beyond the payload (e.g. transport-level decorations added by other mods)
+        // are not LoR's concern and are ignored, mirroring the vanilla bus behavior.
         long remainingBits = (long)packetBytes.Length * 8L - payloadEndBit;
-        if (remainingBits is >= 0 and <= 7)
+        if (remainingBits >= 0)
         {
             return;
         }
 
         throw new LibraryManagedNetDecodeException(
             new LibraryManagedNetDecodeFailure(
-                remainingBits < 0
-                    ? "truncated_action_carrier"
-                    : "forged_action_carrier_length",
+                "truncated_action_carrier",
                 $"Managed action carrier ended at bit {payloadEndBit} with "
                 + $"{remainingBits} packet bits remaining."));
     }

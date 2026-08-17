@@ -11,7 +11,7 @@ internal static class LibraryManagedMessageTypeSafetyPatch
 {
     [HarmonyPrefix]
     [HarmonyPriority(Priority.First)]
-    private static bool Prefix(INetMessage message, ref int __result)
+    private static bool Prefix(INetMessage message)
     {
         Type type = message.GetType();
         if (LibraryManagedNetTypeRegistry.IsVanillaMessage(type))
@@ -29,11 +29,6 @@ internal static class LibraryManagedMessageTypeSafetyPatch
                 "Refusing positional serialization for mod message before the managed protocol is ready: "
                 + type.FullName);
         }
-        if (type == typeof(LibraryManagedNetMessageEnvelope))
-        {
-            throw new InvalidOperationException(
-                "LibraryManagedNetMessageEnvelope cannot be sent directly.");
-        }
         if (LibraryManagedNetTypeRegistry.Catalog.IsExcludedMessage(type))
         {
             throw new InvalidOperationException(
@@ -41,16 +36,15 @@ internal static class LibraryManagedMessageTypeSafetyPatch
                 + type.FullName
                 + ". Network-bearing mods must declare affects_gameplay=true.");
         }
-        if (!LibraryManagedNetTypeRegistry.Catalog.TryGetMessageKey(
-                type,
-                out LibraryManagedNetTypeKey key))
+        if (LibraryManagedNetTypeRegistry.Catalog.TryGetMessageKey(type, out _))
         {
-            return true;
+            throw new InvalidOperationException(
+                "Managed messages must be sent through LibraryManagedNetMessageSender, "
+                + "not the vanilla message bus: "
+                + type.FullName);
         }
 
-        LibraryManagedNetMessageWriteContext.Begin(type, key);
-        __result = LibraryManagedNetTypeRegistry.EnvelopeMessageId;
-        return false;
+        return true;
     }
 }
 

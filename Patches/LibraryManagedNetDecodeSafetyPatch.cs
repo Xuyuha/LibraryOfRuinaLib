@@ -64,27 +64,6 @@ internal static class LibraryManagedNetDecodeSafetyPatch
         return false;
     }
 
-    [HarmonyPostfix]
-    private static void Postfix(ref INetMessage? message, ref bool __result)
-    {
-        if (!__result || message is not LibraryManagedNetMessageEnvelope envelope)
-        {
-            return;
-        }
-
-        if (envelope.InnerMessage == null)
-        {
-            message = null;
-            __result = false;
-            LibraryManagedNetDiagnostics.WarnOnce(new LibraryManagedNetDecodeFailure(
-                "empty_message_envelope",
-                "Managed message envelope completed without an inner message."));
-            return;
-        }
-
-        message = envelope.InnerMessage;
-    }
-
     [HarmonyFinalizer]
     private static Exception? Finalizer(
         Exception? __exception,
@@ -97,14 +76,6 @@ internal static class LibraryManagedNetDecodeSafetyPatch
         {
             null => null,
             LibraryManagedNetDecodeException managedException => managedException.Failure,
-            _ when IsManagedMessageEnvelopePacket(packetBytes, out Type? messageType) =>
-                new LibraryManagedNetDecodeFailure(
-                    "malformed_mod_message",
-                    (messageType?.FullName ?? "unknown")
-                    + ": "
-                    + __exception.GetType().Name
-                    + ": "
-                    + __exception.Message),
             _ when IsManagedActionCarrierPacket(packetBytes, out Type? carrierType) =>
                 new LibraryManagedNetDecodeFailure(
                     "malformed_action_carrier",
@@ -125,17 +96,6 @@ internal static class LibraryManagedNetDecodeSafetyPatch
         __result = false;
         LibraryManagedNetDiagnostics.WarnOnce(failure.Value);
         return null;
-    }
-
-    private static bool IsManagedMessageEnvelopePacket(
-        byte[] packetBytes,
-        out Type? messageType)
-    {
-        messageType = null;
-        return LibraryManagedNetTypeRegistry.IsReady
-               && packetBytes.Length > 0
-               && MessageTypes.TryGetMessageType(packetBytes[0], out messageType)
-               && messageType == typeof(LibraryManagedNetMessageEnvelope);
     }
 
     private static bool IsManagedActionCarrierPacket(

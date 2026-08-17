@@ -1,182 +1,51 @@
 #nullable enable
 using HarmonyLib;
 using LibraryLib.Multiplayer;
-using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Logging;
-using MegaCrit.Sts2.Core.Multiplayer.Serialization;
 using MegaCrit.Sts2.Core.Nodes.Screens.MainMenu;
 
 namespace LibraryLib.Patches;
 
+/// <summary>
+/// Initializes the LibraryOfRuinaLib managed net registry when the main menu is ready.
+///
+/// The game-owned <c>MessageTypes</c>/<c>ActionTypes</c> caches are the exclusive property of the
+/// vanilla game and of libraries that register their own carriers in them (e.g. BaseLib's
+/// <c>CustomMessageWrapper</c> shadow IDs). Following RitsuLib's approach, LibraryOfRuinaLib
+/// never rebuilds or writes into those tables. Managed messages travel through the LoR magic
+/// envelope directly over the transport and are demuxed in
+/// <see cref="LibraryManagedNetPacketDemuxPatch"/> before the vanilla bus ever sees them.
+/// </summary>
 [HarmonyPatch(typeof(NMainMenu), nameof(NMainMenu._Ready))]
 internal static class StableNetMessageTypesPatch
 {
-    private static bool _normalized;
+    private static bool _initialized;
 
     [HarmonyPrefix]
     private static void Prefix()
     {
-        NormalizeOnce();
-    }
-
-    private static void NormalizeOnce()
-    {
-        if (_normalized)
+        if (_initialized)
+        {
             return;
+        }
 
         try
         {
             LibraryManagedNetTypeRegistry.Initialize();
-            bool normalizedMessages = TryNormalizeMessages(out int vanillaMessageCount, out int modMessageCount);
-            bool normalizedActions = TryNormalizeActions(out int vanillaActionCount, out int modActionCount);
-            if (!normalizedMessages || !normalizedActions)
-            {
-                throw new InvalidOperationException(
-                    "STS2 network type caches were not both initialized: "
-                    + $"messages={normalizedMessages}, actions={normalizedActions}.");
-            }
+            _initialized = true;
 
-            int patchedMessageSerializers = LibraryManagedNetMessagePatchInstaller.Install(
-                new Harmony("LibraryOfRuinaLib.ManagedNetMessageEnvelope"));
-
-            _normalized = true;
             LibraryManagedNetTypeCatalog catalog = LibraryManagedNetTypeRegistry.Catalog;
-            Log.Info("[LibraryOfRuinaLib.Multiplayer] Stable gameplay net type table ready. "
-                + $"messages={vanillaMessageCount}/{modMessageCount} "
-                + $"actions={vanillaActionCount}/{modActionCount} "
-                + $"envelopeId={LibraryManagedNetTypeRegistry.EnvelopeMessageId} "
-                + $"serializers={patchedMessageSerializers} "
+            Log.Info("[LibraryOfRuinaLib.Multiplayer] Managed net protocol ready. "
+                + $"messages={catalog.MessageCount} "
+                + $"actions={catalog.ActionCount} "
                 + $"excludedNonGameplay={catalog.ExcludedMessageCount}/{catalog.ExcludedActionCount} "
-                + $"registry={catalog.Fingerprint}");
+                + $"registry={catalog.Fingerprint} "
+                + "(game-owned message type table left untouched)");
         }
         catch (Exception e)
         {
             Log.Error("[LibraryOfRuinaLib.Multiplayer] Managed net protocol initialization failed: " + e);
             throw;
-        }
-    }
-
-    private static bool TryNormalizeMessages(out int vanillaCount, out int modCount)
-    {
-        vanillaCount = 0;
-        modCount = 0;
-
-        var cache = AccessTools.Field(typeof(MessageTypes), "_cache")?.GetValue(null);
-        if (cache == null)
-            return false;
-
-        var typeToId = AccessTools.Field(cache.GetType(), "_typeToId")?.GetValue(cache) as Dictionary<Type, int>;
-        var idToType = AccessTools.Field(cache.GetType(), "_idToType")?.GetValue(cache) as List<Type>;
-        if (typeToId == null || idToType == null)
-            return false;
-
-        IReadOnlyList<Type> vanillaTypes = GetOriginalVanillaMessageWireOrder();
-        var vanillaSet = vanillaTypes.ToHashSet();
-        LibraryManagedNetTypeCatalog catalog = LibraryManagedNetTypeRegistry.Catalog;
-        IReadOnlyList<Type> managedTypes = catalog.GameplayMessageTypesInWireOrder;
-        Type[] passthroughTypes = idToType
-            .Where(type => !vanillaSet.Contains(type)
-                           && type != typeof(LibraryManagedNetMessageEnvelope)
-                           && !catalog.IsRegisteredMessage(type))
-            .Distinct()
-            .ToArray();
-
-        idToType.Clear();
-        typeToId.Clear();
-
-        foreach (Type type in vanillaTypes)
-            AddType(typeToId, idToType, type);
-
-        AddType(typeToId, idToType, typeof(LibraryManagedNetMessageEnvelope));
-        int envelopeId = typeToId[typeof(LibraryManagedNetMessageEnvelope)];
-        if (envelopeId != LibraryManagedNetTypeRegistry.EnvelopeMessageId)
-        {
-            throw new InvalidOperationException(
-                "Managed message envelope did not receive the first post-vanilla message ID.");
-        }
-        if (envelopeId > byte.MaxValue)
-        {
-            throw new InvalidOperationException(
-                $"Managed message envelope ID {envelopeId} does not fit in the game's byte-sized message ID.");
-        }
-
-        foreach (Type type in passthroughTypes)
-            AddType(typeToId, idToType, type);
-
-        foreach (Type type in managedTypes)
-            AddAliasedType(typeToId, type, envelopeId);
-
-        vanillaCount = vanillaTypes.Count;
-        modCount = managedTypes.Count;
-        return true;
-    }
-
-    private static bool TryNormalizeActions(out int vanillaCount, out int modCount)
-    {
-        vanillaCount = 0;
-        modCount = 0;
-
-        var cache = AccessTools.Field(typeof(ActionTypes), "_cache")?.GetValue(null);
-        if (cache == null)
-            return false;
-
-        var typeToId = AccessTools.Field(cache.GetType(), "_typeToId")?.GetValue(cache) as Dictionary<Type, int>;
-        var idToType = AccessTools.Field(cache.GetType(), "_idToType")?.GetValue(cache) as List<Type>;
-        if (typeToId == null || idToType == null)
-            return false;
-
-        IReadOnlyList<Type> vanillaTypes = GetOriginalVanillaActionWireOrder();
-        var vanillaSet = vanillaTypes.ToHashSet();
-        LibraryManagedNetTypeCatalog catalog = LibraryManagedNetTypeRegistry.Catalog;
-        Type[] passthroughTypes = idToType
-            .Where(type => !vanillaSet.Contains(type)
-                           && !catalog.IsRegisteredAction(type))
-            .Distinct()
-            .ToArray();
-
-        idToType.Clear();
-        typeToId.Clear();
-
-        foreach (Type type in vanillaTypes)
-            AddType(typeToId, idToType, type);
-
-        foreach (Type type in passthroughTypes)
-            AddType(typeToId, idToType, type);
-
-        vanillaCount = vanillaTypes.Count;
-        modCount = catalog.ActionCount;
-        return true;
-    }
-
-    internal static IReadOnlyList<Type> GetOriginalVanillaMessageWireOrder() =>
-        INetMessageSubtypes.All
-            .OrderBy(static type => type.Name)
-            .ToArray();
-
-    internal static IReadOnlyList<Type> GetOriginalVanillaActionWireOrder() =>
-        INetActionSubtypes.All
-            .OrderBy(static type => type.Name)
-            .ToArray();
-
-    private static void AddType(Dictionary<Type, int> typeToId, List<Type> idToType, Type type)
-    {
-        if (typeToId.ContainsKey(type))
-            return;
-
-        typeToId[type] = idToType.Count;
-        idToType.Add(type);
-    }
-
-    private static void AddAliasedType(
-        Dictionary<Type, int> typeToId,
-        Type type,
-        int sharedId)
-    {
-        if (!typeToId.TryAdd(type, sharedId))
-        {
-            throw new InvalidOperationException(
-                "Duplicate managed message type in wire table: " + type.FullName);
         }
     }
 }

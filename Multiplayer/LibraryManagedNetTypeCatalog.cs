@@ -239,8 +239,6 @@ internal static class LibraryManagedNetTypeRegistry
 
     public static bool IsReady => _catalog != null;
 
-    public static int EnvelopeMessageId => VanillaMessages.Count;
-
     public static LibraryManagedNetTypeCatalog Catalog =>
         _catalog ?? throw new InvalidOperationException(
             "LibraryOfRuinaLib managed multiplayer protocol is not initialized.");
@@ -270,8 +268,7 @@ internal static class LibraryManagedNetTypeRegistry
         }
 
         List<LibraryManagedNetTypeRegistration> messages = BuildRegistrations(
-            GetRegisteredSubtypes<INetMessage>(registeredAssemblies)
-                .Where(static type => type != typeof(LibraryManagedNetMessageEnvelope)),
+            GetRegisteredSubtypes<INetMessage>(registeredAssemblies),
             owners,
             "message");
         List<LibraryManagedNetTypeRegistration> actions = BuildRegistrations(

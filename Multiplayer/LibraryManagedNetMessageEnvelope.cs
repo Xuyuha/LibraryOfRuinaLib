@@ -1,36 +1,35 @@
 #nullable enable
-using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Multiplayer.Serialization;
-using MegaCrit.Sts2.Core.Multiplayer.Transport;
 
 namespace LibraryLib.Multiplayer;
 
-internal sealed class LibraryManagedNetMessageEnvelope : INetMessage
+/// <summary>
+/// Decoder container for the LoR managed message wire format. The envelope deliberately
+/// does not implement <see cref="INetMessage"/>: it never occupies a slot in the
+/// game-owned message-ID table and can only travel through the magic-prefixed direct
+/// transport path demuxed by <c>LibraryManagedNetPacketDemuxPatch</c>.
+/// </summary>
+internal sealed class LibraryManagedNetMessageEnvelope
 {
     internal const ulong Magic = 0x4C_4F_52_4D_53_47_4E_56UL; // VNGSMROL
     internal const byte CurrentVersion = 1;
 
     public INetMessage? InnerMessage { get; private set; }
 
-    public bool ShouldBroadcast => InnerMessage?.ShouldBroadcast ?? false;
-
-    public NetTransferMode Mode => InnerMessage?.Mode ?? NetTransferMode.Reliable;
-
-    public LogLevel LogLevel => InnerMessage?.LogLevel ?? LogLevel.VeryDebug;
-
-    public bool ShouldBuffer => InnerMessage?.ShouldBuffer ?? true;
-
-    public void Serialize(PacketWriter writer) =>
-        throw new InvalidOperationException(
-            "The managed message envelope is emitted by the wire codec and cannot be sent directly.");
+    /// <summary>
+    /// The sender id carried inside the envelope. On the receiving end this is the id
+    /// the inner message is dispatched with; the transport-level peer id is only used
+    /// for host-side rebroadcast routing.
+    /// </summary>
+    public ulong SenderId { get; private set; }
 
     public void Deserialize(PacketReader reader)
     {
-        if (!LibraryManagedNetPayloadCodec.HasRemainingBytes(reader, sizeof(ulong) + 1))
+        if (!LibraryManagedNetPayloadCodec.HasRemainingBytes(reader, sizeof(ulong) + sizeof(ulong) + 1))
         {
             throw DecodeException(
                 "truncated_message_header",
-                "Managed message ended before its magic and protocol version.");
+                "Managed message ended before its magic, sender id and protocol version.");
         }
 
         ulong magic = reader.ReadULong();
@@ -48,6 +47,8 @@ internal sealed class LibraryManagedNetMessageEnvelope : INetMessage
                 "unsupported_message_version",
                 $"Managed message protocol version {version} is not supported.");
         }
+
+        SenderId = reader.ReadULong();
 
         if (!LibraryManagedNetPayloadCodec.TryReadKey(
                 reader,
@@ -77,25 +78,22 @@ internal sealed class LibraryManagedNetMessageEnvelope : INetMessage
 
         int payloadBitLength = reader.ReadInt();
         long maximumPayloadBits = (long)LibraryManagedNetPayloadCodec.MaxPayloadBytes * 8L;
-        long availableBits = (long)reader.Buffer.Length * 8L - reader.BitPosition;
-        long paddingBits = availableBits - payloadBitLength;
         if (payloadBitLength < 0 || payloadBitLength > maximumPayloadBits)
         {
             throw DecodeException(
                 "invalid_message_payload_length",
                 $"Managed message payload bit length {payloadBitLength} is outside the allowed range.");
         }
-        if (paddingBits < 0 || paddingBits > 7)
-        {
-            throw DecodeException(
-                paddingBits < 0
-                    ? "truncated_message_payload"
-                    : "forged_message_payload_length",
-                $"Managed message declared {payloadBitLength} payload bits with "
-                + $"{availableBits} bits remaining in the packet.");
-        }
 
         int payloadByteLength = (payloadBitLength + 7) / 8;
+        if (!LibraryManagedNetPayloadCodec.HasRemainingBytes(reader, payloadByteLength))
+        {
+            throw DecodeException(
+                "truncated_message_payload",
+                $"Managed message declared {payloadBitLength} payload bits "
+                + "but the packet ended before the payload.");
+        }
+
         byte[] payload = new byte[payloadByteLength];
         reader.ReadBytes(payload, payloadByteLength);
 
