@@ -20,6 +20,11 @@ internal static class LibraryManagedMessageTypeSafetyPatch
         }
         if (!LibraryManagedNetTypeRegistry.IsReady)
         {
+            if (!LibraryManagedNetTypes.IsAssemblyRegistered(type.Assembly))
+            {
+                return true;
+            }
+
             throw new InvalidOperationException(
                 "Refusing positional serialization for mod message before the managed protocol is ready: "
                 + type.FullName);
@@ -40,9 +45,7 @@ internal static class LibraryManagedMessageTypeSafetyPatch
                 type,
                 out LibraryManagedNetTypeKey key))
         {
-            throw new InvalidOperationException(
-                "Refusing positional serialization for unregistered mod message type: "
-                + type.FullName);
+            return true;
         }
 
         LibraryManagedNetMessageWriteContext.Begin(type, key);
@@ -65,6 +68,11 @@ internal static class LibraryManagedActionTypeSafetyPatch
         }
         if (!LibraryManagedNetTypeRegistry.IsReady)
         {
+            if (!LibraryManagedNetTypes.IsAssemblyRegistered(type.Assembly))
+            {
+                return;
+            }
+
             throw new InvalidOperationException(
                 "Refusing positional serialization for mod action before the managed protocol is ready: "
                 + type.FullName);
@@ -78,9 +86,7 @@ internal static class LibraryManagedActionTypeSafetyPatch
         }
         if (!LibraryManagedNetTypeRegistry.Catalog.TryGetActionKey(type, out _))
         {
-            throw new InvalidOperationException(
-                "Refusing positional serialization for unregistered mod action type: "
-                + type.FullName);
+            return;
         }
 
         throw new InvalidOperationException(

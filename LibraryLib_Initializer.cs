@@ -1,6 +1,7 @@
 using Godot.Bridge;
 using HarmonyLib;
 using LibraryLib.Localization;
+using LibraryLib.Multiplayer;
 using LibraryLib.SpeedDice;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Logging;
@@ -13,6 +14,7 @@ public class Entry
 {
     public static void Init()
     {
+        LibraryManagedNetTypes.RegisterAssembly(typeof(Entry).Assembly);
         LibraryResourcePack.TryLoad();
         LibraryResistanceLocalization.Install();
         CombatManager.Instance.CombatEnded += _ => LibrarySpeedDiceService.ClearCombat();

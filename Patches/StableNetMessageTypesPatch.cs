@@ -72,9 +72,15 @@ internal static class StableNetMessageTypesPatch
             return false;
 
         IReadOnlyList<Type> vanillaTypes = GetOriginalVanillaMessageWireOrder();
-
-        IReadOnlyList<Type> modTypes =
-            LibraryManagedNetTypeRegistry.Catalog.GameplayMessageTypesInWireOrder;
+        var vanillaSet = vanillaTypes.ToHashSet();
+        LibraryManagedNetTypeCatalog catalog = LibraryManagedNetTypeRegistry.Catalog;
+        IReadOnlyList<Type> managedTypes = catalog.GameplayMessageTypesInWireOrder;
+        Type[] passthroughTypes = idToType
+            .Where(type => !vanillaSet.Contains(type)
+                           && type != typeof(LibraryManagedNetMessageEnvelope)
+                           && !catalog.IsRegisteredMessage(type))
+            .Distinct()
+            .ToArray();
 
         idToType.Clear();
         typeToId.Clear();
@@ -95,11 +101,14 @@ internal static class StableNetMessageTypesPatch
                 $"Managed message envelope ID {envelopeId} does not fit in the game's byte-sized message ID.");
         }
 
-        foreach (Type type in modTypes)
+        foreach (Type type in passthroughTypes)
+            AddType(typeToId, idToType, type);
+
+        foreach (Type type in managedTypes)
             AddAliasedType(typeToId, type, envelopeId);
 
         vanillaCount = vanillaTypes.Count;
-        modCount = modTypes.Count;
+        modCount = managedTypes.Count;
         return true;
     }
 
@@ -118,6 +127,13 @@ internal static class StableNetMessageTypesPatch
             return false;
 
         IReadOnlyList<Type> vanillaTypes = GetOriginalVanillaActionWireOrder();
+        var vanillaSet = vanillaTypes.ToHashSet();
+        LibraryManagedNetTypeCatalog catalog = LibraryManagedNetTypeRegistry.Catalog;
+        Type[] passthroughTypes = idToType
+            .Where(type => !vanillaSet.Contains(type)
+                           && !catalog.IsRegisteredAction(type))
+            .Distinct()
+            .ToArray();
 
         idToType.Clear();
         typeToId.Clear();
@@ -125,8 +141,11 @@ internal static class StableNetMessageTypesPatch
         foreach (Type type in vanillaTypes)
             AddType(typeToId, idToType, type);
 
+        foreach (Type type in passthroughTypes)
+            AddType(typeToId, idToType, type);
+
         vanillaCount = vanillaTypes.Count;
-        modCount = LibraryManagedNetTypeRegistry.Catalog.ActionCount;
+        modCount = catalog.ActionCount;
         return true;
     }
 

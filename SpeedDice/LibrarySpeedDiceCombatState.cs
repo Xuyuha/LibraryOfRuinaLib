@@ -79,6 +79,13 @@ public sealed class LibrarySpeedDiceCombatState
 
     public event Action? Changed;
 
+    /// <summary>
+    /// 仅在确定性战斗状态变化（动作驱动，host/client 两端对称执行）时触发。
+    /// 本地 UI 交互（装备选择、目标选择等）只触发 <see cref="Changed"/>，
+    /// 不触发本事件，避免多人快照捕获在两端不对称。
+    /// </summary>
+    public event Action? GameplayChanged;
+
     internal Rng GameplayRng { get; set; }
 
     internal Rng TargetRepairRng { get; set; }
@@ -297,7 +304,7 @@ public sealed class LibrarySpeedDiceCombatState
 
             IncrementRevision();
         }
-        NotifyChanged();
+        PublishChanged(gameplay: true);
     }
 
     internal GameplayNotificationBatch BeginGameplayNotificationBatch()
@@ -333,7 +340,7 @@ public sealed class LibrarySpeedDiceCombatState
         }
 
         if (notify)
-            NotifyChanged();
+            PublishChanged(gameplay: true);
     }
 
     private void IncrementRevision()
@@ -343,6 +350,37 @@ public sealed class LibrarySpeedDiceCombatState
 
     internal void NotifyChanged()
     {
+        PublishChanged(gameplay: false);
+    }
+
+    /// <summary>
+    /// 通知 gameplay 订阅者但不递增 Revision；用于快照恢复等
+    /// 已经设置了确定 Revision 的路径。
+    /// </summary>
+    internal void PublishGameplayChangedWithoutRevision()
+    {
+        PublishChanged(gameplay: true);
+    }
+
+    private void PublishChanged(bool gameplay)
+    {
+        if (gameplay)
+        {
+            foreach (Delegate handler in GameplayChanged?.GetInvocationList() ?? [])
+            {
+                try
+                {
+                    ((Action)handler)();
+                }
+                catch (Exception exception)
+                {
+                    Log.Error(
+                        "[LibraryOfRuinaLib] Speed-dice gameplay state listener failed: "
+                        + exception);
+                }
+            }
+        }
+
         foreach (Delegate handler in Changed?.GetInvocationList() ?? [])
         {
             try
@@ -363,14 +401,14 @@ public sealed class LibrarySpeedDiceCombatState
         if (Interlocked.CompareExchange(ref _lifecycleBusy, 1, 0) != 0)
             return false;
 
-        NotifyChanged();
+        PublishChanged(gameplay: true);
         return true;
     }
 
     internal void EndLifecycle()
     {
         if (Interlocked.Exchange(ref _lifecycleBusy, 0) != 0)
-            NotifyChanged();
+            PublishChanged(gameplay: true);
     }
 
     internal sealed class GameplayNotificationBatch : IDisposable

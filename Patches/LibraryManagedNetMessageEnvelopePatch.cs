@@ -118,6 +118,56 @@ internal static class LibraryManagedNetMessageSerializePatch
     }
 }
 
+/// <summary>
+/// Builds a complete managed-message packet for the direct stable sender. This avoids
+/// depending on a Harmony prefix attached to a value-type message's Serialize
+/// implementation, which is not a reliable dispatch point in the current runtime.
+/// </summary>
+internal static class LibraryManagedNetMessageTransport
+{
+    internal static bool TrySerialize(
+        ulong senderId,
+        INetMessage message,
+        out byte[] bytes,
+        out int length)
+    {
+        bytes = [];
+        length = 0;
+        Type messageType = message.GetType();
+        if (!LibraryManagedNetTypeRegistry.IsReady
+            || !LibraryManagedNetTypeRegistry.Catalog.TryGetMessageKey(
+                messageType,
+                out LibraryManagedNetTypeKey key))
+        {
+            return false;
+        }
+
+        var payloadWriter = new PacketWriter();
+        message.Serialize(payloadWriter);
+        int payloadBitLength = payloadWriter.BitPosition;
+        if (payloadBitLength < 0
+            || (long)payloadBitLength
+            > (long)LibraryManagedNetPayloadCodec.MaxPayloadBytes * 8L)
+        {
+            throw new InvalidOperationException(
+                $"Managed message payload is too large: {payloadBitLength} bits.");
+        }
+
+        var writer = new PacketWriter();
+        writer.WriteByte(checked((byte)LibraryManagedNetTypeRegistry.EnvelopeMessageId));
+        writer.WriteULong(senderId);
+        writer.WriteULong(LibraryManagedNetMessageEnvelope.Magic);
+        writer.WriteByte(LibraryManagedNetMessageEnvelope.CurrentVersion);
+        LibraryManagedNetPayloadCodec.WriteKey(writer, key);
+        writer.WriteInt(payloadBitLength);
+        writer.WriteBytes(payloadWriter.Buffer, (payloadBitLength + 7) / 8);
+
+        length = writer.BytePosition;
+        bytes = writer.Buffer;
+        return true;
+    }
+}
+
 internal static class LibraryManagedNetMessagePatchInstaller
 {
     private static bool _installed;
@@ -134,6 +184,7 @@ internal static class LibraryManagedNetMessagePatchInstaller
             return 0;
         }
 
+        Type[] concreteMessageTypes = messageTypes.Distinct().ToArray();
         MethodInfo prefixMethod = AccessTools.Method(
             typeof(LibraryManagedNetMessageSerializePatch),
             nameof(LibraryManagedNetMessageSerializePatch.Prefix));
@@ -144,7 +195,7 @@ internal static class LibraryManagedNetMessagePatchInstaller
         var finalizer = new HarmonyMethod(finalizerMethod) { priority = Priority.Last };
 
         int patchedCount = 0;
-        foreach (MethodInfo serializeMethod in messageTypes
+        foreach (MethodInfo serializeMethod in concreteMessageTypes
                      .Select(GetSerializeMethod)
                      .Distinct())
         {

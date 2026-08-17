@@ -42,6 +42,28 @@ internal static class LibraryManagedNetDecodeSafetyPatch
         AccessTools.GetDeclaredMethods(typeof(NetMessageBus)).Single(static method =>
             method.Name == nameof(NetMessageBus.TryDeserializeMessage));
 
+    [HarmonyPrefix]
+    [HarmonyPriority(Priority.First)]
+    private static bool Prefix(
+        byte[] packetBytes,
+        ref INetMessage? message,
+        ref ulong? overrideSenderId,
+        ref bool __result)
+    {
+        if (!LibraryManagedNetActionTransport.TryDecodeManagedCarrier(
+                packetBytes,
+                out INetMessage? decoded,
+                out ulong senderId))
+        {
+            return true;
+        }
+
+        message = decoded;
+        overrideSenderId = senderId;
+        __result = true;
+        return false;
+    }
+
     [HarmonyPostfix]
     private static void Postfix(ref INetMessage? message, ref bool __result)
     {
@@ -75,7 +97,7 @@ internal static class LibraryManagedNetDecodeSafetyPatch
         {
             null => null,
             LibraryManagedNetDecodeException managedException => managedException.Failure,
-            _ when IsGameplayModMessagePacket(packetBytes, out Type? messageType) =>
+            _ when IsManagedMessageEnvelopePacket(packetBytes, out Type? messageType) =>
                 new LibraryManagedNetDecodeFailure(
                     "malformed_mod_message",
                     (messageType?.FullName ?? "unknown")
@@ -83,7 +105,7 @@ internal static class LibraryManagedNetDecodeSafetyPatch
                     + __exception.GetType().Name
                     + ": "
                     + __exception.Message),
-            _ when IsActionCarrierPacket(packetBytes, out Type? carrierType) =>
+            _ when IsManagedActionCarrierPacket(packetBytes, out Type? carrierType) =>
                 new LibraryManagedNetDecodeFailure(
                     "malformed_action_carrier",
                     (carrierType?.FullName ?? "unknown")
@@ -105,7 +127,7 @@ internal static class LibraryManagedNetDecodeSafetyPatch
         return null;
     }
 
-    private static bool IsGameplayModMessagePacket(
+    private static bool IsManagedMessageEnvelopePacket(
         byte[] packetBytes,
         out Type? messageType)
     {
@@ -113,19 +135,37 @@ internal static class LibraryManagedNetDecodeSafetyPatch
         return LibraryManagedNetTypeRegistry.IsReady
                && packetBytes.Length > 0
                && MessageTypes.TryGetMessageType(packetBytes[0], out messageType)
-               && messageType != null
-               && !LibraryManagedNetTypeRegistry.IsVanillaMessage(messageType);
+               && messageType == typeof(LibraryManagedNetMessageEnvelope);
     }
 
-    private static bool IsActionCarrierPacket(
+    private static bool IsManagedActionCarrierPacket(
         byte[] packetBytes,
         out Type? messageType)
     {
         messageType = null;
-        return LibraryManagedNetTypeRegistry.IsReady
-               && packetBytes.Length > 0
-               && MessageTypes.TryGetMessageType(packetBytes[0], out messageType)
-               && (messageType == typeof(RequestEnqueueActionMessage)
-                   || messageType == typeof(ActionEnqueuedMessage));
+        if (!LibraryManagedNetTypeRegistry.IsReady
+            || packetBytes.Length == 0
+            || !MessageTypes.TryGetMessageType(packetBytes[0], out messageType)
+            || (messageType != typeof(RequestEnqueueActionMessage)
+                && messageType != typeof(ActionEnqueuedMessage)))
+        {
+            return false;
+        }
+
+        try
+        {
+            return LibraryManagedNetActionTransport.TryDecodeManagedCarrier(
+                packetBytes,
+                out _,
+                out _);
+        }
+        catch (LibraryManagedNetDecodeException)
+        {
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
     }
 }

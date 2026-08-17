@@ -1,4 +1,6 @@
 #nullable enable
+using System.Reflection;
+using System.Reflection.Emit;
 using HarmonyLib;
 using LibraryLib.Utils.RelicRightClick;
 using MegaCrit.Sts2.Core.Multiplayer.Messages.Game;
@@ -20,6 +22,151 @@ internal static class LibraryManagedNetActionMessagePatch
         BitPositionRef(probe) = reader.BitPosition;
         return probe;
     }
+}
+
+/// <summary>
+/// Class-level combat-replay seam for managed actions. The game serializes replay
+/// events through a generic list of value types; relying only on Harmony patches on
+/// <see cref="CombatReplayEvent"/> repeats the same value-type dispatch risk that
+/// prevented the request/announcement serializer patches from running in-game.
+/// </summary>
+internal static class LibraryManagedCombatReplayListCodec
+{
+    internal static void WriteEvents(
+        PacketWriter writer,
+        IReadOnlyList<CombatReplayEvent> events,
+        int lengthBits)
+    {
+        writer.WriteInt(events.Count, lengthBits);
+        foreach (CombatReplayEvent replayEvent in events)
+        {
+            if (replayEvent.eventType == CombatReplayEventType.GameAction
+                && replayEvent.action != null
+                && LibraryManagedNetActionCodec.CanWrite(replayEvent.action))
+            {
+                writer.WriteInt((int)replayEvent.eventType, 3);
+                writer.WriteULong(replayEvent.playerId!.Value);
+                LibraryManagedNetActionCodec.TryWrite(writer, replayEvent.action);
+                continue;
+            }
+
+            replayEvent.Serialize(writer);
+        }
+    }
+
+    internal static List<CombatReplayEvent> ReadEvents(
+        PacketReader reader,
+        int lengthBits)
+    {
+        var events = new List<CombatReplayEvent>();
+        int count = reader.ReadInt(lengthBits);
+        for (int index = 0; index < count; index++)
+        {
+            PacketReader probe =
+                LibraryManagedNetActionMessagePatch.CreateProbeReader(reader);
+            var eventType = (CombatReplayEventType)probe.ReadInt(3);
+            if (eventType == CombatReplayEventType.GameAction)
+            {
+                probe.ReadULong();
+                if (LibraryManagedNetActionCodec.NextPayloadIsManagedAction(probe))
+                {
+                    events.Add(new CombatReplayEvent
+                    {
+                        eventType = (CombatReplayEventType)reader.ReadInt(3),
+                        playerId = reader.ReadULong(),
+                        action = LibraryManagedNetActionCodec.Read(reader),
+                    });
+                    continue;
+                }
+            }
+
+            var replayEvent = new CombatReplayEvent();
+            replayEvent.Deserialize(reader);
+            events.Add(replayEvent);
+        }
+
+        return events;
+    }
+}
+
+[HarmonyPatch(typeof(CombatReplay), nameof(CombatReplay.Serialize), typeof(PacketWriter))]
+internal static class LibraryManagedCombatReplaySerializePatch
+{
+    [HarmonyTranspiler]
+    private static IEnumerable<CodeInstruction> Transpiler(
+        IEnumerable<CodeInstruction> instructions)
+    {
+        MethodInfo replacement = AccessTools.Method(
+            typeof(LibraryManagedCombatReplayListCodec),
+            nameof(LibraryManagedCombatReplayListCodec.WriteEvents));
+        int replaced = 0;
+        foreach (CodeInstruction instruction in instructions)
+        {
+            if (IsReplayEventListCall(instruction, nameof(PacketWriter.WriteList)))
+            {
+                instruction.opcode = OpCodes.Call;
+                instruction.operand = replacement;
+                replaced++;
+            }
+
+            yield return instruction;
+        }
+
+        if (replaced != 1)
+        {
+            throw new InvalidOperationException(
+                $"Expected one CombatReplayEvent WriteList call, replaced {replaced}.");
+        }
+    }
+
+    private static bool IsReplayEventListCall(
+        CodeInstruction instruction,
+        string methodName) =>
+        instruction.operand is MethodInfo method
+        && method.Name == methodName
+        && method.IsGenericMethod
+        && method.GetGenericArguments() is [Type itemType]
+        && itemType == typeof(CombatReplayEvent);
+}
+
+[HarmonyPatch(typeof(CombatReplay), nameof(CombatReplay.Deserialize), typeof(PacketReader))]
+internal static class LibraryManagedCombatReplayDeserializePatch
+{
+    [HarmonyTranspiler]
+    private static IEnumerable<CodeInstruction> Transpiler(
+        IEnumerable<CodeInstruction> instructions)
+    {
+        MethodInfo replacement = AccessTools.Method(
+            typeof(LibraryManagedCombatReplayListCodec),
+            nameof(LibraryManagedCombatReplayListCodec.ReadEvents));
+        int replaced = 0;
+        foreach (CodeInstruction instruction in instructions)
+        {
+            if (IsReplayEventListCall(instruction, nameof(PacketReader.ReadList)))
+            {
+                instruction.opcode = OpCodes.Call;
+                instruction.operand = replacement;
+                replaced++;
+            }
+
+            yield return instruction;
+        }
+
+        if (replaced != 1)
+        {
+            throw new InvalidOperationException(
+                $"Expected one CombatReplayEvent ReadList call, replaced {replaced}.");
+        }
+    }
+
+    private static bool IsReplayEventListCall(
+        CodeInstruction instruction,
+        string methodName) =>
+        instruction.operand is MethodInfo method
+        && method.Name == methodName
+        && method.IsGenericMethod
+        && method.GetGenericArguments() is [Type itemType]
+        && itemType == typeof(CombatReplayEvent);
 }
 
 [HarmonyPatch(typeof(RequestEnqueueActionMessage), nameof(RequestEnqueueActionMessage.Serialize), typeof(PacketWriter))]

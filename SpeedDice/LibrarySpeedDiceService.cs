@@ -250,7 +250,7 @@ internal static class LibrarySpeedDiceService
             }
 
             state.Revision = Math.Max(0, snapshot.Revision);
-            state.NotifyChanged();
+            state.PublishGameplayChangedWithoutRevision();
             return true;
         }
         finally

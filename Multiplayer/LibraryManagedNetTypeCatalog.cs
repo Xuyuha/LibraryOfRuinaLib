@@ -3,11 +3,58 @@ using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
-using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Modding;
 using MegaCrit.Sts2.Core.Multiplayer.Serialization;
 
 namespace LibraryLib.Multiplayer;
+
+/// <summary>
+/// Opt-in boundary for LibraryOfRuinaLib's stable multiplayer protocol. A mod must
+/// register each assembly that owns network messages or actions during its initializer.
+/// Assemblies that do not register remain on the game's native positional protocol;
+/// LibraryOfRuinaLib does not scan their types or encode their payloads.
+/// </summary>
+public static class LibraryManagedNetTypes
+{
+    private static readonly object Sync = new();
+    private static readonly HashSet<Assembly> RegisteredAssemblies = [];
+
+    public static void RegisterAssembly(Assembly assembly)
+    {
+        ArgumentNullException.ThrowIfNull(assembly);
+        lock (Sync)
+        {
+            if (RegisteredAssemblies.Contains(assembly))
+            {
+                return;
+            }
+            if (LibraryManagedNetTypeRegistry.IsReady)
+            {
+                throw new InvalidOperationException(
+                    "Managed network assemblies must be registered before the main menu initializes: "
+                    + assembly.GetName().Name);
+            }
+
+            RegisteredAssemblies.Add(assembly);
+        }
+    }
+
+    internal static bool IsAssemblyRegistered(Assembly assembly)
+    {
+        lock (Sync)
+        {
+            return RegisteredAssemblies.Contains(assembly);
+        }
+    }
+
+    internal static Assembly[] GetRegisteredAssemblies()
+    {
+        lock (Sync)
+        {
+            return RegisteredAssemblies.ToArray();
+        }
+    }
+}
 
 internal readonly record struct LibraryManagedNetTypeKey(
     string ModId,
@@ -100,6 +147,9 @@ internal sealed class LibraryManagedNetTypeCatalog
 
     public bool IsExcludedMessage(Type type) => _excludedMessageTypes.Contains(type);
 
+    public bool IsRegisteredMessage(Type type) =>
+        _messageTypeToKey.ContainsKey(type) || _excludedMessageTypes.Contains(type);
+
     public bool TryGetActionKey(Type type, out LibraryManagedNetTypeKey key) =>
         _actionTypeToKey.TryGetValue(type, out key);
 
@@ -107,6 +157,9 @@ internal sealed class LibraryManagedNetTypeCatalog
         _actionKeyToType.TryGetValue(key, out type);
 
     public bool IsExcludedAction(Type type) => _excludedActionTypes.Contains(type);
+
+    public bool IsRegisteredAction(Type type) =>
+        _actionTypeToKey.ContainsKey(type) || _excludedActionTypes.Contains(type);
 
     private static void RegisterAll<TBase>(
         IEnumerable<LibraryManagedNetTypeRegistration> registrations,
@@ -203,14 +256,26 @@ internal static class LibraryManagedNetTypeRegistry
             return;
         }
 
+        Assembly[] registeredAssemblies =
+            LibraryManagedNetTypes.GetRegisteredAssemblies();
         Dictionary<Assembly, AssemblyOwner> owners = BuildAssemblyOwners();
+        foreach (Assembly assembly in registeredAssemblies)
+        {
+            if (!owners.ContainsKey(assembly))
+            {
+                throw new InvalidOperationException(
+                    "Registered managed network assembly has no owning loaded mod: "
+                    + assembly.GetName().Name);
+            }
+        }
+
         List<LibraryManagedNetTypeRegistration> messages = BuildRegistrations(
-            ReflectionHelper.GetSubtypesInMods<INetMessage>()
+            GetRegisteredSubtypes<INetMessage>(registeredAssemblies)
                 .Where(static type => type != typeof(LibraryManagedNetMessageEnvelope)),
             owners,
             "message");
         List<LibraryManagedNetTypeRegistration> actions = BuildRegistrations(
-            ReflectionHelper.GetSubtypesInMods<INetAction>(),
+            GetRegisteredSubtypes<INetAction>(registeredAssemblies),
             owners,
             "action");
 
@@ -223,6 +288,15 @@ internal static class LibraryManagedNetTypeRegistry
 
     internal static void SetCatalogForTesting(LibraryManagedNetTypeCatalog catalog) =>
         _catalog = catalog;
+
+    private static IEnumerable<Type> GetRegisteredSubtypes<TBase>(
+        IEnumerable<Assembly> assemblies)
+    {
+        Type baseType = typeof(TBase);
+        return assemblies
+            .SelectMany(static assembly => assembly.GetTypes())
+            .Where(type => type != baseType && baseType.IsAssignableFrom(type));
+    }
 
     private readonly record struct AssemblyOwner(string ModId, bool AffectsGameplay);
 
