@@ -40,9 +40,16 @@ public abstract class LibraryTurnsPowerModel : LibraryPowerModel, ISecondaryDisp
         }
     }
     //持续回合数
-    public int TurnsRemaining => AmountPlan.Count > 0
-        ? Math.Max(0, AmountPlan.Keys.Max() - CombatState.RoundNumber + 1)
-        : 0;
+    public int TurnsRemaining
+    {
+        get
+        {
+            ICombatState? combatState = Owner?.CombatState;
+            return combatState != null && AmountPlan.Count > 0
+                ? Math.Max(0, AmountPlan.Keys.Max() - combatState.RoundNumber + 1)
+                : 0;
+        }
+    }
 	/// <summary>
 	///     表示在谁的回合结束时消耗，默认为自己回合结束时消耗
 	/// </summary>
@@ -89,12 +96,23 @@ public abstract class LibraryTurnsPowerModel : LibraryPowerModel, ISecondaryDisp
     }
     //回合结束时改变层数
     public sealed override async Task AfterSideTurnEnd(PlayerChoiceContext choiceContext, CombatSide side, IEnumerable<Creature> participants)
-    { 
+    {
+        ICombatState? combatState = Owner?.CombatState;
+        if (combatState == null)
+        {
+            return;
+        }
+
         await AfterSideTurnEnd(choiceContext,side,participants,null);
-        await ExpireDuePlans(side, CombatState.RoundNumber);
+        await ExpireDuePlans(side, combatState.RoundNumber);
     }
     internal async Task ExpireDuePlans(CombatSide side, int currentRound)
     {
+        if (Owner?.CombatState == null)
+        {
+            return;
+        }
+
         if (!AllowNegative && Amount < 0)
         {
             AmountPlan.Clear();
@@ -153,13 +171,14 @@ public abstract class LibraryTurnsPowerModel : LibraryPowerModel, ISecondaryDisp
     }
     public string Prompt()
     {
-        if(!IsMutable)return"";
+        ICombatState? combatState = Owner?.CombatState;
+        if(!IsMutable || combatState == null)return"";
         string s = "\n";
         foreach(var k in AmountPlan)
         {
             LocString loc = new LocString("powers","LIBRARY_TURN_POWER_PROMPT");
             loc.Add("Amount",k.Value);
-            loc.Add("Turns",Math.Max(0, k.Key - CombatState.RoundNumber + 1));
+            loc.Add("Turns",Math.Max(0, k.Key - combatState.RoundNumber + 1));
             s+=loc.GetFormattedText() + "\n";
         }
         return s;
