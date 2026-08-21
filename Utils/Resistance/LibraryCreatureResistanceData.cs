@@ -11,24 +11,24 @@ public sealed class LibraryCreatureResistanceData
     public class Resistance{
         public Resistance(LibraryResistanceLevel level){
             Slash = level;
-            Blunt = level;
             Pierce = level;
+            Blunt = level;
         }
         public Resistance():this(LibraryResistanceLevel.Normal){
         }
         public Resistance(Resistance other)
         {
             Slash = other.Slash;
-            Blunt = other.Blunt;
             Pierce = other.Pierce;
+            Blunt = other.Blunt;
         }
         public LibraryResistanceLevel Slash;
-        public LibraryResistanceLevel Blunt;
         public LibraryResistanceLevel Pierce;
+        public LibraryResistanceLevel Blunt;
     }
         public LibraryCreatureResistanceData(LibraryResistanceLevel level){
-            PhysicalResistance = new(level);
-            ChaosResistance = new(level);
+            PhysicalResistance = new Resistance(level);
+            ChaosResistance = new Resistance(level);
         }
         public LibraryCreatureResistanceData(){
             PhysicalResistance = new(LibraryResistanceLevel.Normal);
@@ -44,8 +44,6 @@ public sealed class LibraryCreatureResistanceData
             PhysicalResistance = new(other.PhysicalResistance);
             ChaosResistance = new(other.ChaosResistance);
         }
-    public Resistance PhysicalResistance = new(){
-    };
-    public Resistance ChaosResistance= new(){
-    };
+    public Resistance PhysicalResistance;
+    public Resistance ChaosResistance;
 }

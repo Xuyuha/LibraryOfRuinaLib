@@ -296,6 +296,22 @@ public static class LibraryEmotionBarUi
         int emotionUnits,
         IReadOnlyList<int> thresholds)
     {
+        // Sources without an emotion track (e.g. attached body parts that
+        // still implement ILibraryEmotionBarSource) expose an empty threshold
+        // list. Keep the bar visible at 0/0 instead of throwing on Clamp.
+        if (thresholds.Count == 0)
+        {
+            if (state.Fill != null)
+                state.Fill.Visible = false;
+            if (state.ValueLabel != null)
+                state.ValueLabel.Text = "0/0";
+            if (state.Badge != null)
+                state.Badge.Visible = false;
+            if (state.BadgeLabel != null)
+                state.BadgeLabel.Text = "";
+            return;
+        }
+
         int level = Math.Clamp(
             emotionLevel,
             0,

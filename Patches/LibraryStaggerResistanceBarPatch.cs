@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using Godot;
 using HarmonyLib;
 using LibraryLib.Entities.Creatures;
+using LibraryLib.Utils.Resistance;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Nodes.Combat;
 
@@ -122,7 +123,10 @@ internal static class LibraryStaggerResistanceBarUi
         var libCreature = creature as LibraryCreature;
         State state = GetOrCreateState(healthBar);
 
-        bool shouldShow = libCreature != null && creature.IsAlive && libCreature.MaxChaoValue > 0;
+        bool shouldShow = libCreature != null
+            && creature.IsAlive
+            && (libCreature.MaxChaoValue > 0
+                || HasNonNormalChaosResistance(libCreature));
 
         if (!shouldShow)
         {
@@ -296,6 +300,14 @@ internal static class LibraryStaggerResistanceBarUi
         state.ValueLabel = label;
     }
 
+    private static bool HasNonNormalChaosResistance(LibraryCreature creature) =>
+        creature.GetChaosResistanceLevel(LibraryDamageType.Slash)
+            != LibraryResistanceLevel.Normal
+        || creature.GetChaosResistanceLevel(LibraryDamageType.Pierce)
+            != LibraryResistanceLevel.Normal
+        || creature.GetChaosResistanceLevel(LibraryDamageType.Blunt)
+            != LibraryResistanceLevel.Normal;
+
     private static void SyncLayout(NHealthBar healthBar, State state)
     {
         if (state.BarContainer == null) return;
@@ -434,11 +446,13 @@ internal static class LibraryStaggerResistanceBarUi
 
         int currentAmount = creature.CurrentChaoValue;
         int maxResistance = creature.MaxChaoValue;
-        if (maxResistance <= 0) maxResistance = Math.Max(1, currentAmount);
+        if (maxResistance <= 0) maxResistance = Math.Max(0, currentAmount);
 
         bool isStunned = creature.IsStunPending;
 
-        state.ValueLabel.Text = $"{currentAmount}/{maxResistance}";
+        state.ValueLabel.Text = maxResistance <= 0
+            ? $"{currentAmount}/0"
+            : $"{currentAmount}/{maxResistance}";
 
         state.ValueLabel.AddThemeColorOverride("font_outline_color",
             isStunned ? StunnedLabelOutlineColor : LabelOutlineColor);

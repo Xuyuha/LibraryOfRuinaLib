@@ -170,16 +170,29 @@ internal static class LibraryAttackExecuteFlagPatch
 }
 
 /// <summary>
-///     只当在 AttackCommand.Execute 执行流中时，在 CreatureCmd.Damage 后追加混乱伤害。
+///     Only append chaos damage after CreatureCmd.Damage when running inside
+///     the AttackCommand.Execute flow.
 /// </summary>
+/// <remarks>
+///     Multiplayer patch-order contract: this Prefix both rewrites
+///     <c>ref targets</c> and can short-circuit __result, so it must run after
+///     every other target-filtering Prefix on this overload
+///     (LibraryOfRuina's friendly-ally filter uses Priority.First).
+///     Priority.Last makes the relative order deterministic on every peer.
+///     The targets parameter is declared <c>ref</c> so that the short-circuit
+///     path receives the filtered target list instead of the original one —
+///     otherwise friendly allies removed by earlier prefixes would still take
+///     damage on some peers, which was observed as multiplayer state divergence.
+/// </remarks>
 [HarmonyPatch(typeof(CreatureCmd), nameof(CreatureCmd.Damage),
     new[] { typeof(PlayerChoiceContext), typeof(IEnumerable<Creature>), typeof(decimal), typeof(ValueProp), typeof(Creature), typeof(CardModel), typeof(CardPlay) })]
 internal static class LibraryAttackChaoDamagePatch
 {
     [HarmonyPrefix]
+    [HarmonyPriority(Priority.Last)]
     private static bool Prefix(
         PlayerChoiceContext choiceContext,
-        IEnumerable<Creature> targets,
+        ref IEnumerable<Creature> targets,
         decimal amount,
         ValueProp props,
         Creature? dealer,
@@ -245,9 +258,10 @@ internal static class LibraryAttackChaoDamagePatch
     }
 
     [HarmonyPostfix]
+    [HarmonyPriority(Priority.Last)]
     private static void Postfix(
         PlayerChoiceContext choiceContext,
-        IEnumerable<Creature> targets,
+        ref IEnumerable<Creature> targets,
         decimal amount,
         ValueProp props,
         Creature? dealer,

@@ -75,7 +75,9 @@ internal static class LibraryChaosResistanceIconsUi
         State state = GetOrCreateState(healthBar);
 
         bool shouldShow = libCreature?.Monster is LibraryMonsterModel { ShowResistanceUi: true }
-            && creature.IsAlive && libCreature.MaxChaoValue > 0;
+            && creature.IsAlive
+            && (libCreature.MaxChaoValue > 0
+                || HasNonNormalChaosResistance(libCreature));
 
         if (!shouldShow)
         {
@@ -192,6 +194,14 @@ internal static class LibraryChaosResistanceIconsUi
                 .SetTrans(Tween.TransitionType.Sine);
         }
     }
+
+    private static bool HasNonNormalChaosResistance(LibraryCreature creature) =>
+        creature.GetChaosResistanceLevel(LibraryDamageType.Slash)
+            != LibraryResistanceLevel.Normal
+        || creature.GetChaosResistanceLevel(LibraryDamageType.Pierce)
+            != LibraryResistanceLevel.Normal
+        || creature.GetChaosResistanceLevel(LibraryDamageType.Blunt)
+            != LibraryResistanceLevel.Normal;
 
     private static void CreateIconNodes(NHealthBar healthBar, State state)
     {
