@@ -172,7 +172,8 @@ public abstract class LibraryTurnsPowerModel : LibraryPowerModel, ISecondaryDisp
     }
     public override void AddVariablesToDescription(LocString description, int? amountOverride = null)
     {
-        description.Add("Prompt",Prompt());
+        // Dumb hover tips use the canonical ModelDb instance; skip turn-plan prompt formatting there.
+        description.Add("Prompt", IsMutable ? Prompt() : "");
     }
     public string Prompt()
     {
