@@ -44,6 +44,11 @@ public abstract class LibraryTurnsPowerModel : LibraryPowerModel, ISecondaryDisp
     {
         get
         {
+            if (!IsMutable)
+            {
+                return 0;
+            }
+
             ICombatState? combatState = Owner?.CombatState;
             return combatState != null && AmountPlan.Count > 0
                 ? Math.Max(0, AmountPlan.Keys.Max() - combatState.RoundNumber + 1)
@@ -171,8 +176,17 @@ public abstract class LibraryTurnsPowerModel : LibraryPowerModel, ISecondaryDisp
     }
     public string Prompt()
     {
+        if (!IsMutable)
+        {
+            return "";
+        }
+
         ICombatState? combatState = Owner?.CombatState;
-        if(!IsMutable || combatState == null)return"";
+        if (combatState == null)
+        {
+            return "";
+        }
+
         string s = "\n";
         foreach(var k in AmountPlan)
         {
