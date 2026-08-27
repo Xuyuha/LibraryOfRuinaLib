@@ -1009,6 +1009,12 @@ internal sealed class MySpeedDiceModule :
 公开的 `ExecuteEquipAsync`、`ExecuteUnequipAsync` 或
 `ExecuteRetargetAsync`。
 
+`ExecuteEquipAsync` 会先严格验证回合、阶段、骰子状态、槽位、卡牌归属、
+选择来源、目标和资源条件。上述结构状态有效时，装备动作允许把本地
+`Revision` 校准到请求值，再由本次装备的确定性变更共同推进新 Revision；
+这用于消除仅由本地生命周期或通知次数形成的计数漂移。卸下与重新选目标
+继续要求 Revision 精确匹配。
+
 若需要把多个玩家一起结算，调用：
 
 ```csharp
@@ -2149,6 +2155,11 @@ if (!applied)
         + $"revision={context.Message.Revision}");
 }
 ```
+
+装备执行允许生命周期重入，并记录本次调用是否取得生命周期所有权；只有
+取得所有权的调用负责释放。结构校验通过且本地 Revision 与请求值不同时，
+基础库会在首个装备状态写入前校准 Revision。网络消息仍需完整携带原始
+`TurnNumber` 和 `Revision`，下游无需改变载荷结构。
 
 卸下和换目标同样调用：
 

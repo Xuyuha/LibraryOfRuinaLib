@@ -1108,11 +1108,10 @@ internal static class LibrarySpeedDiceService
             return false;
         }
 
-        if (state.IsLocked
-            || state.IsResolving
-            || !state.TryBeginLifecycle())
+        if (state.IsLocked || state.IsResolving)
             return false;
 
+        bool lifecycleAcquired = state.TryBeginLifecycle();
         LibrarySpeedDiceCardLease? instantLease = null;
         LibrarySpeedDiceCombatState.GameplayNotificationBatch?
             instantNotificationBatch = null;
@@ -1128,7 +1127,8 @@ internal static class LibrarySpeedDiceService
                         state,
                         slotIndex,
                         expectedTurnNumber,
-                        expectedRevision)
+                        expectedRevision,
+                        requireExpectedRevision: false)
                     || card.Owner != player
                     || state.Slots[slotIndex].Card != null
                     || !CanEquipCard(
@@ -1149,6 +1149,16 @@ internal static class LibrarySpeedDiceService
                     && (slot.IsSpent || slot.IsLocked))
                 {
                     return false;
+                }
+
+                if (state.Revision != expectedRevision)
+                {
+                    int actualRevision = state.Revision;
+                    state.Revision = expectedRevision;
+                    Log.Warn(
+                        "[LibraryOfRuinaLib] Reconciled synchronized speed-die equip revision; "
+                        + $"player={player.NetId} slot={slotIndex} turn={expectedTurnNumber} "
+                        + $"expected={expectedRevision} actual={actualRevision}.");
                 }
 
                 if (assignmentMode == LibrarySpeedDiceAssignmentMode.Instant)
@@ -1286,7 +1296,8 @@ internal static class LibrarySpeedDiceService
             }
             finally
             {
-                state.EndLifecycle();
+                if (lifecycleAcquired)
+                    state.EndLifecycle();
             }
         }
     }
@@ -1562,7 +1573,8 @@ internal static class LibrarySpeedDiceService
         LibrarySpeedDiceCombatState state,
         int slotIndex,
         int expectedTurnNumber,
-        int expectedRevision)
+        int expectedRevision,
+        bool requireExpectedRevision = true)
     {
         return IsStateUsable(state)
             && state.Player.PlayerCombatState?.Phase == PlayerTurnPhase.Play
@@ -1573,7 +1585,9 @@ internal static class LibrarySpeedDiceService
             && slotIndex < state.Slots.Count
             && state.Player.PlayerCombatState?.TurnNumber
             == expectedTurnNumber
-            && state.Revision == expectedRevision;
+            && expectedRevision >= 0
+            && (!requireExpectedRevision
+                || state.Revision == expectedRevision);
     }
 
     /// <summary>
