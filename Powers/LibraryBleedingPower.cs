@@ -30,11 +30,11 @@ public sealed class LibraryBleedingPower : LibraryBasePowerModel
     }
     public override async Task AfterSideTurnEnd(PlayerChoiceContext choiceContext, CombatSide side, IEnumerable<Creature> participants,object?_ = null)
     {
-        if (side != Owner.Side) return;
+        if (side != CombatSide.Enemy) return;
         await TriggerReduce(choiceContext, Owner, null);
         if (Amount < 3) await PowerCmd.Remove(this);
     }
-    public override async Task AfterDamageReceived(PlayerChoiceContext choiceContext, Creature target, DamageResult result, ValueProp props, Creature? dealer, CardModel? cardSource,object?_ = null)
+    public override async Task AfterDamageGiven(PlayerChoiceContext choiceContext, Creature? dealer, DamageResult result, ValueProp props, Creature target, CardModel? cardSource,object?_ = null)
     {
         if (!props.IsPoweredAttack()) return;
         if (dealer == Owner && target != Owner)
