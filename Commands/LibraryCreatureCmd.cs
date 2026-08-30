@@ -346,40 +346,45 @@ public static class LibraryCreatureCmd
 	public static async Task<IEnumerable<LibraryChaoResult>?> ChaoDamage(PlayerChoiceContext choiceContext, IEnumerable<Creature> targets, decimal damageAmount, ValueProp props, Creature? dealer, CardModel? cardSource , CardPlay? cardPlay,LibraryDamageType type = LibraryDamageType.None, IEnumerable<DamageResult>? damageResults = null)
 	{
 		List<LibraryChaoResult> results = [];
-		targets = targets.Where((Creature c) => c is LibraryCreature lc && lc.HasChaoResistance);
-		if(!targets.Any())
+		List<Creature> targetList = targets
+			.Where(static target =>
+				target is LibraryCreature { HasChaoResistance: true }
+				&& target.CombatState is { } combatState
+				&& combatState.ContainsCreature(target))
+			.ToList();
+		if (targetList.Count == 0)
 		{
 			return results;
 		}
 		if (dealer != null && dealer.IsDead)
 		{
-			return targets.Select((Creature t) => new LibraryChaoResult(t, props));	
+			return targetList.Select((Creature target) => new LibraryChaoResult(target, props));
 		}
-		List<Creature> targetList = [.. targets];
-		if (targetList.Count == 0)
-		{
-			return results;
-		}
-		ICombatState combatState = targetList[0].CombatState;
+		ICombatState combatState = targetList[0].CombatState!;
 		IRunState runState = IRunState.GetFrom(targetList.Append(dealer).OfType<Creature>());
-		foreach (Creature Target in targetList)
+		foreach (Creature target in targetList)
 		{
-			if(!Target.IsMonster)
-			{
-				continue;
-			}
-			if (Target.IsDead)
+			if (!ReferenceEquals(target.CombatState, combatState)
+				|| !combatState.ContainsCreature(target)
+				|| !target.IsMonster
+				|| target.IsDead)
 			{
 				continue;
 			}
 			IEnumerable<AbstractModel> modifiers;
 			Log.Info("LibraryChaoDamage");
-			Creature modifiedTarget = LibraryHooks.ModifyChaoDamageTarget(combatState, Target, damageAmount, props, dealer,type);
+			Creature modifiedTarget = LibraryHooks.ModifyChaoDamageTarget(combatState, target, damageAmount, props, dealer,type);
+			if (modifiedTarget is not LibraryCreature libraryTarget
+				|| !ReferenceEquals(modifiedTarget.CombatState, combatState)
+				|| !combatState.ContainsCreature(modifiedTarget))
+			{
+				continue;
+			}
 			decimal modifiedAmountbefore = LibraryHooks.ModifyChaoDamage(runState, combatState, modifiedTarget, dealer,damageAmount, props, cardSource, cardPlay, ModifyChaoDamageHookType.All, CardPreviewMode.None, out modifiers,type);
-			decimal modifiedAmount = LibraryDamageCalculate.CalculateChaoAmount(modifiedAmountbefore,modifiedTarget as LibraryCreature, props, type);
+			decimal modifiedAmount = LibraryDamageCalculate.CalculateChaoAmount(modifiedAmountbefore,libraryTarget, props, type);
 			await LibraryHooks.AfterModifyingChaoAmount(runState, combatState, cardSource, modifiers,type);
 			await LibraryHooks.BeforeChaoDamageReceived(choiceContext, runState, combatState, modifiedTarget, modifiedAmount, props, dealer, cardSource,type);  
-			LibraryChaoResult ChaoResult = (modifiedTarget as LibraryCreature).LoseChaoValueInternal(modifiedAmount, props);
+			LibraryChaoResult chaoResult = libraryTarget.LoseChaoValueInternal(modifiedAmount, props);
 			List<Task> hitTriggers = [];
 			// 混乱伤害反馈
 			// foreach (DamageResult item in damageResults) 
@@ -411,10 +416,10 @@ public static class LibraryCreatureCmd
 			// 		}
 			// 	}
 			// }
-			if (ChaoResult != null && (ChaoResult.ChaoValueAmount > 0 || modifiedAmount == 0m))
+			if (chaoResult.ChaoValueAmount > 0 || modifiedAmount == 0m)
 			{
 				Node vfxContainer = modifiedTarget.GetVfxContainer();
-				LibraryRuinaDamageNumberVfx? chaoVfx = LibraryRuinaDamageNumberVfx.CreateChaos(modifiedTarget, ChaoResult, type);
+				LibraryRuinaDamageNumberVfx? chaoVfx = LibraryRuinaDamageNumberVfx.CreateChaos(modifiedTarget, chaoResult, type);
 				if (chaoVfx != null)
 				{
 					if (vfxContainer != null)
@@ -427,7 +432,7 @@ public static class LibraryCreatureCmd
 					}
 				}
 			}
-			results.Add(ChaoResult);
+			results.Add(chaoResult);
 		}
 		List<LibraryCreature> StunedCreatures = new List<LibraryCreature>();
 		foreach (LibraryChaoResult Result in results)

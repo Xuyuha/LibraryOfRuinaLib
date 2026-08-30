@@ -1,7 +1,5 @@
 #nullable enable
 using System.Reflection;
-using System.Reflection.Emit;
-using System.Runtime.CompilerServices;
 using HarmonyLib;
 using LibraryLib.Combat;
 using LibraryLib.Commands;
@@ -24,15 +22,19 @@ internal static class AttackExecuteContext
 {
     internal static readonly AsyncLocal<bool> IsInAttackExecute = new();
     internal static readonly AsyncLocal<LibraryDamageType> DamageType = new();
-    internal static readonly AsyncLocal<List<int>?> PreDamageBlocks = new();
+
+    internal readonly record struct Scope(
+        bool WasInAttackExecute,
+        LibraryDamageType PreviousDamageType);
     
     public static LibraryDamageType CurrentDamageType =>
         IsInAttackExecute.Value && DamageType.Value != LibraryDamageType.None
             ? DamageType.Value
             : LibraryDamageType.None;
 
-    public static void SetFlag(object? attackCommand)
+    internal static Scope Enter(object? attackCommand)
     {
+        var scope = new Scope(IsInAttackExecute.Value, DamageType.Value);
         try
         {
             IsInAttackExecute.Value = true;
@@ -43,12 +45,14 @@ internal static class AttackExecuteContext
             IsInAttackExecute.Value = true;
             DamageType.Value = LibraryDamageType.Blunt;
         }
+
+        return scope;
     }
 
-    public static void ClearFlag()
+    internal static void Restore(Scope scope)
     {
-        IsInAttackExecute.Value = false;
-        DamageType.Value = LibraryDamageType.None;
+        IsInAttackExecute.Value = scope.WasInAttackExecute;
+        DamageType.Value = scope.PreviousDamageType;
     }
 
     internal static LibraryDamageType ResolveVanillaDamageType(object? attackCommand)
@@ -112,8 +116,8 @@ internal static class AttackExecuteContext
 }
 
 /// <summary>
-///     在 AttackCommand.Execute 整个 async 执行流开始时设标记，
-///     在 async 状态机真正完成时（SetResult/SetException 前）清除标记。
+///     在 AttackCommand.Execute 建立异步状态机时设置上下文，原方法返回 Task 后
+///     立即恢复调用方上下文；AttackCommand 自己捕获的 ExecutionContext 保留攻击类型。
 /// </summary>
 [HarmonyPatch]
 internal static class LibraryAttackExecuteFlagPatch
@@ -128,44 +132,18 @@ internal static class LibraryAttackExecuteFlagPatch
     }
 
     [HarmonyPrefix]
-    private static void Prefix(object __instance)
+    private static void Prefix(object __instance, out AttackExecuteContext.Scope __state)
     {
-        AttackExecuteContext.SetFlag(__instance);
+        __state = AttackExecuteContext.Enter(__instance);
     }
 
-    [HarmonyTranspiler]
-    private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+    [HarmonyFinalizer]
+    private static Exception? Finalizer(
+        Exception? __exception,
+        AttackExecuteContext.Scope __state)
     {
-        var codes = new List<CodeInstruction>(instructions);
-        var clearMethod = AccessTools.Method(typeof(AttackExecuteContext), nameof(AttackExecuteContext.ClearFlag));
-
-        for (int i = 0; i < codes.Count; i++)
-        {
-            if (codes[i].opcode != OpCodes.Call && codes[i].opcode != OpCodes.Callvirt)
-                continue;
-
-            if (codes[i].operand is not MethodInfo method)
-                continue;
-
-            if (method.Name != "SetResult" && method.Name != "SetException")
-                continue;
-
-            var declaringType = method.DeclaringType;
-            if (declaringType == null)
-                continue;
-
-            if (!declaringType.IsGenericType)
-                continue;
-
-            var genericDef = declaringType.GetGenericTypeDefinition();
-            if (genericDef != typeof(AsyncTaskMethodBuilder<>))
-                continue;
-
-            codes.Insert(i, new CodeInstruction(OpCodes.Call, clearMethod));
-            break;
-        }
-
-        return codes;
+        AttackExecuteContext.Restore(__state);
+        return __exception;
     }
 }
 
@@ -188,6 +166,12 @@ internal static class LibraryAttackExecuteFlagPatch
     new[] { typeof(PlayerChoiceContext), typeof(IEnumerable<Creature>), typeof(decimal), typeof(ValueProp), typeof(Creature), typeof(CardModel), typeof(CardPlay) })]
 internal static class LibraryAttackChaoDamagePatch
 {
+    private sealed record DamagePatchState(
+        IReadOnlyList<Creature> Targets,
+        IReadOnlyList<int> PreDamageBlocks,
+        LibraryDamageType DamageType,
+        bool HasLibraryTarget);
+
     [HarmonyPrefix]
     [HarmonyPriority(Priority.Last)]
     private static bool Prefix(
@@ -198,8 +182,10 @@ internal static class LibraryAttackChaoDamagePatch
         Creature? dealer,
         CardModel? cardSource,
         CardPlay? cardPlay,
+        out DamagePatchState? __state,
         ref Task<IEnumerable<DamageResult>> __result)
     {
+        __state = null;
         if (props.HasFlag(ValueProp.Unpowered))
             return true;
 
@@ -219,28 +205,39 @@ internal static class LibraryAttackChaoDamagePatch
         if (targetList.Count == 0)
             return true;
 
-        ICombatState combatState = targetList[0].CombatState;
+        targets = targetList;
+
+        ICombatState? combatState = targetList
+            .Select(static target => target.CombatState)
+            .FirstOrDefault(static state => state != null);
+        if (combatState == null)
+            return true;
+
         IRunState runState =
             IRunState.GetFrom(targetList.Append(dealer).OfType<Creature>());
-        bool isAttackExecute =
-            AttackExecuteContext.IsInAttackExecute.Value;
         bool needsLibraryDamage =
-            isAttackExecute
-            && targetList.Any(static target =>
+            targetList.Any(static target =>
                 target is LibraryCreature { IsPlayer: false });
         bool hasInterceptor =
             !LibraryIncomingDamageInterception.IsSuppressed
             && LibraryHooks.HasIncomingDamageInterceptor(
                 runState,
                 combatState);
+
+        LibraryDamageType damageType = ResolveExecutionDamageType(
+            cardSource,
+            targetList);
+        IReadOnlyList<int> preDamageBlocks = targetList
+            .Select(static target => target.Block)
+            .ToArray();
+        __state = new DamagePatchState(
+            targetList,
+            preDamageBlocks,
+            damageType,
+            needsLibraryDamage);
+
         if (!needsLibraryDamage && !hasInterceptor)
             return true;
-
-        if (isAttackExecute)
-        {
-            AttackExecuteContext.PreDamageBlocks.Value =
-                targetList.Select(c => c.Block).ToList();
-        }
 
         __result = LibraryCreatureCmd.Damage(
             choiceContext: choiceContext,
@@ -250,9 +247,7 @@ internal static class LibraryAttackChaoDamagePatch
             dealer: dealer,
             cardSource: cardSource,
             cardPlay: cardPlay,
-            type: isAttackExecute
-                ? AttackExecuteContext.CurrentDamageType
-                : LibraryDamageType.None);
+            type: damageType);
 
         return false;
     }
@@ -267,11 +262,9 @@ internal static class LibraryAttackChaoDamagePatch
         Creature? dealer,
         CardModel? cardSource,
         CardPlay? cardPlay,
+        DamagePatchState? __state,
         ref Task<IEnumerable<DamageResult>> __result)
     {
-        if (!AttackExecuteContext.IsInAttackExecute.Value)
-            return;
-
         if (props.HasFlag(ValueProp.Unpowered))
             return;
 
@@ -290,42 +283,70 @@ internal static class LibraryAttackChaoDamagePatch
         if (!dealer.IsPlayer && !dealer.IsMonster)
             return;
 
-        __result = WrapWithChaoDamage(__result, choiceContext, targets, amount, props, dealer, cardSource, cardPlay);
+        if (__state is not { HasLibraryTarget: true })
+            return;
+
+        __result = WrapWithChaoDamage(
+            __result,
+            choiceContext,
+            amount,
+            props,
+            dealer,
+            cardSource,
+            cardPlay,
+            __state);
     }
 
     private static async Task<IEnumerable<DamageResult>> WrapWithChaoDamage(
         Task<IEnumerable<DamageResult>> prior,
         PlayerChoiceContext choiceContext,
-        IEnumerable<Creature> targets,
         decimal amount,
         ValueProp props,
         Creature? dealer,
         CardModel? cardSource,
-        CardPlay? cardPlay)
+        CardPlay? cardPlay,
+        DamagePatchState state)
     {
         IEnumerable<DamageResult> results = await prior;
 
-        List<int>? blocks = AttackExecuteContext.PreDamageBlocks.Value;
-        AttackExecuteContext.PreDamageBlocks.Value = null;
-
-        if (blocks == null || blocks.Count == 0)
+        if (state.PreDamageBlocks.Count == 0)
             return results;
 
-        var targetList = targets as IReadOnlyList<Creature> ?? new List<Creature>(targets);
-        for (int i = 0; i < targetList.Count && i < blocks.Count; i++)
+        for (int i = 0;
+             i < state.Targets.Count && i < state.PreDamageBlocks.Count;
+             i++)
         {
-            decimal chaoDamage = Math.Max(amount - blocks[i], 0m);
+            decimal chaoDamage = Math.Max(
+                amount - state.PreDamageBlocks[i],
+                0m);
             await LibraryCreatureCmd.ChaoDamage(
                 damageAmount: chaoDamage,
                 choiceContext: choiceContext,
-                targets: [targetList[i]],
+                targets: [state.Targets[i]],
                 props: props,
                 dealer: dealer,
                 cardSource: cardSource,
                 cardPlay: cardPlay,
                 damageResults: results,
-                type: AttackExecuteContext.CurrentDamageType);
+                type: state.DamageType);
         }
         return results;
+    }
+
+    private static LibraryDamageType ResolveExecutionDamageType(
+        CardModel? cardSource,
+        IReadOnlyList<Creature> targets)
+    {
+        if (cardSource != null)
+        {
+            Creature? target = targets.Count == 1 ? targets[0] : null;
+            return LibraryDamagePreviewFeedback.ResolveVanillaPreviewDamageType(
+                cardSource,
+                target);
+        }
+
+        return targets.Count > 1
+            ? LibraryDamageType.Slash
+            : LibraryDamageType.Blunt;
     }
 }

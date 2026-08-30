@@ -18,13 +18,19 @@ internal static class LibraryDamageNumberPatch
 {
     private static bool Prefix(Creature target, DamageResult result, ref NDamageNumVfx? __result)
     {
-        if (!AttackExecuteContext.IsInAttackExecute.Value || target is not LibraryCreature)
+        if (target is not LibraryCreature libraryTarget)
+        {
+            return true;
+        }
+
+        if (!ReferenceEquals(result.Receiver, libraryTarget)
+            || !AttackExecuteContext.IsInAttackExecute.Value)
         {
             return true;
         }
 
         LibraryRuinaDamageNumberVfx? vfx = LibraryRuinaDamageNumberVfx.CreatePhysical(
-            target,
+            libraryTarget,
             result,
             AttackExecuteContext.CurrentDamageType);
 
@@ -33,14 +39,14 @@ internal static class LibraryDamageNumberPatch
             return true;
         }
 
-        Node? vfxContainer = target.GetVfxContainer();
+        Node? vfxContainer = libraryTarget.GetVfxContainer();
         if (vfxContainer != null)
         {
             vfxContainer.AddChildSafely(vfx);
         }
         else
         {
-            NRun.Instance.GlobalUi.AddChildSafely(vfx);
+            NRun.Instance?.GlobalUi.AddChildSafely(vfx);
         }
 
         __result = null;
