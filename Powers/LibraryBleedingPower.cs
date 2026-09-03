@@ -1,5 +1,6 @@
 using LibraryLib.Models;
 using LibraryLib.Powers.LibraryPowerMode;
+using LibraryLib.Combat.HealthBars;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
 using MegaCrit.Sts2.Core.Entities.Creatures;
@@ -9,7 +10,9 @@ using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.ValueProps;
 
 namespace LibraryLib.Powers;
-public sealed class LibraryBleedingPower : LibraryBasePowerModel
+public sealed class LibraryBleedingPower :
+    LibraryBasePowerModel,
+    ILibraryHealthBarDamageForecastSource
 {
     protected override LibraryPowerMode.LibraryPowerMode DefaultMode => new LibraryBleedingModeDefault(this);
     public LibraryBleedingMode CurrentMode => Mode as LibraryBleedingMode;
@@ -28,6 +31,24 @@ public sealed class LibraryBleedingPower : LibraryBasePowerModel
         Flash();
         await CreatureCmd.Damage(choiceContext, Owner, effectiveAmount, ValueProp.Unpowered, null, null);
     }
+
+    public IEnumerable<LibraryHealthBarDamageForecast>
+        GetLibraryHealthBarDamageForecasts(
+            LibraryHealthBarForecastContext context)
+    {
+        if (Amount <= 0 || context.CombatState == null)
+        {
+            return [];
+        }
+
+        return
+        [
+            LibraryHealthBarDamageForecast.FromLibraryPower(
+                this,
+                LibraryHealthBarForecastColors.Bleeding)
+        ];
+    }
+
     public override async Task AfterSideTurnEnd(PlayerChoiceContext choiceContext, CombatSide side, IEnumerable<Creature> participants,object?_ = null)
     {
         if (side != CombatSide.Enemy) return;

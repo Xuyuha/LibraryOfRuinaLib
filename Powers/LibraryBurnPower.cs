@@ -1,5 +1,6 @@
 using LibraryLib.Models;
 using LibraryLib.Powers.LibraryPowerMode;
+using LibraryLib.Combat.HealthBars;
 using System.Threading;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
@@ -9,7 +10,9 @@ using MegaCrit.Sts2.Core.GameActions.Multiplayer;
 using MegaCrit.Sts2.Core.ValueProps;
 
 namespace LibraryLib.Powers;
-public sealed class LibraryBurnPower : LibraryBasePowerModel
+public sealed class LibraryBurnPower :
+    LibraryBasePowerModel,
+    ILibraryHealthBarDamageForecastSource
 {
     private static readonly AsyncLocal<Creature?> ResolvingDamageTarget = new();
 
@@ -44,6 +47,32 @@ public sealed class LibraryBurnPower : LibraryBasePowerModel
 
     public static bool IsResolvingDamageFor(Creature target) =>
         ReferenceEquals(ResolvingDamageTarget.Value, target); //传回烧伤自己的damageCmd的来源
+
+    public static int CalculateAmountAfterDecay(int amount)
+    {
+        int clampedAmount = Math.Max(0, amount);
+        return Math.Max(
+            0,
+            clampedAmount - (int)CalculateStackDecayByThird(clampedAmount));
+    }
+
+    public IEnumerable<LibraryHealthBarDamageForecast>
+        GetLibraryHealthBarDamageForecasts(
+            LibraryHealthBarForecastContext context)
+    {
+        if (Amount <= 0 || context.CombatState == null)
+        {
+            return [];
+        }
+
+        return
+        [
+            LibraryHealthBarDamageForecast.FromLibraryPower(
+                this,
+                LibraryHealthBarForecastColors.Burn)
+        ];
+    }
+
     public override async Task AfterSideTurnEnd(PlayerChoiceContext choiceContext, CombatSide side, IEnumerable<Creature> participants,object?_ = null)
     {
         if (side != Owner.Side) return;
