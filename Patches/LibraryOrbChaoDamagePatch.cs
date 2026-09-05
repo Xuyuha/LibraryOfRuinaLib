@@ -20,7 +20,12 @@ namespace LibraryLib.Patches;
 /// </summary>
 internal static class OrbDamageContext
 {
+    internal const decimal ChaoDamageMultiplier = 0.75m;
+
     internal static readonly AsyncLocal<bool> IsInOrbDamage = new();
+
+    internal static int CalculateChaoDamage(decimal orbDamage)
+        => (int)decimal.Floor(orbDamage * ChaoDamageMultiplier);
 
     public static void Set()
     {
@@ -156,7 +161,7 @@ internal static class GlassOrbEvokeOrbDamageFlagPatch
 }
 
 /// <summary>
-///     充能球伤害结算后，按“实际伤害的 50%”追加混乱伤害；混乱伤害无视抗性
+///     充能球伤害结算后，按“充能球自身应造成伤害的 75%”追加混乱伤害；混乱伤害无视抗性
 ///     （传 Unpowered + None 类型，LibraryDamageCalculate 会跳过混乱抗性乘区）。
 /// </summary>
 [HarmonyPatch(typeof(CreatureCmd), nameof(CreatureCmd.Damage),
@@ -166,6 +171,7 @@ internal static class LibraryOrbChaoDamageEnumerablePatch
     [HarmonyPostfix]
     private static void Postfix(
         PlayerChoiceContext choiceContext,
+        decimal amount,
         Creature dealer,
         ref Task<IEnumerable<DamageResult>> __result)
     {
@@ -174,19 +180,20 @@ internal static class LibraryOrbChaoDamageEnumerablePatch
             return;
         }
 
-        __result = WrapWithChaoDamage(__result, choiceContext, dealer);
+        __result = WrapWithChaoDamage(__result, choiceContext, amount, dealer);
     }
 
     private static async Task<IEnumerable<DamageResult>> WrapWithChaoDamage(
         Task<IEnumerable<DamageResult>> prior,
         PlayerChoiceContext choiceContext,
+        decimal orbDamage,
         Creature dealer)
     {
         IEnumerable<DamageResult> results = await prior;
 
         foreach (DamageResult result in results)
         {
-            int chaoDamage = result.UnblockedDamage / 2;
+            int chaoDamage = OrbDamageContext.CalculateChaoDamage(orbDamage);
             if (chaoDamage <= 0)
             {
                 continue;
@@ -214,6 +221,7 @@ internal static class LibraryOrbChaoDamageSinglePatch
     [HarmonyPostfix]
     private static void Postfix(
         PlayerChoiceContext choiceContext,
+        decimal amount,
         Creature dealer,
         ref Task<IEnumerable<DamageResult>> __result)
     {
@@ -222,19 +230,20 @@ internal static class LibraryOrbChaoDamageSinglePatch
             return;
         }
 
-        __result = WrapWithChaoDamage(__result, choiceContext, dealer);
+        __result = WrapWithChaoDamage(__result, choiceContext, amount, dealer);
     }
 
     private static async Task<IEnumerable<DamageResult>> WrapWithChaoDamage(
         Task<IEnumerable<DamageResult>> prior,
         PlayerChoiceContext choiceContext,
+        decimal orbDamage,
         Creature dealer)
     {
         IEnumerable<DamageResult> results = await prior;
 
         foreach (DamageResult result in results)
         {
-            int chaoDamage = result.UnblockedDamage / 2;
+            int chaoDamage = OrbDamageContext.CalculateChaoDamage(orbDamage);
             if (chaoDamage <= 0)
             {
                 continue;
