@@ -65,13 +65,12 @@ internal sealed partial class LibraryRuinaDamageNumberVfx : Node2D
 
     public static LibraryRuinaDamageNumberVfx? CreatePhysical(Creature target, DamageResult result, LibraryDamageType type)
     {
-        if (type == LibraryDamageType.None)
+        if (target is not LibraryCreature libraryTarget || type == LibraryDamageType.None)
         {
             return null;
         }
 
-        LibraryResistanceLevel level = (target as LibraryCreature)?.GetPhysicalResistanceLevel(type)
-            ?? LibraryResistanceLevel.Normal;
+        LibraryResistanceLevel level = libraryTarget.GetPhysicalResistanceLevel(type);
         int damage = result.UnblockedDamage;
 
         return Create(target, type, level, damage, false, PhysicalSideOffset);
@@ -79,13 +78,12 @@ internal sealed partial class LibraryRuinaDamageNumberVfx : Node2D
 
     public static LibraryRuinaDamageNumberVfx? CreateChaos(Creature target, LibraryChaoResult result, LibraryDamageType type)
     {
-        if (type == LibraryDamageType.None)
+        if (target is not LibraryCreature libraryTarget || type == LibraryDamageType.None)
         {
             return null;
         }
 
-        LibraryResistanceLevel level = (target as LibraryCreature)?.GetChaosResistanceLevel(type)
-            ?? LibraryResistanceLevel.Normal;
+        LibraryResistanceLevel level = libraryTarget.GetChaosResistanceLevel(type);
         int damage = result.ChaoValueAmount;
 
         return Create(target, type, level, damage, true, ChaosSideOffset);

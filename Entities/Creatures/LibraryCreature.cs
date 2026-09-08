@@ -39,6 +39,9 @@ public class LibraryCreature : Creature//扩展Creature，添加Chao值属性
     private int _stunPlayerTurnsRemaining;
     public bool RestoreChaoOnNextOwnerTurn { get; set; }
     public bool IsStunPending => RestoreChaoOnNextOwnerTurn;
+
+    /// <summary>是否处于混乱状态，独立于普通 Stun 和自动恢复开关。</summary>
+    public bool IsChaoed { get; private set; }
     public int StunPlayerTurnsRemaining => _stunPlayerTurnsRemaining;
     public LibraryCreatureResistanceData ResistanceData => _resistanceData ??= new();
 
@@ -49,6 +52,7 @@ public class LibraryCreature : Creature//扩展Creature，添加Chao值属性
 
     public void SaveAndSetStunResistance()
     {
+        IsChaoed = true;
         _preStunResistanceData ??= new LibraryCreatureResistanceData(ResistanceData);
         _resistanceData = new(LibraryResistanceLevel.Fatal);
         _stunPlayerTurnsRemaining = CombatState?.CurrentSide == CombatSide.Enemy ? 2 : 1;
@@ -59,6 +63,7 @@ public class LibraryCreature : Creature//扩展Creature，添加Chao值属性
 
     public void RestorePreStunResistance()
     {
+        IsChaoed = false;
         if (_preStunResistanceData == null)
         {
             _stunPlayerTurnsRemaining = 0;
@@ -123,7 +128,11 @@ public class LibraryCreature : Creature//扩展Creature，添加Chao值属性
     }
     public void HealChaoInternal(decimal amount)
     {
-        if(!HasChaoResistance)return;
+        if (!HasChaoResistance || IsChaoed)
+        {
+            return;
+        }
+
         SetCurrentChaoValueInternal((decimal)CurrentChaoValue + amount);
     }
 
@@ -178,7 +187,7 @@ public class LibraryCreature : Creature//扩展Creature，添加Chao值属性
         {
 		    OverStunChaoValue = flag ? Math.Max(num - currentChaoValue, 0) : 0,
             ChaoValueAmount = currentChaoValue - CurrentChaoValue,
-            WasStun = CurrentChaoValue == 0 && !IsStunPending,
+            WasStun = CurrentChaoValue == 0 && !IsChaoed,
         };
     }
     public new void StunInternal(Func<IReadOnlyList<Creature>, Task> stunMove, string? nextMoveId)
@@ -192,7 +201,7 @@ public class LibraryCreature : Creature//扩展Creature，添加Chao值属性
             SaveAndSetStunResistance();
             SetCurrentChaoValueInternal(0m);
             nextMoveId = ResolvePostStunMoveId(Monster, nextMoveId);
-            MoveState state = new MoveState("STUNNED", stunMove, new StunIntent())
+            MoveState state = new LibraryStunMoveState(this, stunMove)
             {
                 FollowUpStateId = nextMoveId,
                 MustPerformOnceBeforeTransitioning = true
@@ -200,6 +209,18 @@ public class LibraryCreature : Creature//扩展Creature，添加Chao值属性
             Monster?.SetMoveImmediate(state);
         }
     }
+
+    private sealed class LibraryStunMoveState(
+        LibraryCreature owner,
+        Func<IReadOnlyList<Creature>, Task> stunMove)
+        : MoveState("STUNNED", stunMove, new StunIntent())
+    {
+        // Enemy-side stagger lasts through the next enemy turn. Keep its move
+        // until the same recovery lifecycle releases the Fatal resistance layer.
+        public override bool CanTransitionAway =>
+            base.CanTransitionAway && !owner.IsChaoed;
+    }
+
     private static string? ResolvePostStunMoveId(MonsterModel monster, string? nextMoveId)
     {
         if (IsValidPostStunMoveId(monster, nextMoveId))

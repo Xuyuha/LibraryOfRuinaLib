@@ -477,6 +477,11 @@ public static class LibraryCreatureCmd
 	}	
 	public static async Task SetCurrentChaoValue(LibraryCreature creature, decimal amount)
 	{
+		if (amount > creature.CurrentChaoValue && creature.IsChaoed)
+		{
+			return;
+		}
+
 		bool flag = creature.IsDead && amount > 0m;
 		decimal num = creature.CurrentChaoValue;
 		creature.SetCurrentChaoValueInternal(amount);
@@ -485,7 +490,7 @@ public static class LibraryCreatureCmd
 		{
 			await LibraryHooks.AfterCurrentChaoValueChanged(creature.Player?.RunState ?? creature.CombatState.RunState, creature.CombatState, creature, changedAmount,LibraryDamageType.None);
 		}
-		if (creature.CurrentChaoValue == 0 && !creature.IsStunPending && creature.MaxChaoValue!=0)
+		if (creature.CurrentChaoValue == 0 && !creature.IsChaoed && creature.MaxChaoValue!=0)
 		{
 			await Stun(creature);
 		}
@@ -561,6 +566,11 @@ public static class LibraryCreatureCmd
 	}
 	public static async Task HealChaoValue(LibraryCreature creature, decimal amount)
 	{
+		if (creature.IsChaoed)
+		{
+			return;
+		}
+
 		if (CombatManager.Instance.IsEnding && !creature.IsPlayer)
 		{
 			return;

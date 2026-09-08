@@ -79,6 +79,17 @@ internal static class LibraryStaggerResistanceBarUi
         if (state.SubscribedCreature == creature)
             return;
 
+        UnsubscribeFromChaoEvents(state);
+
+        state.CurrentChaoChangedHandler = (_, _) => RefreshFromChaoEvent(healthBar);
+        state.MaxChaoChangedHandler = (_, _) => RefreshFromChaoEvent(healthBar);
+        creature.CurrentChaoValueChanged += state.CurrentChaoChangedHandler;
+        creature.MaxChaoValueChanged += state.MaxChaoChangedHandler;
+        state.SubscribedCreature = creature;
+    }
+
+    private static void UnsubscribeFromChaoEvents(State state)
+    {
         if (state.SubscribedCreature != null)
         {
             if (state.CurrentChaoChangedHandler != null)
@@ -87,11 +98,10 @@ internal static class LibraryStaggerResistanceBarUi
                 state.SubscribedCreature.MaxChaoValueChanged -= state.MaxChaoChangedHandler;
         }
 
-        state.CurrentChaoChangedHandler = (_, _) => RefreshFromChaoEvent(healthBar);
-        state.MaxChaoChangedHandler = (_, _) => RefreshFromChaoEvent(healthBar);
-        creature.CurrentChaoValueChanged += state.CurrentChaoChangedHandler;
-        creature.MaxChaoValueChanged += state.MaxChaoChangedHandler;
-        state.SubscribedCreature = creature;
+        state.SubscribedCreature = null;
+        state.CurrentChaoChangedHandler = null;
+        state.MaxChaoChangedHandler = null;
+        state.ResetMiddlegroundOnNextRefresh = true;
     }
 
     private static void RefreshFromChaoEvent(NHealthBar healthBar)
@@ -117,14 +127,22 @@ internal static class LibraryStaggerResistanceBarUi
     {
         if (healthBar == null) return;
 
-        Creature? creature = GetCreature(healthBar);
-        if (creature == null) return;
+        if (GetCreature(healthBar) is not LibraryCreature libCreature)
+        {
+            if (States.TryGetValue(healthBar, out State? previousState))
+            {
+                UnsubscribeFromChaoEvents(previousState);
+                previousState.MiddlegroundTween?.Kill();
+                previousState.MiddlegroundTween = null;
+                if (previousState.BarContainer != null)
+                    previousState.BarContainer.Visible = false;
+            }
+            return;
+        }
 
-        var libCreature = creature as LibraryCreature;
         State state = GetOrCreateState(healthBar);
 
-        bool shouldShow = libCreature != null
-            && creature.IsAlive
+        bool shouldShow = libCreature.IsAlive
             && (libCreature.MaxChaoValue > 0
                 || HasNonNormalChaosResistance(libCreature));
 
@@ -140,12 +158,12 @@ internal static class LibraryStaggerResistanceBarUi
 
         if (state.BarContainer == null) return;
 
-        SubscribeToChaoEvents(libCreature!, healthBar, state);
+        SubscribeToChaoEvents(libCreature, healthBar, state);
         state.BarContainer.Visible = true;
         SyncLayout(healthBar, state);
-        UpdateFill(libCreature!, state);
-        UpdateMiddleground(libCreature!, state);
-        UpdateLabel(libCreature!, state);
+        UpdateFill(libCreature, state);
+        UpdateMiddleground(libCreature, state);
+        UpdateLabel(libCreature, state);
     }
 
     private static void CreateBarNodes(NHealthBar healthBar, State state)
@@ -343,7 +361,7 @@ internal static class LibraryStaggerResistanceBarUi
         int maxResistance = creature.MaxChaoValue;
         if (maxResistance <= 0) maxResistance = Math.Max(1, currentAmount);
 
-        bool isStunned = creature.IsStunPending;
+        bool isChaoed = creature.IsChaoed;
         float maxFgWidth = state.MaxFgWidth;
 
         if (maxFgWidth <= 0f || maxResistance <= 0)
@@ -359,7 +377,7 @@ internal static class LibraryStaggerResistanceBarUi
             state.Fill.OffsetRight = GetFillOffset(currentAmount, maxResistance, maxFgWidth);
         }
 
-        state.Fill.SelfModulate = isStunned ? StunnedFillColor : FillColor;
+        state.Fill.SelfModulate = isChaoed ? StunnedFillColor : FillColor;
     }
 
     private static void UpdateMiddleground(
@@ -448,14 +466,14 @@ internal static class LibraryStaggerResistanceBarUi
         int maxResistance = creature.MaxChaoValue;
         if (maxResistance <= 0) maxResistance = Math.Max(0, currentAmount);
 
-        bool isStunned = creature.IsStunPending;
+        bool isChaoed = creature.IsChaoed;
 
         state.ValueLabel.Text = maxResistance <= 0
             ? $"{currentAmount}/0"
             : $"{currentAmount}/{maxResistance}";
 
         state.ValueLabel.AddThemeColorOverride("font_outline_color",
-            isStunned ? StunnedLabelOutlineColor : LabelOutlineColor);
+            isChaoed ? StunnedLabelOutlineColor : LabelOutlineColor);
     }
 }
 

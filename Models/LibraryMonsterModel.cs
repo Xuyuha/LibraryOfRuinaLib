@@ -78,6 +78,7 @@ public abstract class LibraryMonsterModel : MonsterModel, ILibraryAbstractModel,
             || Creature is not LibraryCreature creature
             || creature.Side != CombatSide.Enemy
             || creature.CombatState == null
+            || !creature.IsChaoed
             || !creature.RestoreChaoOnNextOwnerTurn)
         {
             return;
