@@ -68,26 +68,31 @@ public abstract class LibraryMonsterModel : MonsterModel, ILibraryAbstractModel,
     public virtual LibraryCreatureResistanceData.Resistance? DefaultChaoResistanceData => null;
 
     
-    public sealed override async Task AfterSideTurnEnd(PlayerChoiceContext choiceContext, CombatSide side, IEnumerable<Creature> participants)
+    public sealed override async Task AfterSideTurnEnd(
+        PlayerChoiceContext choiceContext,
+        CombatSide side,
+        IEnumerable<Creature> participants)
     {
         await AfterSideTurnEndInternal(choiceContext, side, participants);
-        if (side != CombatSide.Enemy) return;
-        foreach (Creature creature in CombatState.Creatures)
+        if (side != CombatSide.Enemy
+            || Creature is not LibraryCreature creature
+            || creature.Side != CombatSide.Enemy
+            || creature.CombatState == null
+            || !creature.RestoreChaoOnNextOwnerTurn)
         {
-            if (creature is not LibraryCreature lc || lc.Side != CombatSide.Enemy || !lc.RestoreChaoOnNextOwnerTurn)
-                continue;
-            if (lc.StunPlayerTurnsRemaining > 1)
-            {
-                lc.DecrementStunTurns();
-                continue;
-            }
-            lc.RestoreChaoOnNextOwnerTurn = false;
-            lc.RestorePreStunResistance();
-            decimal recoveryValue = lc.Monster is LibraryMonsterModel model
-                ? model.GetChaoRecoveryValue(lc.MaxChaoValue)
-                : lc.MaxChaoValue;
-            lc.SetCurrentChaoValueInternal(recoveryValue);
+            return;
         }
+
+        // Every monster receives this hook; each one advances only its own stun.
+        if (creature.StunPlayerTurnsRemaining > 1)
+        {
+            creature.DecrementStunTurns();
+            return;
+        }
+
+        creature.RestoreChaoOnNextOwnerTurn = false;
+        creature.RestorePreStunResistance();
+        creature.SetCurrentChaoValueInternal(GetChaoRecoveryValue(creature.MaxChaoValue));
     }
     //子类重写不会覆盖父类方法了
     protected virtual Task AfterSideTurnEndInternal(PlayerChoiceContext choiceContext, CombatSide side, IEnumerable<Creature> participants)
