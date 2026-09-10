@@ -49,13 +49,13 @@ public static class ResistancePreview
         bool allSame = true;
         foreach (Creature enemy in card.CombatState.HittableEnemies)
         {
-            if (enemy is not LibraryCreature libraryEnemy)
+            decimal previewValue = amount;
+            if (enemy is LibraryCreature libraryEnemy)
             {
-                continue;
+                PulseResistanceIcons(libraryEnemy, damageType);
+                previewValue = CalculatePhysicalResistancePreview(amount, libraryEnemy, props, damageType);
             }
 
-            PulseResistanceIcons(libraryEnemy, damageType);
-            decimal previewValue = CalculatePhysicalResistancePreview(amount, libraryEnemy, props, damageType);
             if (!firstValue.HasValue)
             {
                 firstValue = previewValue;

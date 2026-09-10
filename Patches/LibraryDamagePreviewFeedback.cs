@@ -3,6 +3,7 @@
 using HarmonyLib;
 using LibraryLib.Entities.Creatures;
 using LibraryLib.Localization;
+using LibraryLib.Models;
 using LibraryLib.Utils.Resistance;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Cards;
@@ -150,6 +151,35 @@ internal static class LibraryDamagePreviewFeedback
         }
     }
 
+    public static void SafeApplyVanillaPreview(
+        DynamicVar dynamicVar,
+        CardModel card,
+        CardPreviewMode previewMode,
+        Creature? target)
+    {
+        // Library 卡牌由各自的伤害变量提供类型；原版兼容结算只接管其他卡牌。
+        if (card is LibraryCardModel)
+        {
+            return;
+        }
+
+        ValueProp props = SafeGetProps(dynamicVar);
+        try
+        {
+            dynamicVar.PreviewValue = ResistancePreview.ApplyPhysicalResistancePreview(
+                card,
+                previewMode,
+                target,
+                dynamicVar.PreviewValue,
+                props,
+                ResolveVanillaPreviewDamageType(card, target));
+        }
+        catch
+        {
+            SafePulseVanillaPreview(card, previewMode, target, props);
+        }
+    }
+
     private static bool IsPreviewMultiHit(CardModel card, Creature? target)
     {
         if (FixedMultiHitCardIds.Contains(card.Id.Entry))
@@ -258,7 +288,7 @@ internal static class LibraryDamagePreviewFeedback
 }
 
 /// <summary>
-/// 原版 DamageVar 没有 LibraryDamageType；按当前兼容规则，预览时只闪打击抗性。
+/// 原版 DamageVar 按当前攻击类型兼容规则计算抗性预览并提示图标。
 /// </summary>
 [HarmonyPatch(typeof(DamageVar), nameof(DamageVar.UpdateCardPreview))]
 internal static class LibraryVanillaDamageVarPreviewPulsePatch
@@ -269,16 +299,16 @@ internal static class LibraryVanillaDamageVarPreviewPulsePatch
         CardPreviewMode previewMode,
         Creature? target)
     {
-        LibraryDamagePreviewFeedback.SafePulseVanillaPreview(
+        LibraryDamagePreviewFeedback.SafeApplyVanillaPreview(
+            __instance,
             card,
             previewMode,
-            target,
-            LibraryDamagePreviewFeedback.SafeGetProps(__instance));
+            target);
     }
 }
 
 /// <summary>
-/// 原版 CalculatedDamageVar 预览同样按打击抗性提示。
+/// 原版 CalculatedDamageVar 在动态伤害计算完成后应用抗性预览。
 /// </summary>
 [HarmonyPatch(typeof(CalculatedDamageVar), nameof(CalculatedDamageVar.UpdateCardPreview))]
 internal static class LibraryVanillaCalculatedDamageVarPreviewPulsePatch
@@ -289,16 +319,16 @@ internal static class LibraryVanillaCalculatedDamageVarPreviewPulsePatch
         CardPreviewMode previewMode,
         Creature? target)
     {
-        LibraryDamagePreviewFeedback.SafePulseVanillaPreview(
+        LibraryDamagePreviewFeedback.SafeApplyVanillaPreview(
+            __instance,
             card,
             previewMode,
-            target,
-            LibraryDamagePreviewFeedback.SafeGetProps(__instance));
+            target);
     }
 }
 
 /// <summary>
-/// 原版 OstyDamageVar 预览同样按打击抗性提示。
+/// 原版 OstyDamageVar 在奥斯提的伤害修正完成后应用抗性预览。
 /// </summary>
 [HarmonyPatch(typeof(OstyDamageVar), nameof(OstyDamageVar.UpdateCardPreview))]
 internal static class LibraryVanillaOstyDamageVarPreviewPulsePatch
@@ -309,10 +339,10 @@ internal static class LibraryVanillaOstyDamageVarPreviewPulsePatch
         CardPreviewMode previewMode,
         Creature? target)
     {
-        LibraryDamagePreviewFeedback.SafePulseVanillaPreview(
+        LibraryDamagePreviewFeedback.SafeApplyVanillaPreview(
+            __instance,
             card,
             previewMode,
-            target,
-            LibraryDamagePreviewFeedback.SafeGetProps(__instance));
+            target);
     }
 }

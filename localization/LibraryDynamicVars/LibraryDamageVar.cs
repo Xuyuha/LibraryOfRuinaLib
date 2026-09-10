@@ -57,7 +57,13 @@ public class LibraryDamageVar : DamageVar
 			if (lc.HasChaoResistance)
 				ChaoResistanceValue = lc.GetChaosResistanceLevel(DamageType).GetMultiplier();
 		}
-		PreviewValue = num;
+		PreviewValue = ResistancePreview.ApplyPhysicalResistancePreview(
+			card,
+			previewMode,
+			target,
+			num,
+			Props,
+			DamageType);
 		ChaoPreviewValue = num1;
 	}
 }
