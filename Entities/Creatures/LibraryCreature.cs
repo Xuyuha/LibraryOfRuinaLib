@@ -177,8 +177,12 @@ public class LibraryCreature : Creature//扩展Creature，添加Chao值属性
         return chaoValue * (decimal)playerCount * MultiplayerScalingModel.GetMultiplayerScaling(encounter, actIndex);
     }
     public LibraryChaoResult? LoseChaoValueInternal(decimal amount, ValueProp props)
-    {   
-        if(!HasChaoResistance)return null;
+    {
+        // 已陷入混乱或混乱值已耗尽时，不再产生混乱伤害及重复混乱结果。
+        if (!HasChaoResistance || IsChaoed || CurrentChaoValue <= 0)
+        {
+            return null;
+        }
         bool flag = CurrentChaoValue > 0 && amount >= (decimal)CurrentChaoValue;
         int currentChaoValue = CurrentChaoValue;
         int num = (int)Math.Min(amount, 999999999m);

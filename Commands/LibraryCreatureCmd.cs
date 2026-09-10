@@ -367,6 +367,7 @@ public static class LibraryCreatureCmd
 			if (!ReferenceEquals(target.CombatState, combatState)
 				|| !combatState.ContainsCreature(target)
 				|| !target.IsMonster
+				|| target is LibraryCreature { IsChaoed: true }
 				|| target.IsDead)
 			{
 				continue;
@@ -375,6 +376,7 @@ public static class LibraryCreatureCmd
 			Log.Info("LibraryChaoDamage");
 			Creature modifiedTarget = LibraryHooks.ModifyChaoDamageTarget(combatState, target, damageAmount, props, dealer,type);
 			if (modifiedTarget is not LibraryCreature libraryTarget
+				|| libraryTarget.IsChaoed
 				|| !ReferenceEquals(modifiedTarget.CombatState, combatState)
 				|| !combatState.ContainsCreature(modifiedTarget))
 			{
@@ -384,7 +386,11 @@ public static class LibraryCreatureCmd
 			decimal modifiedAmount = LibraryDamageCalculate.CalculateChaoAmount(modifiedAmountbefore,libraryTarget, props, type);
 			await LibraryHooks.AfterModifyingChaoAmount(runState, combatState, cardSource, modifiers,type);
 			await LibraryHooks.BeforeChaoDamageReceived(choiceContext, runState, combatState, modifiedTarget, modifiedAmount, props, dealer, cardSource,type);  
-			LibraryChaoResult chaoResult = libraryTarget.LoseChaoValueInternal(modifiedAmount, props);
+			LibraryChaoResult? chaoResult = libraryTarget.LoseChaoValueInternal(modifiedAmount, props);
+			if (chaoResult == null)
+			{
+				continue;
+			}
 			List<Task> hitTriggers = [];
 			// 混乱伤害反馈
 			// foreach (DamageResult item in damageResults) 
