@@ -210,15 +210,17 @@ public class LibraryCreature : Creature//扩展Creature，添加Chao值属性
                 FollowUpStateId = nextMoveId,
                 MustPerformOnceBeforeTransitioning = true
             };
-            Monster?.SetMoveImmediate(state);
+            Monster.SetMoveImmediate(state, forceTransition: true);
         }
     }
 
-    private sealed class LibraryStunMoveState(
+    internal sealed class LibraryStunMoveState(
         LibraryCreature owner,
         Func<IReadOnlyList<Creature>, Task> stunMove)
         : MoveState("STUNNED", stunMove, new StunIntent())
     {
+        internal bool IsChaosLocked => owner.IsChaoed;
+
         // Enemy-side stagger lasts through the next enemy turn. Keep its move
         // until the same recovery lifecycle releases the Fatal resistance layer.
         public override bool CanTransitionAway =>
