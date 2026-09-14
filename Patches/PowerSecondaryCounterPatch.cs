@@ -32,6 +32,11 @@ internal static class PowerSecondaryCounterUi
 
     public static void EnsureAndRefresh(NPower powerNode)
     {
+        if (!IsUsable(powerNode))
+        {
+            return;
+        }
+
         EnsureSecondaryLabel(powerNode);
         SyncPowerNodeVisibility(powerNode);
         RefreshSecondaryLabel(powerNode);
@@ -63,6 +68,11 @@ internal static class PowerSecondaryCounterUi
 
     public static void SyncPowerNodeVisibility(NPower powerNode)
     {
+        if (!IsUsable(powerNode))
+        {
+            return;
+        }
+
         PowerModel? model = GetModel(powerNode);
         bool isVisible = model?.IsVisible ?? false;
 
@@ -178,7 +188,19 @@ internal static class PowerSecondaryCounterUi
 
     private static MegaLabel? GetSecondaryLabel(NPower powerNode)
     {
-        return powerNode.GetNodeOrNull<MegaLabel>(SecondaryAmountLabelName);
+        if (!IsUsable(powerNode))
+        {
+            return null;
+        }
+
+        MegaLabel? label = powerNode.GetNodeOrNull<MegaLabel>(SecondaryAmountLabelName);
+        return IsUsable(label) ? label : null;
+    }
+
+    private static bool IsUsable(Node? node)
+    {
+        // Power 的回合计数仍须结算；已释放或等待释放的 UI 不再参与刷新。
+        return node != null && GodotObject.IsInstanceValid(node) && !node.IsQueuedForDeletion();
     }
 }
 
