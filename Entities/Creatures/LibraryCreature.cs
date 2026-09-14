@@ -200,7 +200,7 @@ public class LibraryCreature : Creature//扩展Creature，添加Chao值属性
         {
             throw new InvalidOperationException("Can't stun a player.");
         }
-        if (CombatState != null && !IsDead)
+        if (CombatState != null && !IsDead && !IsChaoed)
         {
             SaveAndSetStunResistance();
             SetCurrentChaoValueInternal(0m);
@@ -227,7 +227,7 @@ public class LibraryCreature : Creature//扩展Creature，添加Chao值属性
             base.CanTransitionAway && !owner.IsChaoed;
     }
 
-    private static string? ResolvePostStunMoveId(MonsterModel monster, string? nextMoveId)
+    internal static string? ResolvePostStunMoveId(MonsterModel monster, string? nextMoveId)
     {
         if (IsValidPostStunMoveId(monster, nextMoveId))
         {
@@ -259,7 +259,8 @@ public class LibraryCreature : Creature//扩展Creature，添加Chao值属性
         return !string.IsNullOrEmpty(moveId)
             && moveId != MonsterModel.stunnedMoveId
             && moveId != "UNSET_MOVE"
-            && monster.MoveStateMachine?.States.ContainsKey(moveId) == true;
+            && monster.MoveStateMachine?.States.TryGetValue(moveId, out MonsterState? state) == true
+            && state is not LibraryPhaseTransitionMoveState;
     }
     public NHealthBar? HealthBar => GetCreatureNode()?.GetNode<NCreatureStateDisplay>("%HealthBar")?.GetNode<NHealthBar>("%HealthBar");
     public LibraryResistanceLevel GetChaosResistanceLevel(LibraryDamageType type) => type switch{
