@@ -141,7 +141,7 @@ public class LibraryDice : DynamicVar
         await LibraryHooks.AfterDiceEffect(combatState, choiceContext, targets, cardPlay.Card, this,result);
     }
 	/// <summary>
-	///     可将标签为Task Function (PlayerChoiceContext , CardPlay)的方法作为骰子特殊效果，使用后，骰子将启用自定义描述；
+	///     可将标签为Task Function (PlayerChoiceContext , CardPlay , int)的方法作为骰子特殊效果，使用后，骰子将启用自定义描述；
     ///     注意该方法中调用的card的子属性一定得从cardplay中获取
 	/// </summary>
     public LibraryDice WithDiceEffect(Func<PlayerChoiceContext, CardPlay, int ,Task>? diceEffct){
