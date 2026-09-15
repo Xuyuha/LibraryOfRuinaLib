@@ -54,7 +54,7 @@ public class LibraryAttackCommand
 	private bool _doesRandomTargetingAllowDuplicates = true;
 
 	private bool _shouldPlayAnimation = true;
-
+	private readonly List<DiceRollResult> _rollResults = new List<DiceRollResult>();
 	private readonly List<List<DamageResult>> _damageResults = new List<List<DamageResult>>();
 	private readonly List<List<LibraryChaoResult>> _chaoResults = new List<List<LibraryChaoResult>>();
 
@@ -98,6 +98,7 @@ public class LibraryAttackCommand
 	public bool IsMultiTargeted => _combatState != null;
 
 	public bool IsRandomlyTargeted { get; private set; }
+	public List<DiceRollResult> RollResults => _rollResults;
 
 	public IEnumerable<List<DamageResult>> DamageResults => _damageResults;
 
@@ -368,6 +369,9 @@ public class LibraryAttackCommand
 	{
 		_chaoResults.Add(results.ToList());
 	}
+	public void AddRollResultsInternal(DiceRollResult results){
+		_rollResults.Add(results);
+	}
 	private IReadOnlyList<Creature> GetPossibleTargets()
 	{
 		if (IsSingleTargeted)
@@ -583,6 +587,7 @@ public class LibraryAttackCommand
 			}
 			IReadOnlyList<Creature> targets = singleTarget != null ? [singleTarget] : validTargets;
 			DiceRollResult? rollResult = await LibraryDice.GetResultWithRoll(combatState,choiceContext,Dice,targets.ToList());
+			AddRollResultsInternal(rollResult);
 			decimal damage = Dice != null ? rollResult.CurrentValue:((_calculatedDamageVar == null) ?_damagePerHit : _calculatedDamageVar.Calculate(singleTarget));
 			List<int> Blocks = targets.Select(c => c.Block).ToList();
 			Func<Task>? beforeApplyingDamage = null;

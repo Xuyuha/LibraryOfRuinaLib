@@ -31,7 +31,7 @@ public static class LibraryCreatureCmd
 {
 	private const int MaxAdditionalDiceUses = 32;
 
-	public static async Task GainBlock(Creature creature, CardPlay cardPlay, LibraryDice dice, bool fast = false)
+	public static async Task<List<DiceRollResult?>> GainBlock(Creature creature, CardPlay cardPlay, LibraryDice dice, bool fast = false)
 	{
 		ArgumentNullException.ThrowIfNull(cardPlay);
 		int blockTimes = dice.EnableCustomUseTimes? dice.UseTimes : 1;
@@ -41,9 +41,10 @@ public static class LibraryCreatureCmd
 			?? throw new InvalidOperationException(
 				$"Cannot resolve combat state for {cardPlay.Card.Id.Entry}.");
 		int additionalUses = 0;
+		List<DiceRollResult?> list = [];
 		for(int i = 0 ; i < blockTimes ; i++)
 		{
-			DiceRollResult rollResult = await LibraryDice.GetResultWithRoll(combatState,new BlockingPlayerChoiceContext(),dice,[creature]);
+			DiceRollResult? rollResult = await LibraryDice.GetResultWithRoll(combatState,new BlockingPlayerChoiceContext(),dice,[creature]);
 			int amount = rollResult.CurrentValue;
 			await CreatureCmd.GainBlock(creature, amount, ValueProp.Move, cardPlay, fast);
 			await dice.TriggerDiceEffect(new BlockingPlayerChoiceContext(), cardPlay,rollResult, [creature]);
@@ -61,7 +62,9 @@ public static class LibraryCreatureCmd
 						await trigger1.AfterReusing(new BlockingPlayerChoiceContext(), [creature] ,dice,rollResult);
 				}
 			}
+			list.Add(rollResult);
 		}
+		return list;
 	}
 	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, Creature target, DamageVar damageVar, CardModel cardSource, LibraryDamageType type = LibraryDamageType.None, CardPlay? cardPlay = null)
 	{
