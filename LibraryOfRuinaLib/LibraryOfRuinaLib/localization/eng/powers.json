@@ -44,7 +44,7 @@
   "LIBRARY_STRONG_BLUNT_POWER.smartDescription": "[gold]{OwnerName}[/gold]'s [red]Blunt[/red] damage and [gold]Blunt chaos damage[/gold] are increased by [blue]{Amount}[/blue].{Prompt}",
   "LIBRARY_BLEEDING_POWER_DEFAULT.title": "Bleed",
   "LIBRARY_BLEEDING_POWER_DEFAULT.description": "After attacking, take damage and lose stacks over time.",
-  "LIBRARY_BLEEDING_POWER_DEFAULT.smartDescription": "Whenever [gold]{OwnerName}[/gold] deals [red]attack damage[/red], they take [red]{Amount}[/red] damage, then [gold]Bleed[/gold] loses one third of its stacks. It also loses one third of its stacks at end of turn; remove it below [blue]3[/blue] stacks.",
+  "LIBRARY_BLEEDING_POWER_DEFAULT.smartDescription": "Whenever [gold]{OwnerName}[/gold] deals [red]attack damage[/red], they take [red]{Amount}[/red] damage, then [gold]Bleed[/gold] loses one third of its stacks. It also loses one third of its stacks at end of turn.",
   "LIBRARY_BURN_POWER_DEFAULT.title": "Burn",
   "LIBRARY_BURN_POWER_DEFAULT.description": "At end of turn, take damage and lose stacks over time.",
   "LIBRARY_BURN_POWER_DEFAULT.smartDescription": "At the end of [gold]{OwnerName}[/gold]'s side turn, they take [red]{Amount}[/red] damage, then [gold]Burn[/gold] loses one third of its stacks.",

@@ -45,7 +45,7 @@
   "LIBRARY_STRONG_BLUNT_POWER.smartDescription": "[gold]{OwnerName}[/gold]造成的[red]打击[/red]伤害与[gold]打击混乱伤害[/gold]增加[blue]{Amount}[/blue]点。{Prompt}",
   "LIBRARY_BLEEDING_POWER_DEFAULT.title": "流血",
   "LIBRARY_BLEEDING_POWER_DEFAULT.description": "攻击后受到伤害，并逐步减少层数。",
-  "LIBRARY_BLEEDING_POWER_DEFAULT.smartDescription": "每当[gold]{OwnerName}[/gold]造成[red]攻击伤害[/red]后，受到[red]{Amount}[/red]点伤害，然后[gold]流血[/gold]层数减少[blue]1/3[/blue]。回合结束时也会减少[blue]1/3[/blue]；低于[blue]3[/blue]层时移除。",
+  "LIBRARY_BLEEDING_POWER_DEFAULT.smartDescription": "每当[gold]{OwnerName}[/gold]造成[red]攻击伤害[/red]后，受到[red]{Amount}[/red]点伤害，然后[gold]流血[/gold]层数减少[blue]1/3[/blue]。回合结束时也会减少[blue]1/3[/blue]。",
   "LIBRARY_BURN_POWER_DEFAULT.title": "烧伤",
   "LIBRARY_BURN_POWER_DEFAULT.description": "回合结束时受到伤害，并逐步减少层数。",
   "LIBRARY_BURN_POWER_DEFAULT.smartDescription": "每当[gold]{OwnerName}[/gold]所在方回合结束时，受到[red]{Amount}[/red]点伤害，然后[gold]烧伤[/gold]层数减少[blue]1/3[/blue]。",

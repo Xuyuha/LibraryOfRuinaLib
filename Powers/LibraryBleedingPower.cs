@@ -53,7 +53,6 @@ public sealed class LibraryBleedingPower :
     {
         if (side != CombatSide.Enemy) return;
         await TriggerReduce(choiceContext, Owner, null);
-        if (Amount < 3) await PowerCmd.Remove(this);
     }
     public override async Task AfterDamageGiven(PlayerChoiceContext choiceContext, Creature? dealer, DamageResult result, ValueProp props, Creature target, CardModel? cardSource,object?_ = null)
     {
