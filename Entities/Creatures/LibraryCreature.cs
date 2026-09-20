@@ -234,6 +234,13 @@ public class LibraryCreature : Creature//扩展Creature，添加Chao值属性
             return nextMoveId;
         }
 
+        // 动态路由怪物在混乱锁下无法再改写恢复招式，恢复时必须重新经过路由选招。
+        string? recoveryStateId = (monster as LibraryMonsterModel)?.StunRecoveryStateId;
+        if (IsValidPostStunMoveId(monster, recoveryStateId))
+        {
+            return recoveryStateId;
+        }
+
         string? loggedMoveId = monster.MoveStateMachine?.StateLog
             .LastOrDefault(state => IsValidPostStunMoveId(monster, state.Id))
             ?.Id;

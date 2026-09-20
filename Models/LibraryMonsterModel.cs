@@ -33,6 +33,14 @@ public abstract class LibraryMonsterModel : MonsterModel, ILibraryAbstractModel,
     }
 
     /// <summary>
+    /// 混乱恢复后进入的状态 Id；调用方未显式指定恢复招式时优先使用。
+    /// 默认 null 沿用原版规则（回到最近一次抽取的招式）。按周期动态选招的怪物
+    /// 应返回自己的路由状态：混乱锁生效期间无法再改写恢复招式，只有在恢复时
+    /// 重新经过路由，才能按最新周期选招，而不是重放触发混乱前的那一招。
+    /// </summary>
+    public virtual string? StunRecoveryStateId => null;
+
+    /// <summary>
     /// Default numerical-resolution policy. Encounter monsters can override
     /// this once and affect vanilla and LibraryLib preview/live paths alike.
     /// </summary>
