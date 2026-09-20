@@ -31,7 +31,7 @@
   "LIBRARY_DISARM_POWER.title": "隙",
   "LIBRARY_DISARM_POWER.description": "プレイヤーが得るブロックが減少し、敵が受ける攻撃ダメージが増加する。",
   "LIBRARY_DISARM_POWER.smartDescription": "{OnPlayer:得る[gold]ブロック[/gold]が[blue]{Amount}[/blue]点減少する|[gold]{OwnerName}[/gold]が受ける[red]攻撃ダメージ[/red]が[blue]{Amount}[/blue]点増加する}。{Prompt}",
-  "LIBRARY_STRONG_POWER.title": "筋力",
+  "LIBRARY_STRONG_POWER.title": "威力増加",
   "LIBRARY_STRONG_POWER.description": "持続ターン中、与えるダメージと混乱ダメージが増加する。",
   "LIBRARY_STRONG_POWER.smartDescription": "[gold]{OwnerName}[/gold]が与える[red]攻撃ダメージ[/red]と[gold]混乱ダメージ[/gold]が[blue]{Amount}[/blue]点増加する。{Prompt}",
   "LIBRARY_STRONG_SLASH_POWER.title": "斬撃威力増加",
@@ -79,8 +79,8 @@
   "LIBRARY_SMOKE_POWER.title": "煙",
   "LIBRARY_SMOKE_POWER.description": "自身が与える攻撃ダメージと受ける攻撃ダメージに[blue]1+この効果のスタック数*0.05[/blue]を掛ける。",
   "LIBRARY_SMOKE_POWER.smartDescription": "自身が与える攻撃ダメージと受ける攻撃ダメージ*{Multiplier}",
-  "LIBRARY_DECAY_POWER.title.ja": "腐食",
-  "LIBRARY_DECAY_POWER.description.ja": "ダメージを受けた時、自身に追加でダメージと混乱ダメージを与える。ターン終了時、自身にダメージを与える。",
-  "LIBRARY_DECAY_POWER.smartDescription.ja": "ダメージを受けた時、自身に追加で{Amount}ダメージと混乱ダメージを与える。ターン終了時、自身に{Amount}ダメージを与え、このスタックを1減らす。",
+  "LIBRARY_DECAY_POWER.title": "腐食",
+  "LIBRARY_DECAY_POWER.description": "ダメージを受けた時、自身に追加でダメージと混乱ダメージを与える。ターン終了時、自身にダメージを与える。",
+  "LIBRARY_DECAY_POWER.smartDescription": "ダメージを受けた時、自身に追加で{Amount}ダメージと混乱ダメージを与える。ターン終了時、自身に{Amount}ダメージを与え、このスタックを1減らす。",
   "LIBRARY_TURN_POWER_PROMPT": "この効果は[blue]{Turns}[/blue]ターン後に[blue]{Amount}[/blue]層減少する。"
 }
