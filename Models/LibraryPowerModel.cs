@@ -33,8 +33,8 @@ public abstract class LibraryPowerModel : PowerModel,ILibraryAbstractModel
     private NPower? _boundNPower;
     protected string _suffix = "";
     protected virtual string DefaultSuffix => "";
-    private string UpSuffix => Suffix.ToUpperInvariant();
-    private string LowSuffix => Suffix.ToLowerInvariant();
+    protected string UpSuffix => Suffix.ToUpperInvariant();
+    protected string LowSuffix => Suffix.ToLowerInvariant();
     private static AccessTools.FieldRef<NPower, TextureRect>? _iconAccessor;
     private static AccessTools.FieldRef<NPower, CpuParticles2D>? _powerFlashAccessor;
 

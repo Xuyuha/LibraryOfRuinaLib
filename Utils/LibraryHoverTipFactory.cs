@@ -23,7 +23,8 @@ public static class LibraryHoverTipFactory
     where T : LibraryMultipleModePowerModel
     {
         T model = ModelDb.Power<T>();
-        model.Mode = mode;
-        return HoverTipFactory.FromPower(model,amount);
+        var model2 = (T)model.MutableClone();
+        model2.Mode = mode;
+        return HoverTipFactory.FromPower(model2,amount);
     }
 }

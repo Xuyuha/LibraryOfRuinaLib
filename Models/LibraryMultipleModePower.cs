@@ -12,6 +12,7 @@ using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
+using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Rewards;
 using MegaCrit.Sts2.Core.Rooms;
@@ -35,6 +36,22 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
     public override string Suffix{
 		get => Mode.Name;
 	}
+    public override string PackedIconPath
+    {
+        get
+        {
+            string fileName = base.Id.Entry.ToLowerInvariant()
+                + (IsDynamic ? $"_{LowSuffix}" : string.Empty)
+                + ".png";
+
+            if (Mode.GetType().Assembly != typeof(LibraryPowerModel).Assembly)
+            {
+                return ImageHelper.GetImagePath($"powers/{fileName}");
+            }
+
+            return $"res://LibraryOfRuinaLib/images/powers/{fileName}";
+        }
+    }
     public async Task SetPowerMode<T>(PlayerChoiceContext choiceContext, Creature? dealer, CardModel? cardSource)
     where T:LibraryPowerMode,new()
 	{
