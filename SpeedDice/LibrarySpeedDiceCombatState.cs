@@ -1,4 +1,5 @@
 using LibraryLib.Light;
+using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Entities.Players;
 using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Random;
@@ -45,6 +46,13 @@ public sealed class LibrarySpeedDiceCombatState
     public LibrarySpeedDiceParticipant Participant { get; }
 
     internal LibrarySpeedDiceRegistration Registration { get; }
+
+    /// <summary>
+    /// Creatures the target line of <paramref name="slot"/> points at, through the same module dispatch the
+    /// speed dice UI uses (group-attack extensions and card-specific target rules included).
+    /// </summary>
+    public IReadOnlyList<Creature> GetTargetLineTargets(LibrarySpeedDiceSlot slot) =>
+        Registration.Dispatcher.GetTargetLineTargets(this, slot);
 
     public LibraryEmotionState Emotion { get; } = new();
 
