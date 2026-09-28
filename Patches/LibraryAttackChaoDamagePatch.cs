@@ -9,6 +9,7 @@ using LibraryLib.Models;
 using LibraryLib.Utils.Resistance;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Commands;
+using MegaCrit.Sts2.Core.Commands.Builders;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.GameActions.Multiplayer;
@@ -62,14 +63,22 @@ internal static class AttackExecuteContext
 
     private static LibraryDamageType SafeResolveVanillaDamageType(object? attackCommand)
     {
+        LibraryDamageType inferred;
         try
         {
-            return ResolveVanillaDamageTypeUnsafe(attackCommand);
+            inferred = ResolveVanillaDamageTypeUnsafe(attackCommand);
         }
         catch
         {
-            return LibraryDamageType.Blunt;
+            inferred = LibraryDamageType.Blunt;
         }
+
+        // Registered modifiers see the inferred type; see LibraryDamageTypes.
+        return attackCommand is AttackCommand command
+            ? LibraryDamageTypes.Modify(
+                new LibraryDamageTypeContext(command.ModelSource as CardModel, command.Attacker, null, command, null, false),
+                inferred)
+            : inferred;
     }
 
     private static LibraryDamageType ResolveVanillaDamageTypeUnsafe(object? attackCommand)
@@ -226,6 +235,7 @@ internal static class LibraryAttackChaoDamagePatch
 
         LibraryDamageType damageType = ResolveExecutionDamageType(
             cardSource,
+            dealer,
             targetList);
         IReadOnlyList<int> preDamageBlocks = targetList
             .Select(static target => target.Block)
@@ -335,18 +345,17 @@ internal static class LibraryAttackChaoDamagePatch
 
     private static LibraryDamageType ResolveExecutionDamageType(
         CardModel? cardSource,
+        Creature? dealer,
         IReadOnlyList<Creature> targets)
     {
+        Creature? target = targets.Count == 1 ? targets[0] : null;
         if (cardSource != null)
         {
-            Creature? target = targets.Count == 1 ? targets[0] : null;
-            return LibraryDamagePreviewFeedback.ResolveVanillaPreviewDamageType(
-                cardSource,
-                target);
+            return LibraryDamageTypes.ResolveForCard(cardSource, target, isPreview: false);
         }
 
-        return targets.Count > 1
-            ? LibraryDamageType.Slash
-            : LibraryDamageType.Blunt;
+        return LibraryDamageTypes.Modify(
+            new LibraryDamageTypeContext(null, dealer, target, null, null, false),
+            targets.Count > 1 ? LibraryDamageType.Slash : LibraryDamageType.Blunt);
     }
 }

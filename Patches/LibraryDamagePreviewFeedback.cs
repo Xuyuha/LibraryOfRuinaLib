@@ -1,6 +1,7 @@
 #nullable enable
 
 using HarmonyLib;
+using LibraryLib.Combat;
 using LibraryLib.Entities.Creatures;
 using LibraryLib.Localization;
 using LibraryLib.Models;
@@ -114,7 +115,7 @@ internal static class LibraryDamagePreviewFeedback
                 previewMode,
                 target,
                 props,
-                ResolveVanillaPreviewDamageType(card, target));
+                LibraryDamageTypes.ResolveForCard(card, target, isPreview: true));
         }
         catch
         {
@@ -172,7 +173,7 @@ internal static class LibraryDamagePreviewFeedback
                 target,
                 dynamicVar.PreviewValue,
                 props,
-                ResolveVanillaPreviewDamageType(card, target));
+                LibraryDamageTypes.ResolveForCard(card, target, isPreview: true));
         }
         catch
         {
