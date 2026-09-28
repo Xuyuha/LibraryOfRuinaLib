@@ -1,5 +1,6 @@
 #nullable enable
 using Godot;
+using LibraryLib.Combat;
 using LibraryLib.Entities.Creatures;
 using LibraryLib.Hooks;
 using LibraryLib.Localization.Dice;
@@ -458,6 +459,10 @@ public class LibraryAttackCommand
 			throw new InvalidOperationException("No targets set.");
 		}
 		await LibraryHooks.BeforeAttack(combatState, this);
+		// Registered ILibraryDamageTypeModifier implementations can change the type; see LibraryDamageTypes.
+		LibraryDamageType damageType = LibraryDamageTypes.Modify(
+			new LibraryDamageTypeContext(ModelSource as CardModel, Attacker, IsSingleTargeted ? _singleTarget : null, null, this, false),
+			_damageType);
 		decimal attackCount = LibraryHooks.ModifyAttackHitCount(combatState, this, (Dice?.EnableCustomUseTimes ?? false) ? Dice.UseTimes : _hitCount);
 		int additionalUses = 0;
 		for (int i = 0; i < attackCount; i++)
@@ -599,14 +604,14 @@ public class LibraryAttackCommand
 					await PlayAttackPresentationAsync();
 				};
 			}
-			IEnumerable<DamageResult> damageResults = await LibraryCreatureCmd.Damage(damageAmount: damage, choiceContext: choiceContext ?? new BlockingPlayerChoiceContext(), targets: targets, props: DamageProps, dealer: Attacker ,cardSource: ModelSource as CardModel, cardPlay: cardPlay, type : _damageType, beforeApplyingDamage: beforeApplyingDamage);
+			IEnumerable<DamageResult> damageResults = await LibraryCreatureCmd.Damage(damageAmount: damage, choiceContext: choiceContext ?? new BlockingPlayerChoiceContext(), targets: targets, props: DamageProps, dealer: Attacker ,cardSource: ModelSource as CardModel, cardPlay: cardPlay, type : damageType, beforeApplyingDamage: beforeApplyingDamage);
 			AddDamageResultsInternal(damageResults);
 			List<LibraryChaoResult> chaoResults = [];
 			for (int j = 0 ; j < Blocks.Count ; j++){
 				decimal chaoDamage = DamageProps.HasFlag(ValueProp.Unblockable)
 					? damage
 					: Math.Max(0, damage - Blocks[j]);
-				IEnumerable<LibraryChaoResult>? results = await LibraryCreatureCmd.ChaoDamage(damageAmount: chaoDamage, choiceContext: choiceContext ?? new BlockingPlayerChoiceContext(), target: targets[j], props: DamageProps, dealer: Attacker, cardSource: ModelSource as CardModel, cardPlay: cardPlay, type: _damageType, damageResults: damageResults);
+				IEnumerable<LibraryChaoResult>? results = await LibraryCreatureCmd.ChaoDamage(damageAmount: chaoDamage, choiceContext: choiceContext ?? new BlockingPlayerChoiceContext(), target: targets[j], props: DamageProps, dealer: Attacker, cardSource: ModelSource as CardModel, cardPlay: cardPlay, type: damageType, damageResults: damageResults);
 				if(results != null)
 					chaoResults.AddRange(results);
 			}
