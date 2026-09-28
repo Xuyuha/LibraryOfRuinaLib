@@ -373,7 +373,13 @@ public class LibraryAttackCommand
 	public void AddRollResultsInternal(DiceRollResult results){
 		_rollResults.Add(results);
 	}
+	// Registered ILibraryAttackTargetFilter implementations narrow the result; see LibraryAttackTargets.
 	private IReadOnlyList<Creature> GetPossibleTargets()
+	{
+		return LibraryAttackTargets.Filter(this, GetUnfilteredTargets());
+	}
+
+	private IReadOnlyList<Creature> GetUnfilteredTargets()
 	{
 		if (IsSingleTargeted)
 		{
