@@ -23,10 +23,12 @@ internal static class AttackExecuteContext
 {
     internal static readonly AsyncLocal<bool> IsInAttackExecute = new();
     internal static readonly AsyncLocal<LibraryDamageType> DamageType = new();
+    internal static readonly AsyncLocal<AttackCommand?> Command = new();
 
     internal readonly record struct Scope(
         bool WasInAttackExecute,
-        LibraryDamageType PreviousDamageType);
+        LibraryDamageType PreviousDamageType,
+        AttackCommand? PreviousCommand);
     
     public static LibraryDamageType CurrentDamageType =>
         IsInAttackExecute.Value && DamageType.Value != LibraryDamageType.None
@@ -35,7 +37,8 @@ internal static class AttackExecuteContext
 
     internal static Scope Enter(object? attackCommand)
     {
-        var scope = new Scope(IsInAttackExecute.Value, DamageType.Value);
+        var scope = new Scope(IsInAttackExecute.Value, DamageType.Value, Command.Value);
+        Command.Value = attackCommand as AttackCommand;
         try
         {
             IsInAttackExecute.Value = true;
@@ -54,6 +57,7 @@ internal static class AttackExecuteContext
     {
         IsInAttackExecute.Value = scope.WasInAttackExecute;
         DamageType.Value = scope.PreviousDamageType;
+        Command.Value = scope.PreviousCommand;
     }
 
     internal static LibraryDamageType ResolveVanillaDamageType(object? attackCommand)
@@ -349,9 +353,31 @@ internal static class LibraryAttackChaoDamagePatch
         IReadOnlyList<Creature> targets)
     {
         Creature? target = targets.Count == 1 ? targets[0] : null;
+        AttackCommand? command = AttackExecuteContext.IsInAttackExecute.Value
+            ? AttackExecuteContext.Command.Value
+            : null;
+        // Nested damage from another source must not inherit the outer attack's type.
+        if (command != null &&
+            (!ReferenceEquals(command.Attacker, dealer) ||
+             !ReferenceEquals(command.ModelSource as CardModel, cardSource)))
+        {
+            command = null;
+        }
+
         if (cardSource != null)
         {
-            return LibraryDamageTypes.ResolveForCard(cardSource, target, isPreview: false);
+            // Keep legacy card-inference patches, then let modifiers see the real attack command.
+            LibraryDamageType inferred =
+                LibraryDamagePreviewFeedback.ResolveVanillaPreviewDamageType(cardSource, target);
+            return LibraryDamageTypes.Modify(
+                new LibraryDamageTypeContext(cardSource, dealer, target, command, null, false),
+                inferred);
+        }
+
+        if (command != null)
+        {
+            // Monster attacks may carry a type supplied by their synchronized move plan.
+            return AttackExecuteContext.CurrentDamageType;
         }
 
         return LibraryDamageTypes.Modify(
