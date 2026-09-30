@@ -1,7 +1,6 @@
 #nullable enable
 using HarmonyLib;
 using LibraryLib.Entities.Creatures;
-using LibraryLib.Utils;
 using MegaCrit.Sts2.Core.Combat.History;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Logging;
@@ -30,8 +29,8 @@ internal static class CombatHistoryDamageReceivedSafetyPatch
         {
             Log.Warn(
                 "[LibraryOfRuinaLib] Suppressed CombatHistory.DamageReceived NullReferenceException " +
-                $"for non-card or cross-assembly Library damage. receiver={LibraryDiagnostics.Describe(receiver)}, " +
-                $"dealer={LibraryDiagnostics.Describe(dealer)}, cardSource={LibraryDiagnostics.Describe(cardSource)}, " +
+                $"for non-card or cross-assembly Library damage. receiver={GetCreatureId(receiver)}, " +
+                $"dealer={GetCreatureId(dealer)}, cardSource={GetCardSourceId(cardSource)}, " +
                 $"damage={damageResult.UnblockedDamage}, props={damageResult.Props}");
         }
         catch
@@ -63,5 +62,24 @@ internal static class CombatHistoryDamageReceivedSafetyPatch
         return !ReferenceEquals(
             cardSource.GetType().Assembly,
             receiver.Monster?.GetType().Assembly);
+    }
+
+    private static string GetCreatureId(Creature? creature)
+    {
+        if (creature == null)
+            return "null";
+
+        if (creature.IsMonster)
+            return creature.Monster?.Id.Entry ?? "unknown-monster";
+
+        if (creature.IsPlayer)
+            return creature.Player?.Character.Id.Entry ?? "unknown-player";
+
+        return creature.GetType().Name;
+    }
+
+    private static string GetCardSourceId(CardModel? cardSource)
+    {
+        return cardSource?.Id.Entry ?? "null";
     }
 }

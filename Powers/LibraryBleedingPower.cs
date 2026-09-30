@@ -32,8 +32,22 @@ public sealed class LibraryBleedingPower :
         await CreatureCmd.Damage(choiceContext, Owner, effectiveAmount, ValueProp.Unpowered, null, null);
     }
 
-    public IEnumerable<LibraryHealthBarDamageForecast> GetLibraryHealthBarDamageForecasts(LibraryHealthBarForecastContext context) =>
-        LibraryPowerRules.NextTriggerForecast(this, context, LibraryHealthBarForecastColors.Bleeding);
+    public IEnumerable<LibraryHealthBarDamageForecast>
+        GetLibraryHealthBarDamageForecasts(
+            LibraryHealthBarForecastContext context)
+    {
+        if (Amount <= 0 || context.CombatState == null)
+        {
+            return [];
+        }
+
+        return
+        [
+            LibraryHealthBarDamageForecast.FromLibraryPower(
+                this,
+                LibraryHealthBarForecastColors.Bleeding)
+        ];
+    }
 
     public override async Task AfterSideTurnEnd(PlayerChoiceContext choiceContext, CombatSide side, IEnumerable<Creature> participants,object?_ = null)
     {

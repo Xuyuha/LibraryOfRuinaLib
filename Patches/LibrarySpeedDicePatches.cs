@@ -397,9 +397,12 @@ internal static class LibrarySpeedDiceCombatRoomUiPatch
 [HarmonyPatch(typeof(NHealthBar), "RefreshForeground")]
 internal static class LibrarySpeedDiceHealthBarUiPatch
 {
+    private static readonly System.Reflection.FieldInfo? CreatureField =
+        AccessTools.Field(typeof(NHealthBar), "_creature");
+
     private static void Postfix(NHealthBar __instance)
     {
-        if (LibraryHealthBarAccess.GetCreature(__instance) is { } creature)
+        if (CreatureField?.GetValue(__instance) is Creature creature)
         {
             LibrarySpeedDiceUiMount.TryMount(
                 creature.GetCreatureNode(),

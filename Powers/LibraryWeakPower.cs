@@ -7,16 +7,31 @@ using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.ValueProps;
 
 namespace LibraryLib.Powers;
-
-/// <summary>虚弱：本方造成的伤害与混乱伤害 -层数。</summary>
-public sealed class LibraryWeakPower : LibraryTurnsPowerModel
+public sealed class LibraryWeakPower : LibraryTurnsPowerModel//虚弱，造成的伤害与混乱伤害-1
 {
     public override PowerType Type => PowerType.Debuff;
     public override PowerStackType StackType => PowerStackType.Counter;
-
-    public override decimal ModifyDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay) =>
-        LibraryPowerRules.OwnerAttackBonus(this, dealer, props, -Amount);
-
-    public override decimal ModifyChaoDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay, LibraryDamageType type) =>
-        LibraryPowerRules.OwnerAttackBonus(this, dealer, props, -Amount);
+    public override decimal ModifyDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay){
+		if (base.Owner != dealer)
+		{
+			return 0m;
+		}
+		if (!props.IsPoweredAttack())
+		{
+			return 0m;
+		}
+		return -base.Amount;
+	}
+    public override decimal ModifyChaoDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay, LibraryDamageType type)
+    {
+		if (base.Owner != dealer)
+		{
+			return 0m;
+		}
+		if (!props.IsPoweredAttack())
+		{
+			return 0m;
+		}
+		return -base.Amount;
+	}
 }

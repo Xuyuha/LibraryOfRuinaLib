@@ -28,6 +28,8 @@ namespace LibraryLib.Commands;
 
 public class LibraryAttackCommand
 {
+	private const int _maxAdditionalDiceUses = 32;
+
 	private enum SourceType
 	{
 		None,
@@ -136,7 +138,7 @@ public class LibraryAttackCommand
 		{
 			throw new ArgumentException("Creature is not Osty");
 		}
-		Attacker = osty;
+		Attacker = osty as LibraryCreature;
 		ModelSource = card;
 		_attackerAnimName = "Attack";
 		_attackerAnimDelay = 0.3f;
@@ -151,7 +153,7 @@ public class LibraryAttackCommand
 		{
 			throw new InvalidOperationException("Attacker has already been set.");
 		}
-		Attacker = monster.Creature;
+		Attacker = monster.Creature as LibraryCreature;
 		_attackerAnimName = "Attack";
 		_sourceType = SourceType.Monster;
 		// AttackCommand.FromMonster already configures all-opponent targeting.
@@ -627,10 +629,19 @@ public class LibraryAttackCommand
 			{
 				await Dice.TriggerDiceEffect(choiceContext ?? new BlockingPlayerChoiceContext(), cardPlay, rollResult, targets);
 			}
-			if (Dice != null && await Dice.TryReuseAsync(combatState, choiceContext ?? new BlockingPlayerChoiceContext(), targets, rollResult!, additionalUses))
+			if (Dice != null && LibraryHooks.ShouldReuse(combatState,targets,Dice,rollResult,out ILibraryAbstractModel? trigger1))
 			{
-				additionalUses++;
-				attackCount++;
+				if (additionalUses >= _maxAdditionalDiceUses)
+				{
+					Log.Warn($"[LibraryOfRuinaLib.Dice] Reuse limit reached for {Dice.Name}.");
+				}
+				else
+				{
+					additionalUses++;
+					attackCount++;
+					if(trigger1 != null)
+						await trigger1.AfterReusing(choiceContext ?? new BlockingPlayerChoiceContext(),targets,Dice,rollResult);
+				}
 			}
 		}
 		CombatManager.Instance.History.CreatureAttacked(combatState, Attacker, _damageResults.SelectMany((List<DamageResult> r) => r).ToList());

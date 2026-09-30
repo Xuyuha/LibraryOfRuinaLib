@@ -2,7 +2,6 @@ using LibraryLib.Commands;
 using LibraryLib.Entities.Creatures;
 using LibraryLib.Localization.LibraryDynamicVars;
 using LibraryLib.Powers.LibraryPowerMode;
-using LibraryLib.Utils.RelicRightClick;
 using LibraryLib.Utils.Resistance;
 using MegaCrit.Sts2.Core.Entities.Cards;
 using MegaCrit.Sts2.Core.Entities.Creatures;
@@ -13,17 +12,10 @@ using LibraryLib.Localization.Dice;
 
 namespace LibraryLib.Models;
 
-public abstract class LibraryRelicModel : RelicModel,ILibraryAbstractModel
+public abstract class LibraryPotionPoolModel : PotionPoolModel,ILibraryAbstractModel
 {
-    public virtual bool HasRightClick => false;
-    public virtual decimal ModifyDiceMaxValue(LibraryDice dice, decimal maxValue)
-    {
-        return maxValue;
-    }
-    public virtual decimal ModifyDiceMinValue(LibraryDice dice, decimal minValue)
-    {
-        return minValue;
-    }
+    public virtual decimal ModifyDiceMaxValue(LibraryDice dice,decimal maxValue) => maxValue;
+    public virtual decimal ModifyDiceMinValue(LibraryDice dice,decimal minValue) => minValue;
     public virtual Creature ModifyDamageTarget(Creature creature, decimal amount, ValueProp props, Creature? dealer,LibraryDamageType type)
     {
         return creature;
@@ -32,29 +24,10 @@ public abstract class LibraryRelicModel : RelicModel,ILibraryAbstractModel
     {
         return creature;
     }
-
-    public virtual bool CanHandleRightClickLocal(LibraryRightClickContext context)
-    {
-        return HasRightClick;
-    }
-
-    public virtual bool CanExecuteRightClick(LibraryRightClickExecutionContext context)
-    {
-        return HasRightClick;
-    }
-
-    public virtual Task OnRightClick(LibraryRightClickExecutionContext context)
-    {
-        return Task.CompletedTask;
-    }
-
+    
     public virtual Task BeforeDiceRoll(PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, LibraryDice dice)
     {
         return Task.CompletedTask;
-    }
-    public virtual bool ShouldReroll(IEnumerable<Creature>? target, LibraryDice dice, DiceRollResult result)
-    {
-        return false;
     }
     public virtual bool ShouldReuse(IEnumerable<Creature>? targets, LibraryDice dice, DiceRollResult result)
     {
@@ -65,14 +38,14 @@ public abstract class LibraryRelicModel : RelicModel,ILibraryAbstractModel
     {
         return Task.CompletedTask;
     }
+    public virtual bool ShouldReroll(IEnumerable<Creature>? target, LibraryDice dice, DiceRollResult result)
+    {
+        return false;
+    }
     public virtual Task AfterDiceRoll(PlayerChoiceContext choiceContext, IEnumerable<Creature>? target, LibraryDice dice, DiceRollResult result)
     {
         return Task.CompletedTask;
     }
-    public virtual Task AfterRerolling(PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, LibraryDice dice, DiceRollResult result)
-    {
-        return Task.CompletedTask;
-    }    
     public virtual Task BeforeDiceEffect(PlayerChoiceContext choiceContext, IEnumerable<Creature>? target, CardModel cardSource, LibraryDice dice, DiceRollResult result)
     {
         return Task.CompletedTask;
@@ -105,7 +78,8 @@ public abstract class LibraryRelicModel : RelicModel,ILibraryAbstractModel
     {
         return Task.CompletedTask;
     }
-    public virtual bool TryDiceEffect(PlayerChoiceContext choiceContext, IEnumerable<Creature>? target, CardModel cardSource, LibraryDice dice, DiceRollResult result)
+
+    public virtual bool TryDiceEffect(PlayerChoiceContext choiceContext,IEnumerable<Creature>? target, CardModel cardSource, LibraryDice dice, DiceRollResult result)
     {
         return true;
     }
@@ -165,12 +139,11 @@ public abstract class LibraryRelicModel : RelicModel,ILibraryAbstractModel
     {
         return Task.CompletedTask;
     }
-    public virtual Task AfterModifyingEffectiveAmount(CardModel? cardSource, LibraryBasePowerModel power)
+    public virtual Task AfterModifyingEffectiveAmount(CardModel? cardSource,LibraryBasePowerModel power)
     {
         return Task.CompletedTask;
     }
-    public virtual Task AfterPowerEffect(PlayerChoiceContext choiceContext, LibraryPowerModel power,decimal amount, Creature? dealer, CardModel? cardSource)
-    {
+    public virtual Task AfterPowerEffect(PlayerChoiceContext choiceContext, LibraryPowerModel power,decimal amount, Creature? dealer, CardModel? cardSource)    {
         return Task.CompletedTask;
     }
     public virtual Task AfterPowerReduce(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource)
@@ -197,8 +170,7 @@ public abstract class LibraryRelicModel : RelicModel,ILibraryAbstractModel
     {
         return Task.CompletedTask;
     }
-    public virtual Task BeforePowerEffect(PlayerChoiceContext choiceContext, LibraryPowerModel power,decimal amount, Creature? dealer, CardModel? cardSource)
-    {
+    public virtual Task BeforePowerEffect(PlayerChoiceContext choiceContext, LibraryPowerModel power,decimal amount, Creature? dealer, CardModel? cardSource)    {
         return Task.CompletedTask;
     }
     public virtual Task BeforePowerReduce(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource)
@@ -276,5 +248,9 @@ public abstract class LibraryRelicModel : RelicModel,ILibraryAbstractModel
     public virtual bool TryPowerReduce(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource)
     {
         return true;
+    }
+    public virtual Task AfterRerolling(PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, LibraryDice dice, DiceRollResult result)
+    {
+        return Task.CompletedTask;
     }
 }

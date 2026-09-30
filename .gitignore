@@ -13,7 +13,6 @@ libs/sts2.dll
 *.dll
 *.md
 !docs/SPEED_DICE_LIGHT_EMOTION_GUIDE.md
-!docs/ARCHITECTURE.md
 *.ps1
 *.sln
 *.pck
