@@ -1,10 +1,12 @@
 #nullable enable
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using Godot;
 using HarmonyLib;
 using LibraryLib.Entities.Creatures;
 using LibraryLib.Models;
 using LibraryLib.Utils.Resistance;
+using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.HoverTips;
 using MegaCrit.Sts2.Core.Localization;
 using MegaCrit.Sts2.Core.Nodes.Combat;
@@ -13,112 +15,102 @@ using MegaCrit.Sts2.Core.Nodes.HoverTips;
 namespace LibraryLib.Patches;
 
 /// <summary>
-///     在 NHealthBar 右侧显示斩/刺/打三个抗性小图标，带悬浮提示和受击预览闪烁。
-///     <see cref="Chaos"/> 显示混乱抗性（与混乱条同高），<see cref="Physical"/> 显示物理抗性（叠在其上方）。
+///     在 NHealthBar 左侧显示物理抗性图标（斩/刺/打），与混乱抗性图标对称。
 /// </summary>
-internal sealed class LibraryResistanceIconsUi
+internal static class LibraryPhysicalResistanceIconsUi//TODO:你们来做物理抗性相关的方法。
 {
     private const float IconSize = 28f;
     private const float IconSpacing = 1f;
-    private const float RightOffset = 1f;
+    private const float LeftOffset = 1f;
     private const float TopOffset = -52f;
     private const ulong PulseCooldownMs = 120;
 
     private static readonly LibraryDamageType[] DisplayOrder =
         [LibraryDamageType.Slash, LibraryDamageType.Pierce, LibraryDamageType.Blunt];
 
-    public static readonly LibraryResistanceIconsUi Chaos = new(
-        kind: "Chaos",
-        iconInfix: "_chaos",
-        rowsAboveStaggerBar: 0,
-        getLevel: static (creature, type) => creature.GetChaosResistanceLevel(type),
-        // Monsters without Chao still show chaos icons when some resistance differs from Normal.
-        shouldShow: static creature => creature.MaxChaoValue > 0
-            || DisplayOrder.Any(type => creature.GetChaosResistanceLevel(type) != LibraryResistanceLevel.Normal));
-
-    public static readonly LibraryResistanceIconsUi Physical = new(
-        kind: "Physical",
-        iconInfix: "",
-        rowsAboveStaggerBar: 3,
-        getLevel: static (creature, type) => creature.GetPhysicalResistanceLevel(type),
-        shouldShow: static _ => true);
+    private static readonly FieldInfo? CreatureField =
+        AccessTools.Field(typeof(NHealthBar), "_creature");
 
     private sealed class State
     {
         public Control? Container;
-        public readonly TextureRect?[] Icons = new TextureRect?[3];
-        public readonly ColorRect?[] Highlights = new ColorRect?[3];
-        public readonly Tween?[] PulseTweens = new Tween?[3];
-        public readonly ulong[] LastPulseTicks = new ulong[3];
-        public readonly LibraryResistanceLevel[] LastLevels =
+        public TextureRect?[] Icons = new TextureRect?[3];
+        public ColorRect?[] Highlights = new ColorRect?[3];
+        public Control?[] Hitboxes = new Control?[3];
+        public Tween?[] PulseTweens = new Tween?[3];
+        public ulong[] LastPulseTicks = new ulong[3];
+        public LibraryResistanceLevel[] LastLevels =
             [LibraryResistanceLevel.Normal, LibraryResistanceLevel.Normal, LibraryResistanceLevel.Normal];
+        public bool WasVisible;
     }
 
-    private readonly string _kind;
-    private readonly string _iconInfix;
-    private readonly float _verticalShift;
-    private readonly Func<LibraryCreature, LibraryDamageType, LibraryResistanceLevel> _getLevel;
-    private readonly Func<LibraryCreature, bool> _shouldShow;
-    private readonly ConditionalWeakTable<NHealthBar, State> _states = new();
+    private static readonly ConditionalWeakTable<NHealthBar, State> States = new();
 
-    private LibraryResistanceIconsUi(
-        string kind,
-        string iconInfix,
-        int rowsAboveStaggerBar,
-        Func<LibraryCreature, LibraryDamageType, LibraryResistanceLevel> getLevel,
-        Func<LibraryCreature, bool> shouldShow)
+    private static State GetOrCreateState(NHealthBar healthBar)
     {
-        _kind = kind;
-        _iconInfix = iconInfix;
-        _verticalShift = rowsAboveStaggerBar * (IconSize + IconSpacing);
-        _getLevel = getLevel;
-        _shouldShow = shouldShow;
+        if (!States.TryGetValue(healthBar, out State? state))
+        {
+            state = new State();
+            States.AddOrUpdate(healthBar, state);
+        }
+        return state;
     }
 
-    public void Refresh(NHealthBar? healthBar)
+    private static Creature? GetCreature(NHealthBar? healthBar)
     {
-        if (healthBar == null || LibraryHealthBarAccess.GetCreature(healthBar) is not { } creature)
-            return;
+        if (healthBar == null) return null;
 
-        State state = _states.GetValue(healthBar, static _ => new State());
-        if (creature is not LibraryCreature { Monster: LibraryMonsterModel { ShowResistanceUi: true }, IsAlive: true } libraryCreature
-            || !_shouldShow(libraryCreature))
+        return CreatureField?.GetValue(healthBar) as Creature;
+    }
+
+    public static void Refresh(NHealthBar? healthBar)
+    {
+        if (healthBar == null) return;
+
+        Creature? creature = GetCreature(healthBar);
+        if (creature == null) return;
+
+        var libCreature = creature as LibraryCreature;
+        State state = GetOrCreateState(healthBar);
+
+        bool shouldShow = libCreature?.Monster is LibraryMonsterModel { ShowResistanceUi: true }
+            && creature.IsAlive;
+
+        if (!shouldShow)
         {
             if (state.Container != null)
                 state.Container.Visible = false;
+            state.WasVisible = false;
             return;
         }
 
         if (state.Container == null)
             CreateIconNodes(healthBar, state);
-        if (state.Container == null)
-            return;
+
+        if (state.Container == null) return;
 
         state.Container.Visible = true;
+        state.WasVisible = true;
         SyncLayout(healthBar, state);
-        UpdateIcons(libraryCreature, state);
+        UpdateIcons(libCreature!, state);
     }
 
-    public void Pulse(LibraryCreature creature, LibraryDamageType damageType)
+    public static void Pulse(LibraryCreature creature, LibraryDamageType damageType)
     {
         NHealthBar? healthBar = creature.HealthBar;
-        if (healthBar == null)
-            return;
+        if (healthBar == null) return;
 
         Refresh(healthBar);
 
-        State state = _states.GetValue(healthBar, static _ => new State());
+        State state = GetOrCreateState(healthBar);
         int index = Array.IndexOf(DisplayOrder, damageType);
-        if (index < 0)
-            return;
+        if (index < 0) return;
 
         TextureRect? icon = state.Icons[index];
-        if (icon == null || !GodotObject.IsInstanceValid(icon))
-            return;
+        if (icon == null || !GodotObject.IsInstanceValid(icon)) return;
 
         ulong now = Time.GetTicksMsec();
-        if (state.LastPulseTicks[index] != 0 && now - state.LastPulseTicks[index] < PulseCooldownMs)
-            return;
+        if (state.LastPulseTicks[index] != 0 && now - state.LastPulseTicks[index] < PulseCooldownMs) return;
         state.LastPulseTicks[index] = now;
 
         Tween? runningTween = state.PulseTweens[index];
@@ -161,7 +153,7 @@ internal sealed class LibraryResistanceIconsUi
 
     private static void AddFlashStep(Tween tween, TextureRect icon, ColorRect? highlight, float peakScale, float peakAlpha)
     {
-        bool hasHighlight = highlight != null && GodotObject.IsInstanceValid(highlight);
+        float highlightScale = peakScale + 0.08f;
 
         tween.TweenProperty(icon, "scale", Vector2.One * peakScale, 0.08)
             .SetEase(Tween.EaseType.Out)
@@ -169,9 +161,10 @@ internal sealed class LibraryResistanceIconsUi
         tween.Parallel().TweenProperty(icon, "modulate", new Color(1f, 0.98f, 0.72f, 1f), 0.08)
             .SetEase(Tween.EaseType.Out)
             .SetTrans(Tween.TransitionType.Cubic);
-        if (hasHighlight)
+
+        if (highlight != null && GodotObject.IsInstanceValid(highlight))
         {
-            tween.Parallel().TweenProperty(highlight, "scale", Vector2.One * (peakScale + 0.08f), 0.08)
+            tween.Parallel().TweenProperty(highlight, "scale", Vector2.One * highlightScale, 0.08)
                 .SetEase(Tween.EaseType.Out)
                 .SetTrans(Tween.TransitionType.Cubic);
             tween.Parallel().TweenProperty(highlight, "color", new Color(1f, 0.70f, 0.02f, peakAlpha), 0.08)
@@ -187,7 +180,8 @@ internal sealed class LibraryResistanceIconsUi
         tween.Parallel().TweenProperty(icon, "modulate", Colors.White, 0.12)
             .SetEase(Tween.EaseType.Out)
             .SetTrans(Tween.TransitionType.Sine);
-        if (hasHighlight)
+
+        if (highlight != null && GodotObject.IsInstanceValid(highlight))
         {
             tween.Parallel().TweenProperty(highlight, "scale", Vector2.One * 0.92f, 0.12)
                 .SetEase(Tween.EaseType.Out)
@@ -198,27 +192,29 @@ internal sealed class LibraryResistanceIconsUi
         }
     }
 
-    private void CreateIconNodes(NHealthBar healthBar, State state)
+    private static void CreateIconNodes(NHealthBar healthBar, State state)
     {
         Control hpBarContainer = healthBar.HpBarContainer;
-        if (hpBarContainer?.GetParent() is not { } healthBarNode)
-            return;
+        if (hpBarContainer == null) return;
+
+        Node healthBarNode = hpBarContainer.GetParent();
+        if (healthBarNode == null) return;
 
         var container = new Control
         {
-            Name = $"LibraryOfRuina{_kind}ResistIcons",
+            Name = "LibraryOfRuinaPhysicalResistIcons",
             MouseFilter = Control.MouseFilterEnum.Ignore,
         };
         healthBarNode.AddChild(container);
         healthBarNode.MoveChild(container, 0);
 
-        for (int i = 0; i < DisplayOrder.Length; i++)
+        for (int i = 0; i < 3; i++)
         {
             LibraryDamageType damageType = DisplayOrder[i];
 
             var hitbox = new Control
             {
-                Name = $"{_kind}ResistHitbox_{damageType}",
+                Name = $"PhysicalResistHitbox_{damageType}",
                 MouseFilter = Control.MouseFilterEnum.Stop,
                 Size = new Vector2(IconSize, IconSize),
                 Position = new Vector2(0f, i * (IconSize + IconSpacing)),
@@ -227,7 +223,7 @@ internal sealed class LibraryResistanceIconsUi
 
             var highlight = new ColorRect
             {
-                Name = $"{_kind}ResistPulse_{damageType}",
+                Name = $"PhysicalResistPulse_{damageType}",
                 MouseFilter = Control.MouseFilterEnum.Ignore,
                 Size = new Vector2(IconSize + 10f, IconSize + 10f),
                 Position = new Vector2(-5f, -5f),
@@ -238,7 +234,7 @@ internal sealed class LibraryResistanceIconsUi
 
             var icon = new TextureRect
             {
-                Name = $"{_kind}ResistIcon_{damageType}",
+                Name = $"PhysicalResistIcon_{damageType}",
                 MouseFilter = Control.MouseFilterEnum.Ignore,
                 ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
                 StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
@@ -248,22 +244,26 @@ internal sealed class LibraryResistanceIconsUi
             };
             hitbox.AddChild(icon);
 
-            hitbox.Connect(Control.SignalName.MouseEntered, Callable.From(() => OnIconHovered(healthBar, damageType, hitbox)));
-            hitbox.Connect(Control.SignalName.MouseExited, Callable.From(() => NHoverTipSet.Remove(hitbox)));
+            hitbox.Connect(Control.SignalName.MouseEntered, Callable.From(() =>
+                OnIconHovered(healthBar, damageType, hitbox)));
+            hitbox.Connect(Control.SignalName.MouseExited, Callable.From(() =>
+                OnIconUnhovered(hitbox)));
 
             state.Icons[i] = icon;
             state.Highlights[i] = highlight;
+            state.Hitboxes[i] = hitbox;
         }
 
         state.Container = container;
     }
 
-    private void SyncLayout(NHealthBar healthBar, State state)
+    private static void SyncLayout(NHealthBar healthBar, State state)
     {
-        if (state.Container == null)
-            return;
+        if (state.Container == null) return;
 
         Control hpBarContainer = healthBar.HpBarContainer;
+        float barWidth = hpBarContainer.Size.X;
+
         state.Container.ZIndex = 0;
         state.Container.ZAsRelative = true;
         Node? healthBarNode = hpBarContainer.GetParent();
@@ -271,67 +271,82 @@ internal sealed class LibraryResistanceIconsUi
             healthBarNode.MoveChild(state.Container, 0);
 
         float staggerBarY = hpBarContainer.Position.Y - 14f - 2f;
+        float chaosIconsHeight = 3 * (IconSize + IconSpacing);
         state.Container.Position = new Vector2(
-            hpBarContainer.Position.X + hpBarContainer.Size.X + RightOffset,
-            staggerBarY + TopOffset - _verticalShift);
+            hpBarContainer.Position.X + barWidth + LeftOffset,
+            staggerBarY + TopOffset - chaosIconsHeight
+        );
     }
 
-    private void UpdateIcons(LibraryCreature creature, State state)
+    private static void UpdateIcons(LibraryCreature creature, State state)
     {
-        for (int i = 0; i < DisplayOrder.Length; i++)
+        for (int i = 0; i < 3; i++)
         {
-            TextureRect? icon = state.Icons[i];
-            if (icon == null)
-                continue;
-
             LibraryDamageType damageType = DisplayOrder[i];
-            LibraryResistanceLevel level = _getLevel(creature, damageType);
-            if (level == state.LastLevels[i] && icon.Texture != null)
-                continue;
+            LibraryResistanceLevel level = creature.GetPhysicalResistanceLevel(damageType);
 
-            string path = $"res://LibraryOfRuinaLib/images/resistance/{damageType.String()}{_iconInfix}_{level.GetLocKeySuffix()}.png";
-            icon.Texture = ResourceLoader.Load<Texture2D>(path, null, ResourceLoader.CacheMode.Reuse);
-            state.LastLevels[i] = level;
+            if (state.Icons[i] == null) continue;
+
+            if (level != state.LastLevels[i] || state.Icons[i]!.Texture == null)
+            {
+                string texPath = GetPhysicalIconPath(damageType, level);
+                state.Icons[i]!.Texture = ResourceLoader.Load<Texture2D>(texPath, null,
+                    ResourceLoader.CacheMode.Reuse);
+                state.LastLevels[i] = level;
+            }
         }
     }
 
-    private void OnIconHovered(NHealthBar healthBar, LibraryDamageType damageType, Control hitbox)
+    private static string GetPhysicalIconPath(LibraryDamageType type, LibraryResistanceLevel level)
     {
-        if (LibraryHealthBarAccess.GetCreature(healthBar) is not LibraryCreature creature)
-            return;
+        string levelStr = level.GetLocKeySuffix();
+        return $"res://LibraryOfRuinaLib/images/resistance/{type.String()}_{levelStr}.png";
+    }
 
-        LibraryResistanceLevel level = _getLevel(creature, damageType);
-        string typeName = new LocString("powers", $"DAMAGE_TYPE_RESISTANCE.{damageType.String()}_{_kind.ToLowerInvariant()}").GetRawText();
+    private static void OnIconHovered(NHealthBar healthBar, LibraryDamageType damageType, Control hitbox)
+    {
+        Creature? creature = GetCreature(healthBar);
+        if (creature == null) return;
+
+        var libCreature = creature as LibraryCreature;
+        if (libCreature == null) return;
+
+        LibraryResistanceLevel level = libCreature.GetPhysicalResistanceLevel(damageType);
+
+        string typeName = damageType == LibraryDamageType.None?"" :new LocString("powers", $"DAMAGE_TYPE_RESISTANCE.{damageType.String()}_physical").GetRawText();
 
         var levelLoc = new LocString("powers", $"DAMAGE_TYPE_RESISTANCE.{level.GetLocKeySuffix()}");
         levelLoc.Add("Multiplier", level.GetMultiplierText());
+        string levelText = levelLoc.GetFormattedText();
+
         string format = new LocString("powers", "DAMAGE_TYPE_RESISTANCE.tooltip_format").GetRawText();
-        string description = string.Format(format, typeName, levelLoc.GetFormattedText());
+        string description = string.Format(format, typeName, levelText);
 
         var tip = new HoverTip(new LocString("powers", "DAMAGE_TYPE_RESISTANCE_POWER.title"), description);
+
         NHoverTipSet.CreateAndShow(hitbox, tip, HoverTip.GetHoverTipAlignment(hitbox));
+    }
+
+    private static void OnIconUnhovered(Control hitbox)
+    {
+        NHoverTipSet.Remove(hitbox);
     }
 }
 
-/// <summary>NHealthBar.RefreshForeground 后刷新混乱与物理抗性图标。</summary>
+/// <summary>
+///     NHealthBar.RefreshForeground 后刷新物理抗性图标。
+/// </summary>
 [HarmonyPatch(typeof(NHealthBar), "RefreshForeground")]
-internal static class LibraryResistanceIconsRefreshPatch
+internal static class LibraryPhysicalResistanceIconsRefreshPatch
 {
     private static void Postfix(NHealthBar __instance)
     {
-        Refresh(LibraryResistanceIconsUi.Chaos, __instance);
-        Refresh(LibraryResistanceIconsUi.Physical, __instance);
-    }
-
-    private static void Refresh(LibraryResistanceIconsUi ui, NHealthBar healthBar)
-    {
         try
         {
-            ui.Refresh(healthBar);
+            LibraryPhysicalResistanceIconsUi.Refresh(__instance);
         }
         catch (Exception)
         {
-            // UI refresh must never break the vanilla health bar.
         }
     }
 }

@@ -34,8 +34,9 @@ public abstract class LibraryTurnsPowerModel : LibraryPowerModel, ISecondaryDisp
         }
         set
         {
-            _AmountPlan = value;
-            RefreshSecondaryLabel();
+            _AmountPlan =value;
+            if(BoundNPower != null)
+                PowerSecondaryCounterUi.RefreshSecondaryLabel(BoundNPower);
         }
     }
     //持续回合数
@@ -88,14 +89,15 @@ public abstract class LibraryTurnsPowerModel : LibraryPowerModel, ISecondaryDisp
     }
     public override Task AfterApplied(Creature? applier, CardModel? cardSource)
     {
-        RefreshSecondaryLabel();
-        return AfterApplied(applier, cardSource, null);
+        if (BoundNPower != null) PowerSecondaryCounterUi.RefreshSecondaryLabel(BoundNPower);
+        return Task.CompletedTask;
     }
     public override Task AfterSideTurnStart(CombatSide side, IReadOnlyList<Creature> participants, ICombatState combatState)
     {
-        if (side == CombatSide.Player)
-            RefreshSecondaryLabel();
-        return AfterSideTurnStart(side, participants, combatState, null);
+        if(side == CombatSide.Player)
+            if (BoundNPower != null)
+                PowerSecondaryCounterUi.RefreshSecondaryLabel(BoundNPower);
+        return Task.CompletedTask;
     }
     //回合结束时改变层数
     public sealed override async Task AfterSideTurnEnd(PlayerChoiceContext choiceContext, CombatSide side, IEnumerable<Creature> participants)
@@ -148,17 +150,25 @@ public abstract class LibraryTurnsPowerModel : LibraryPowerModel, ISecondaryDisp
             }
         }
 
-        RefreshSecondaryLabel();
-    }
-    // 子类重写这些带 object? _ 的重载；原签名由本类实现，保证回合计划与副计数始终更新。
-    public virtual Task AfterSideTurnEnd(PlayerChoiceContext choiceContext, CombatSide side, IEnumerable<Creature> participants, object? _ = null) => Task.CompletedTask;
-    public virtual Task AfterSideTurnStart(CombatSide side, IReadOnlyList<Creature> participants, ICombatState combatState, object? _ = null) => Task.CompletedTask;
-    public virtual Task AfterApplied(Creature? applier, CardModel? cardSource, object? _ = null) => Task.CompletedTask;
-
-    private void RefreshSecondaryLabel()
-    {
-        if (BoundNPower != null)
+        if(BoundNPower != null)
             PowerSecondaryCounterUi.RefreshSecondaryLabel(BoundNPower);
+    }
+    //防止子类继承时覆盖
+    public virtual Task AfterSideTurnEnd(PlayerChoiceContext choiceContext, CombatSide side, IEnumerable<Creature> participants,object? _=null)
+    {
+        return Task.CompletedTask;
+    }    
+    public virtual Task AfterSideTurnStart(CombatSide side, IReadOnlyList<Creature> participants, ICombatState combatState,object? _=null)
+    {
+        if(side == CombatSide.Player)
+            if (BoundNPower != null)
+                PowerSecondaryCounterUi.RefreshSecondaryLabel(BoundNPower);
+        return Task.CompletedTask;
+    }
+    public virtual Task AfterApplied(Creature? applier, CardModel? cardSource,object? _=null)
+    {
+        if (BoundNPower != null) PowerSecondaryCounterUi.RefreshSecondaryLabel(BoundNPower);
+        return Task.CompletedTask;
     }
     public override void AddVariablesToDescription(LocString description, int? amountOverride = null)
     {

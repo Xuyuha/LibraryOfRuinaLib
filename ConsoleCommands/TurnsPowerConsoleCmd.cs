@@ -152,7 +152,13 @@ public sealed class TurnsPowerConsoleCmd : AbstractConsoleCmd
 		// 第五个参数是目标索引（0 为玩家，之后为敌人），按当前战斗生物列表补全。
 		if (args.Length >= 5 && CombatManager.Instance.IsInProgress)
 		{
-			return CompleteArgument(ChaoDamageConsoleCmd.CreatureIndexCandidates(), args.Take(args.Length - 1).ToArray(), args[^1]);
+			IReadOnlyList<Creature> creatures = CombatManager.Instance.DebugOnlyGetState()!.Creatures;
+			List<string> candidates = new List<string>(creatures.Count);
+			for (int i = 0; i < creatures.Count; i++)
+			{
+				candidates.Add(i.ToString());
+			}
+			return CompleteArgument(candidates, args.Take(args.Length - 1).ToArray(), args[^1]);
 		}
 		return new CompletionResult
 		{

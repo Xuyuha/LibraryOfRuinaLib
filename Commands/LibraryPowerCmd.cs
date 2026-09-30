@@ -46,27 +46,93 @@ public static class LibraryPowerCmd
         CardModel? cardSource
     ) where T : LibraryPowerModel
     {
-        if (IsTurnsPower<T>())
+        if (typeof(LibraryTurnsPowerModel).IsAssignableFrom(typeof(T)))
         {
-            if (ModelDb.Power<T>() is not LibraryTurnsPowerModel turnsModel)
+            LibraryTurnsPowerModel? powerModel = ModelDb.Power<T>() as LibraryTurnsPowerModel;
+            if (powerModel == null)
+            {
                 return null;
-            if (FindTurnsInstance(turnsModel, target, applier) is not { } existing)
-                return amount == 0m ? null : await ApplyNewTurnsPower<T>(turnsModel, target, amount, turns, applier, cardSource, silent: false);
+            }
+            LibraryTurnsPowerModel? existingPower = PowerCmd.FindExistingInstanceForStacking(powerModel, target, applier) as LibraryTurnsPowerModel;
+            if (existingPower == null)
+            {
+                if (amount == 0m)
+                {
+                    return null;
+                }
+                LibraryTurnsPowerModel? mutable = powerModel.ToMutable() as LibraryTurnsPowerModel;
+                if (mutable == null)
+                {
+                    return null;
+                }
+                await Apply(new ThrowingPlayerChoiceContext(), mutable, target, amount, turns, turns < 0, applier, cardSource);
+                return target.GetPowerInstances<T>()
+                    .Any(instance => ReferenceEquals(instance, mutable))
+                    ? mutable as T
+                    : null;
+            }
 
-            decimal delta = amount - existing.Amount;
-            existing.AmountPlan = turns < 0
+            decimal amountDelta = amount - existingPower.Amount;
+            existingPower.AmountPlan = turns < 0
                 ? new SortedDictionary<int, int>()
-                : new SortedDictionary<int, int> { [(existing.Owner.CombatState?.RoundNumber ?? 0) + turns] = (int)amount };
-            if (delta == 0m)
-                return existing as T;
-            int newAmount = await PowerCmd.ModifyAmount(new ThrowingPlayerChoiceContext(), existing, delta, applier, cardSource);
-            return newAmount == 0 ? null : existing as T;
+                : new SortedDictionary<int, int> { [(existingPower.Owner.CombatState?.RoundNumber ?? 0) + turns] = (int)amount };
+            if (amountDelta == 0m)
+            {
+                return existingPower as T;
+            }
+
+            int newAmount = await PowerCmd.ModifyAmount(
+                new ThrowingPlayerChoiceContext(),
+                existingPower,
+                amountDelta,
+                applier,
+                cardSource);
+            return newAmount == 0 ? null : existingPower as T;
         }
 
-        LibraryDurationPowerModel durationModel = RequireDurationModel<T>(nameof(SetAmount));
-        return FindDurationInstance<T>(target, durationModel, turns) is { } durationPower
-            ? await ModifyDurationPower<T>(durationPower, target, amount - durationPower.Amount, turns, applier, cardSource, silent: false)
-            : await ApplyNewDurationPower<T>(durationModel, target, amount, turns, applier, cardSource, silent: false);
+        LibraryDurationPowerModel? durationModel = ModelDb.Power<T>() as LibraryDurationPowerModel;
+        if (durationModel == null)
+        {
+            throw new InvalidOperationException($"SetAmount<T> 仅支持 LibraryDurationPowerModel / LibraryTurnsPowerModel：{typeof(T).Name}");
+        }
+
+        bool incomingIsPermanent = LibraryDurationPowerModel.IsIncomingPermanent(durationModel, turns);
+        LibraryDurationPowerModel? durationExistingPower = target.GetPowerInstances<T>()
+	        .OfType<LibraryDurationPowerModel?>()
+	        .FirstOrDefault(p => p?.IsPermanent == incomingIsPermanent);
+        if (durationExistingPower == null)
+        {
+            if (amount == 0m)
+            {
+                return null;
+            }
+            LibraryDurationPowerModel? mutable = durationModel.ToMutable() as LibraryDurationPowerModel;
+            if (mutable == null)
+            {
+                return null;
+            }
+            mutable.SetTurnsRemaining(turns, notifyDisplay: false);
+            LibraryDurationPowerModel.CorrectDurationSkipFlag(mutable, target);
+            await PowerCmd.Apply(new ThrowingPlayerChoiceContext(), mutable, target, amount, applier, cardSource);
+            LibraryDurationPowerModel.CorrectDurationSkipFlag(mutable, target);
+            return mutable as T;
+        }
+
+        decimal durationAmountDelta = amount - durationExistingPower.Amount;
+        durationExistingPower.SetTurnsRemaining(turns, notifyDisplay: durationAmountDelta == 0);
+        LibraryDurationPowerModel.CorrectDurationSkipFlag(durationExistingPower, target);
+        if (durationAmountDelta == 0m)
+        {
+            return durationExistingPower as T;
+        }
+
+        int durationNewAmount = await PowerCmd.ModifyAmount(
+            new ThrowingPlayerChoiceContext(),
+            durationExistingPower,
+            durationAmountDelta,
+            applier,
+            cardSource);
+        return durationNewAmount == 0 ? null : durationExistingPower as T;
     }
 
     /// <summary>
@@ -94,20 +160,78 @@ public static class LibraryPowerCmd
         CardModel? cardSource,
         bool silent = false) where T : LibraryPowerModel
     {
-        if (IsTurnsPower<T>())
+        if (typeof(LibraryTurnsPowerModel).IsAssignableFrom(typeof(T)))
         {
-            if (ModelDb.Power<T>() is not LibraryTurnsPowerModel turnsModel)
+            LibraryTurnsPowerModel? powerModel = ModelDb.Power<T>() as LibraryTurnsPowerModel;
+            if (powerModel == null)
+            {
                 return null;
-            if (FindTurnsInstance(turnsModel, target, applier) is not { } existing)
-                return await ApplyNewTurnsPower<T>(turnsModel, target, amount, turns, applier, cardSource, silent);
-            int newAmount = await ModifyAmount(new ThrowingPlayerChoiceContext(), existing, amount, turns, turns < 0, applier, cardSource, silent);
-            return newAmount == 0 ? null : existing as T;
+            }
+            LibraryTurnsPowerModel? power = PowerCmd.FindExistingInstanceForStacking(powerModel, target, applier) as LibraryTurnsPowerModel;
+            if (power == null)
+            {
+                power = powerModel.ToMutable() as LibraryTurnsPowerModel;
+                if (power == null)
+                {
+                    return null;
+                }
+                await Apply(new ThrowingPlayerChoiceContext(), power, target, amount, turns, turns < 0, applier, cardSource, silent);
+                if (!target.GetPowerInstances<T>()
+                        .Any(instance => ReferenceEquals(instance, power)))
+                {
+                    power = null;
+                }
+            }
+            else if (await ModifyAmount(new ThrowingPlayerChoiceContext(), power, amount, turns, turns < 0, applier, cardSource, silent) == 0)
+            {
+                power = null;
+            }
+            return power as T;
         }
 
-        LibraryDurationPowerModel durationModel = RequireDurationModel<T>(nameof(Apply));
-        return FindDurationInstance<T>(target, durationModel, turns) is { } durationPower
-            ? await ModifyDurationPower<T>(durationPower, target, amount, turns, applier, cardSource, silent)
-            : await ApplyNewDurationPower<T>(durationModel, target, amount, turns, applier, cardSource, silent);
+        LibraryDurationPowerModel? durationModel = ModelDb.Power<T>() as LibraryDurationPowerModel;
+        if (durationModel == null)
+        {
+            throw new InvalidOperationException($"Apply<T> 仅支持 LibraryDurationPowerModel / LibraryTurnsPowerModel：{typeof(T).Name}");
+        }
+
+        bool incomingIsPermanent = LibraryDurationPowerModel.IsIncomingPermanent(durationModel, turns);
+        LibraryDurationPowerModel? durationExistingPower = target.GetPowerInstances<T>()
+	        .OfType<LibraryDurationPowerModel?>()
+	        .FirstOrDefault(p => p?.IsPermanent == incomingIsPermanent);
+        if (durationExistingPower == null)
+        {
+            if (amount == 0m)
+            {
+                return null;
+            }
+            LibraryDurationPowerModel? mutable = durationModel.ToMutable() as LibraryDurationPowerModel;
+            if (mutable == null)
+            {
+                return null;
+            }
+            mutable.SetTurnsRemaining(turns, notifyDisplay: false);
+            LibraryDurationPowerModel.CorrectDurationSkipFlag(mutable, target);
+            await PowerCmd.Apply(new ThrowingPlayerChoiceContext(), mutable, target, amount, applier, cardSource, silent);
+            LibraryDurationPowerModel.CorrectDurationSkipFlag(mutable, target);
+            return mutable as T;
+        }
+
+        durationExistingPower.SetTurnsRemaining(turns, notifyDisplay: amount == 0m);
+        LibraryDurationPowerModel.CorrectDurationSkipFlag(durationExistingPower, target);
+        if (amount == 0m)
+        {
+            return durationExistingPower as T;
+        }
+
+        int newAmount = await PowerCmd.ModifyAmount(
+            new ThrowingPlayerChoiceContext(),
+            durationExistingPower,
+            amount,
+            applier,
+            cardSource,
+            silent);
+        return newAmount == 0 ? null : durationExistingPower as T;
     }
 
     /// <summary>
@@ -137,73 +261,46 @@ public static class LibraryPowerCmd
         CardModel? cardSource,
         bool silent = false) where T : LibraryPowerModel
     {
-        if (IsTurnsPower<T>())
+        if (typeof(LibraryTurnsPowerModel).IsAssignableFrom(typeof(T)))
         {
-            return ModelDb.Power<T>() is LibraryTurnsPowerModel turnsModel && FindTurnsInstance(turnsModel, target, applier) is { } existing
-                ? await ModifyAmount(new ThrowingPlayerChoiceContext(), existing, offset, turns, turns < 0, applier, cardSource, silent)
-                : 0;
+            LibraryTurnsPowerModel? powerModel = ModelDb.Power<T>() as LibraryTurnsPowerModel;
+            if (powerModel == null)
+            {
+                return 0;
+            }
+            LibraryTurnsPowerModel? power = PowerCmd.FindExistingInstanceForStacking(powerModel, target, applier) as LibraryTurnsPowerModel;
+            if (power == null)
+            {
+                return 0;
+            }
+            return await ModifyAmount(new ThrowingPlayerChoiceContext(), power, offset, turns, turns < 0, applier, cardSource, silent);
         }
 
-        LibraryDurationPowerModel durationModel = RequireDurationModel<T>(nameof(ModifyAmount));
-        if (FindDurationInstance<T>(target, durationModel, turns) is not { } durationPower)
+        LibraryDurationPowerModel? durationModel = ModelDb.Power<T>() as LibraryDurationPowerModel;
+        if (durationModel == null)
+        {
+            throw new InvalidOperationException($"ModifyAmount<T> 仅支持 LibraryDurationPowerModel / LibraryTurnsPowerModel：{typeof(T).Name}");
+        }
+
+        bool incomingIsPermanent = LibraryDurationPowerModel.IsIncomingPermanent(durationModel, turns);
+        LibraryDurationPowerModel? durationExistingPower = target.GetPowerInstances<T>()
+            .Select(p => p as LibraryDurationPowerModel)
+            .FirstOrDefault(p => p != null && p.IsPermanent == incomingIsPermanent);
+        if (durationExistingPower == null)
+        {
             return 0;
-        durationPower.SetTurnsRemaining(turns);
-        LibraryDurationPowerModel.CorrectDurationSkipFlag(durationPower, target);
-        return await PowerCmd.ModifyAmount(new ThrowingPlayerChoiceContext(), durationPower, offset, applier, cardSource, silent);
+        }
+
+        durationExistingPower.SetTurnsRemaining(turns);
+        LibraryDurationPowerModel.CorrectDurationSkipFlag(durationExistingPower, target);
+        return await PowerCmd.ModifyAmount(
+            new ThrowingPlayerChoiceContext(),
+            durationExistingPower,
+            offset,
+            applier,
+            cardSource,
+            silent);
     }
-
-    private static bool IsTurnsPower<T>() => typeof(LibraryTurnsPowerModel).IsAssignableFrom(typeof(T));
-
-    private static LibraryTurnsPowerModel? FindTurnsInstance(LibraryTurnsPowerModel canonical, Creature target, Creature? applier) =>
-        PowerCmd.FindExistingInstanceForStacking(canonical, target, applier) as LibraryTurnsPowerModel;
-
-    /// <summary>Applies a fresh instance; null when nothing ended up on the target.</summary>
-    private static async Task<T?> ApplyNewTurnsPower<T>(LibraryTurnsPowerModel canonical, Creature target, decimal amount, int turns, Creature? applier, CardModel? cardSource, bool silent)
-        where T : PowerModel
-    {
-        if (canonical.ToMutable() is not LibraryTurnsPowerModel mutable)
-            return null;
-        await Apply(new ThrowingPlayerChoiceContext(), mutable, target, amount, turns, turns < 0, applier, cardSource, silent);
-        return target.GetPowerInstances<T>().Any(instance => ReferenceEquals(instance, mutable)) ? mutable as T : null;
-    }
-
-    private static LibraryDurationPowerModel RequireDurationModel<T>(string method) where T : PowerModel =>
-        ModelDb.Power<T>() as LibraryDurationPowerModel
-        ?? throw new InvalidOperationException($"{method}<T> 仅支持 LibraryDurationPowerModel / LibraryTurnsPowerModel：{typeof(T).Name}");
-
-    /// <summary>Permanent and timed instances of the same duration power never stack with each other.</summary>
-    private static LibraryDurationPowerModel? FindDurationInstance<T>(Creature target, LibraryDurationPowerModel canonical, int turns) where T : PowerModel
-    {
-        bool incomingIsPermanent = LibraryDurationPowerModel.IsIncomingPermanent(canonical, turns);
-        return target.GetPowerInstances<T>()
-            .OfType<LibraryDurationPowerModel>()
-            .FirstOrDefault(power => power.IsPermanent == incomingIsPermanent);
-    }
-
-    private static async Task<T?> ApplyNewDurationPower<T>(LibraryDurationPowerModel canonical, Creature target, decimal amount, int turns, Creature? applier, CardModel? cardSource, bool silent)
-        where T : PowerModel
-    {
-        if (amount == 0m || canonical.ToMutable() is not LibraryDurationPowerModel mutable)
-            return null;
-        mutable.SetTurnsRemaining(turns, notifyDisplay: false);
-        LibraryDurationPowerModel.CorrectDurationSkipFlag(mutable, target);
-        await PowerCmd.Apply(new ThrowingPlayerChoiceContext(), mutable, target, amount, applier, cardSource, silent);
-        LibraryDurationPowerModel.CorrectDurationSkipFlag(mutable, target);
-        return mutable as T;
-    }
-
-    /// <summary>Resets the remaining turns and changes the amount by <paramref name="delta"/>; null when the power was removed.</summary>
-    private static async Task<T?> ModifyDurationPower<T>(LibraryDurationPowerModel power, Creature target, decimal delta, int turns, Creature? applier, CardModel? cardSource, bool silent)
-        where T : PowerModel
-    {
-        power.SetTurnsRemaining(turns, notifyDisplay: delta == 0m);
-        LibraryDurationPowerModel.CorrectDurationSkipFlag(power, target);
-        if (delta == 0m)
-            return power as T;
-        int newAmount = await PowerCmd.ModifyAmount(new ThrowingPlayerChoiceContext(), power, delta, applier, cardSource, silent);
-        return newAmount == 0 ? null : power as T;
-    }
-
 	/// <summary>
 	/// 	turns代表持续回合数（0表示该回合减少），IsPermanent代表是否永久性改变
 	/// </summary>

@@ -30,17 +30,40 @@ public class LibraryDamageVar : DamageVar
 
 	public override void UpdateCardPreview(CardModel card, CardPreviewMode previewMode, Creature? target, bool runGlobalHooks)
 	{
-		(decimal damage, decimal chao) = LibraryDamagePreview.Calculate(this, card, previewMode, target, runGlobalHooks, Props, DamageType);
-		// Multipliers describe the current target only; reset them so a previous target's values never linger.
-		DamageResistanceValue = 1m;
-		ChaoResistanceValue = 0m;
-		if (target is LibraryCreature libraryTarget)
+		decimal num = base.BaseValue;
+		decimal num1 = base.BaseValue;
+		EnchantmentModel enchantment = card.Enchantment;
+		if (enchantment != null)
 		{
-			DamageResistanceValue = libraryTarget.GetPhysicalResistanceLevel(DamageType).GetMultiplier();
-			if (libraryTarget.HasChaoResistance)
-				ChaoResistanceValue = libraryTarget.GetChaosResistanceLevel(DamageType).GetMultiplier();
+			num += enchantment.EnchantDamageAdditive(num, Props);
+			num *= enchantment.EnchantDamageMultiplicative(num, Props);
+			if (!card.IsEnchantmentPreview)
+			{
+				base.EnchantedValue = num;
+			}
+			if(enchantment is LibraryEnchantmentModel le){
+				num1 +=le.EnchantChaoDamageAdditive(num1,Props);
+				num1 *=le.EnchantChaoDamageMultiplicative(num1,Props);
+			}
 		}
-		PreviewValue = ResistancePreview.ApplyPhysicalResistancePreview(card, previewMode, target, damage, Props, DamageType);
-		ChaoPreviewValue = chao;
+		if (runGlobalHooks)
+		{
+			num = LibraryHooks.ModifyDamage(card.Owner.RunState, card.CombatState, target, card.Owner.Creature, base.BaseValue, Props, card, null, ModifyDamageHookType.All, previewMode, out IEnumerable<AbstractModel> _, DamageType);
+			num1 = LibraryHooks.ModifyChaoDamage(card.Owner.RunState, card.CombatState, target, card.Owner.Creature, base.BaseValue, Props, card, null, ModifyChaoDamageHookType.All, previewMode, out IEnumerable<AbstractModel> _, DamageType);
+		}
+		if(target is LibraryCreature lc)
+		{
+			DamageResistanceValue = lc.GetPhysicalResistanceLevel(DamageType).GetMultiplier();
+			if (lc.HasChaoResistance)
+				ChaoResistanceValue = lc.GetChaosResistanceLevel(DamageType).GetMultiplier();
+		}
+		PreviewValue = ResistancePreview.ApplyPhysicalResistancePreview(
+			card,
+			previewMode,
+			target,
+			num,
+			Props,
+			DamageType);
+		ChaoPreviewValue = num1;
 	}
 }

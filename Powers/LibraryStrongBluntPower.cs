@@ -8,17 +8,34 @@ using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.ValueProps;
 
 namespace LibraryLib.Powers;
-
-/// <summary>打击威力增强：本方造成的打击伤害与混乱伤害 +层数。</summary>
-public sealed class LibraryStrongBluntPower : LibraryTurnsPowerModel
+public sealed class LibraryStrongBluntPower : LibraryTurnsPowerModel//打击威力增强，若本次伤害是打击伤害，则所造成的伤害与混乱伤害+1
 {
     public override PowerType Type => PowerType.Buff;
     public override PowerStackType StackType => PowerStackType.Counter;
+
     protected override CombatSide DecaySide => Owner.IsPlayer ? OppositeSideOf(Owner) : Owner.Side;
 
-    public override decimal ModifyDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay, LibraryDamageType type) =>
-        LibraryPowerRules.OwnerAttackBonus(this, dealer, props, Amount, type, LibraryDamageType.Blunt);
-
-    public override decimal ModifyChaoDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay, LibraryDamageType type) =>
-        LibraryPowerRules.OwnerAttackBonus(this, dealer, props, Amount, type, LibraryDamageType.Blunt);
+    public override decimal ModifyDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay,LibraryDamageType type){
+		if (base.Owner != dealer)
+		{
+			return 0m;
+		}
+		if (!props.IsPoweredAttack() || type != LibraryDamageType.Blunt)
+		{
+			return 0m;
+		}
+		return base.Amount;
+	}
+    public override decimal ModifyChaoDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay, LibraryDamageType type)
+    {
+		if (base.Owner != dealer)
+		{
+			return 0m;
+		}
+		if (!props.IsPoweredAttack() || type != LibraryDamageType.Blunt)
+		{
+			return 0m;
+		}
+		return base.Amount;
+	}
 }

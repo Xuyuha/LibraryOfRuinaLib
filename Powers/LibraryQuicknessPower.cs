@@ -12,17 +12,27 @@ public sealed class LibraryQuicknessPower : LibraryPowerModel
     public override PowerType Type => PowerType.Buff;
     public override PowerStackType StackType => PowerStackType.Counter;
     public override bool AllowNegative => false;
-    /// <summary>主人回合结束时，对所有对手造成等同层数的伤害，然后层数 -1。</summary>
     public override async Task AfterSideTurnEnd(PlayerChoiceContext choiceContext, CombatSide side, IEnumerable<Creature> participants)
     {
-        if (side != Owner.Side || side is not (CombatSide.Enemy or CombatSide.Player))
-            return;
-
-        List<Creature> opponents = side == CombatSide.Enemy
-            ? CombatState.Players.Select(player => player.Creature).ToList()
-            : CombatState.Enemies.ToList();
-        foreach (Creature opponent in opponents)
-            await CreatureCmd.Damage(new ThrowingPlayerChoiceContext(), opponent, Amount, ValueProp.Unpowered, Owner);
-        await PowerCmd.Decrement(this);
+        if (Owner.Side == side && side == CombatSide.Enemy)
+        {
+            foreach (var p in CombatState.Players.ToList())
+            {
+                await CreatureCmd.Damage(new ThrowingPlayerChoiceContext(),
+                p.Creature,
+                Amount,
+                ValueProp.Unpowered,
+                Owner);
+            }
+            await PowerCmd.Decrement(this);
+        }
+        else if (Owner.Side == side && side == CombatSide.Player)
+        {
+            foreach(var c in CombatState.Enemies.ToList())
+            {
+                await CreatureCmd.Damage(new ThrowingPlayerChoiceContext(),c,Amount,ValueProp.Unpowered,Owner);
+            }
+            await PowerCmd.Decrement(this);
+        }
     }
 }
