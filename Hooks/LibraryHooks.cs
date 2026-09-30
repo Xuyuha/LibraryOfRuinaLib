@@ -88,32 +88,32 @@ public static partial class LibraryHooks
     }
 
     public static Task BeforeSetPhysicalResistance(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryCreature target, Creature? dealer, LibraryDamageType type, LibraryResistanceLevel resistanceValue) =>
-        ForEachLibraryListener(combatState.IterateHookListeners(), m => m.BeforeSetPhysicalResistance(choiceContext, target, dealer, type, resistanceValue));
+        ForEachLibraryListener(CombatListeners(combatState), m => m.BeforeSetPhysicalResistance(choiceContext, target, dealer, type, resistanceValue));
 
     public static bool TrySetPhysicalResistance(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryCreature target, Creature? dealer, LibraryDamageType type, LibraryResistanceLevel resistanceValue) =>
         AllLibraryListenersAllow(combatState, m => m.TrySetPhysicalResistance(choiceContext, target, dealer, type, resistanceValue));
 
     public static Task AfterSetPhysicalResistance(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryCreature target, Creature? dealer, LibraryDamageType type) =>
-        ForEachLibraryListener(combatState.IterateHookListeners(), m => m.AfterSetPhysicalResistance(choiceContext, target, dealer, type));
+        ForEachLibraryListener(CombatListeners(combatState), m => m.AfterSetPhysicalResistance(choiceContext, target, dealer, type));
 
     public static Task BeforeSetChaoResistance(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryCreature target, Creature? dealer, LibraryDamageType type, LibraryResistanceLevel resistanceValue) =>
-        ForEachLibraryListener(combatState.IterateHookListeners(), m => m.BeforeSetChaoResistance(choiceContext, target, dealer, type, resistanceValue));
+        ForEachLibraryListener(CombatListeners(combatState), m => m.BeforeSetChaoResistance(choiceContext, target, dealer, type, resistanceValue));
 
     public static bool TrySetChaoResistance(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryCreature target, Creature? dealer, LibraryDamageType type, LibraryResistanceLevel resistanceValue) =>
         AllLibraryListenersAllow(combatState, m => m.TrySetChaoResistance(choiceContext, target, dealer, type, resistanceValue));
 
     public static Task AfterSetChaoResistance(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryCreature target, Creature? dealer, LibraryDamageType type) =>
-        ForEachLibraryListener(combatState.IterateHookListeners(), m => m.AfterSetChaoResistance(choiceContext, target, dealer, type));
+        ForEachLibraryListener(CombatListeners(combatState), m => m.AfterSetChaoResistance(choiceContext, target, dealer, type));
 
     public static Task BeforeAttack(ICombatState combatState, LibraryAttackCommand command) =>
         ForEachListener(
-            combatState.IterateHookListeners(),
+            CombatListeners(combatState),
             m => m.BeforeAttack(command.ToAttackCommand),
             m => m.BeforeAttack(command));
 
     public static Task AfterAttack(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryAttackCommand command) =>
         ForEachListener(
-            combatState.IterateHookListeners(),
+            CombatListeners(combatState),
             m => m.AfterAttack(choiceContext, command.ToAttackCommand),
             m => m.AfterAttack(choiceContext, command));
 
@@ -220,47 +220,47 @@ public static partial class LibraryHooks
         ForEachModifier(runState.IterateHookListeners(combatState), modifiers, m => m.AfterModifyingChaoDamageAmount(cardSource, type));
 
     public static Task AfterModifyingEffectiveAmount(ICombatState combatState, LibraryBasePowerModel power, CardModel? cardSource, IEnumerable<AbstractModel> modifiers) =>
-        ForEachModifier(combatState.IterateHookListeners(), modifiers, m => m.AfterModifyingEffectiveAmount(cardSource, power));
+        ForEachModifier(CombatListeners(combatState), modifiers, m => m.AfterModifyingEffectiveAmount(cardSource, power));
 
     public static bool TryPowerEffect(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource) =>
         AllLibraryListenersAllow(combatState, m => m.TryPowerEffect(choiceContext, power, dealer, cardSource));
 
     public static Task BeforePowerEffect(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryPowerModel power, decimal amount, Creature? dealer, CardModel? cardSource) =>
-        ForEachLibraryListener(combatState.IterateHookListeners(), m => m.BeforePowerEffect(choiceContext, power, amount, dealer, cardSource));
+        ForEachLibraryListener(CombatListeners(combatState), m => m.BeforePowerEffect(choiceContext, power, amount, dealer, cardSource));
 
     public static Task AfterPowerEffect(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryPowerModel power, decimal amount, Creature? dealer, CardModel? cardSource) =>
-        ForEachLibraryListener(combatState.IterateHookListeners(), m => m.AfterPowerEffect(choiceContext, power, amount, dealer, cardSource));
+        ForEachLibraryListener(CombatListeners(combatState), m => m.AfterPowerEffect(choiceContext, power, amount, dealer, cardSource));
 
     public static bool TryPowerReduce(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource) =>
         AllLibraryListenersAllow(combatState, m => m.TryPowerReduce(choiceContext, power, dealer, cardSource));
 
     public static Task BeforePowerReduce(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource) =>
-        ForEachLibraryListener(combatState.IterateHookListeners(), m => m.BeforePowerReduce(choiceContext, power, dealer, cardSource));
+        ForEachLibraryListener(CombatListeners(combatState), m => m.BeforePowerReduce(choiceContext, power, dealer, cardSource));
 
     public static Task AfterPowerReduce(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource) =>
-        ForEachLibraryListener(combatState.IterateHookListeners(), m => m.AfterPowerReduce(choiceContext, power, dealer, cardSource));
+        ForEachLibraryListener(CombatListeners(combatState), m => m.AfterPowerReduce(choiceContext, power, dealer, cardSource));
 
     public static Task BeforeSetPowerMode(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource, LibraryPowerMode mode) =>
-        ForEachLibraryListener(combatState.IterateHookListeners(), m => m.BeforeSetPowerMode(choiceContext, power, dealer, cardSource, mode));
+        ForEachLibraryListener(CombatListeners(combatState), m => m.BeforeSetPowerMode(choiceContext, power, dealer, cardSource, mode));
 
     public static Task AfterSetPowerMode(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource, LibraryPowerMode mode) =>
-        ForEachLibraryListener(combatState.IterateHookListeners(), m => m.AfterSetPowerMode(choiceContext, power, dealer, cardSource, mode));
+        ForEachLibraryListener(CombatListeners(combatState), m => m.AfterSetPowerMode(choiceContext, power, dealer, cardSource, mode));
 
     public static Task BeforeStun(ICombatState? combatState, Creature creature) =>
         combatState == null
             ? Task.CompletedTask
-            : ForEachLibraryListener(combatState.IterateHookListeners(), m => m.BeforeStun(creature));
+            : ForEachLibraryListener(CombatListeners(combatState), m => m.BeforeStun(creature));
 
     public static Task AfterStun(ICombatState? combatState, Creature creature) =>
         combatState == null
             ? Task.CompletedTask
-            : ForEachLibraryListener(combatState.IterateHookListeners(), m => m.AfterStun(creature));
+            : ForEachLibraryListener(CombatListeners(combatState), m => m.AfterStun(creature));
 
     public static Task BeforeDiceRoll(ICombatState combatState, PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, LibraryDice dice) =>
-        ForEachLibraryListener(combatState.IterateHookListeners(), m => m.BeforeDiceRoll(choiceContext, targets, dice));
+        ForEachLibraryListener(CombatListeners(combatState), m => m.BeforeDiceRoll(choiceContext, targets, dice));
 
     public static Task AfterDiceRoll(ICombatState combatState, PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, LibraryDice dice, DiceRollResult result) =>
-        ForEachLibraryListener(combatState.IterateHookListeners(), m => m.AfterDiceRoll(choiceContext, targets, dice, result));
+        ForEachLibraryListener(CombatListeners(combatState), m => m.AfterDiceRoll(choiceContext, targets, dice, result));
 
     public static bool ShouldReroll(ICombatState combatState, IEnumerable<Creature>? targets, LibraryDice dice, out ILibraryAbstractModel? trigger, DiceRollResult result)
     {
@@ -278,10 +278,26 @@ public static partial class LibraryHooks
         AllLibraryListenersAllow(combatState, m => m.TryDiceEffect(choiceContext, targets, cardSource, dice, result));
 
     public static Task BeforeDiceEffect(ICombatState combatState, PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, CardModel cardSource, LibraryDice dice, DiceRollResult result) =>
-        ForEachLibraryListener(combatState.IterateHookListeners(), m => m.BeforeDiceEffect(choiceContext, targets, cardSource, dice, result));
+        ForEachLibraryListener(CombatListeners(combatState), m => m.BeforeDiceEffect(choiceContext, targets, cardSource, dice, result));
 
     public static Task AfterDiceEffect(ICombatState combatState, PlayerChoiceContext choiceContext, IEnumerable<Creature>? targets, CardModel cardSource, LibraryDice dice, DiceRollResult result) =>
-        ForEachLibraryListener(combatState.IterateHookListeners(), m => m.AfterDiceEffect(choiceContext, targets, cardSource, dice, result));
+        ForEachLibraryListener(CombatListeners(combatState), m => m.AfterDiceEffect(choiceContext, targets, cardSource, dice, result));
+
+    /// <summary>
+    /// The combat's hook listeners, or none once combat is over or ending, like the game's
+    /// <c>Hook.IterateCombatHookListeners</c>: checked once when enumeration begins, and combat setup
+    /// (<see cref="CombatManager.IsStarting"/>) still reaches listeners. Hooks that are part of damage
+    /// resolution, which carries on while combat ends, iterate the listeners directly as the game's
+    /// damage hooks do: damage/HP/Chao modifiers and their notifications, the received/given/block-broken
+    /// hooks, damage interception and the damage target hooks.
+    /// </summary>
+    private static IEnumerable<AbstractModel> CombatListeners(ICombatState combatState)
+    {
+        if (CombatManager.Instance.IsOverOrEnding && !CombatManager.Instance.IsStarting)
+            yield break;
+        foreach (AbstractModel model in combatState.IterateHookListeners())
+            yield return model;
+    }
 
     /// <summary>Runs a Library-only hook on every <see cref="ILibraryAbstractModel"/> listener.</summary>
     private static async Task ForEachLibraryListener(
@@ -368,7 +384,7 @@ public static partial class LibraryHooks
 
     private static bool AllLibraryListenersAllow(ICombatState combatState, Func<ILibraryAbstractModel, bool> predicate)
     {
-        foreach (AbstractModel model in combatState.IterateHookListeners())
+        foreach (AbstractModel model in CombatListeners(combatState))
         {
             if (model is ILibraryAbstractModel libraryModel && !predicate(libraryModel))
                 return false;
@@ -378,7 +394,7 @@ public static partial class LibraryHooks
 
     private static ILibraryAbstractModel? FirstLibraryListener(ICombatState combatState, Func<ILibraryAbstractModel, bool> predicate)
     {
-        foreach (AbstractModel model in combatState.IterateHookListeners())
+        foreach (AbstractModel model in CombatListeners(combatState))
         {
             if (model is ILibraryAbstractModel libraryModel && predicate(libraryModel))
                 return libraryModel;

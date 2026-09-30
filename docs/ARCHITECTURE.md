@@ -39,6 +39,9 @@
 
 - `ILibraryAbstractModel` 定义库钩子；`LibraryHooks` 遍历 `IterateHookListeners()`，
   配对钩子先调原版 `AbstractModel` 钩子、再调库重载，每个监听器结束后 `InvokeExecutionFinished`。
+- 战斗结束（`CombatManager.IsOverOrEnding`，开战准备阶段 `IsStarting` 除外）后，战斗钩子不再派发给任何监听器，
+  与原版 `Hook.IterateCombatHookListeners` 一致（`LibraryHooks.CombatListeners`）。伤害结算的一部分照原版不受此限：
+  伤害/HP/混乱的数值钩子及其通知、受击/造成伤害/破盾钩子、受击拦截、伤害目标钩子。
 - 数值钩子统一走四种 pass：加法、乘法、上限（取最小）、变换（整数部分变化才算修改者）。
 - `LibraryMultipleModePowerModel` 把每个钩子先交给当前 `Mode`，再交给子类的 `object? _ = null` 重载；
   原签名已 sealed，子类只重写带 `_` 的重载。`LibraryTurnsPowerModel` 的回合钩子同理。
@@ -47,7 +50,8 @@
 
 1. 在 `ILibraryAbstractModel` 对应分组里声明。
 2. 在 `Models/LibraryModelHookDefaults.cs` 的**每个**基类块里加同一行默认实现（漏掉会报 CS0535）。
-3. 在 `LibraryHooks` 里用 `ForEachLibraryListener` / `ForEachListener` / 数值 pass 写派发。
+3. 在 `LibraryHooks` 里用 `ForEachLibraryListener` / `ForEachListener` / 数值 pass 写派发；监听器来源默认用
+   `CombatListeners(combatState)`，只有属于伤害结算的钩子才直接遍历（参照原版同类钩子）。
 4. 若是能力会用到的钩子：在 `LibraryPowerMode` 加默认实现，在 `LibraryMultipleModePowerModel` 加
    sealed 转发和 `object? _` 重载（按文件内说明的组合规则）。
 
@@ -62,7 +66,7 @@
 
 - 构建：`dotnet build .\LibraryLib.csproj /p:Sts2Flavor=Beta`（`LibraryLib.csproj` 未纳入 Git，新 worktree 需从主检出复制）。
 - 本地契约测试（`tests/`，未纳入 Git，用 `dotnet run --project tests/<名称>` 运行）：
-  - `HookDispatchContract`：钩子派发顺序、修改者统计、模型作用域与短路规则。
+  - `HookDispatchContract`：钩子派发顺序、修改者统计、模型作用域、短路规则、战斗结束守卫与伤害目标只改写一次。
   - `PatchBindingContract`：在游戏外对全部补丁执行 PatchAll，列出绑定并检查反射查找。
   - `CombatValueResolutionContract`、`ManagedNetCodecContract`：数值策略与网络编解码。
 - 公共 API 变更前后，用反编译或 API 导出对比公共成员；有 API 变化时重建下游

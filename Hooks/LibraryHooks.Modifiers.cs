@@ -46,7 +46,7 @@ public static partial class LibraryHooks
     public static decimal ModifyAttackHitCount(ICombatState combatState, LibraryAttackCommand attackCommand, int originalHitCount)
     {
         int hitCount = originalHitCount;
-        foreach (AbstractModel model in combatState.IterateHookListeners())
+        foreach (AbstractModel model in CombatListeners(combatState))
         {
             hitCount = model.ModifyAttackHitCount(attackCommand.ToAttackCommand, hitCount);
             if (model is ILibraryAbstractModel libraryModel)
@@ -58,9 +58,9 @@ public static partial class LibraryHooks
     public static decimal ModifyEffectiveAmount(ICombatState combatState, LibraryBasePowerModel power, Creature? dealer, decimal amount, CardModel? cardSource, out IEnumerable<AbstractModel> modifiers)
     {
         var changed = new List<AbstractModel>();
-        decimal value = AdditivePass(combatState.IterateHookListeners(), amount, changed, (model, current) =>
+        decimal value = AdditivePass(CombatListeners(combatState), amount, changed, (model, current) =>
             model is ILibraryAbstractModel m ? m.ModifyEffectiveAmountAdditive(power, current, dealer, cardSource) : 0m);
-        value = MultiplicativePass(combatState.IterateHookListeners(), value, changed, (model, current) =>
+        value = MultiplicativePass(CombatListeners(combatState), value, changed, (model, current) =>
             model is ILibraryAbstractModel m ? m.ModifyEffectiveAmountMultiplicative(power, current, dealer, cardSource) : 1m);
         modifiers = changed;
         return value;
@@ -225,7 +225,7 @@ public static partial class LibraryHooks
             dice.DamageType);
         if (resolution != LibraryCombatValueResolution.Default)
             return LibraryCombatValueResolver.ResolveBaseValue(resolution, value);
-        return ChainLibraryListeners(combatState.IterateHookListeners(), value, (m, current) => modify(m, dice, current));
+        return ChainLibraryListeners(CombatListeners(combatState), value, (m, current) => modify(m, dice, current));
     }
 
     /// <summary>
