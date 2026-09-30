@@ -231,8 +231,10 @@ internal static class LibraryAttackChaoDamagePatch
         bool needsLibraryDamage =
             targetList.Any(static target =>
                 target is LibraryCreature { IsPlayer: false });
+        // LibraryCreatureCmd.Damage hands player targets straight back to CreatureCmd.Damage,
+        // so rerouting a player-only hit for interception would re-enter this prefix forever.
         bool hasInterceptor =
-            !LibraryIncomingDamageInterception.IsSuppressed
+            targetList.Any(static target => !target.IsPlayer)
             && LibraryHooks.HasIncomingDamageInterceptor(
                 runState,
                 combatState);

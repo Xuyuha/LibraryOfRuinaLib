@@ -138,7 +138,7 @@ public class LibraryAttackCommand
 		{
 			throw new ArgumentException("Creature is not Osty");
 		}
-		Attacker = osty as LibraryCreature;
+		Attacker = osty;
 		ModelSource = card;
 		_attackerAnimName = "Attack";
 		_attackerAnimDelay = 0.3f;
@@ -153,7 +153,7 @@ public class LibraryAttackCommand
 		{
 			throw new InvalidOperationException("Attacker has already been set.");
 		}
-		Attacker = monster.Creature as LibraryCreature;
+		Attacker = monster.Creature;
 		_attackerAnimName = "Attack";
 		_sourceType = SourceType.Monster;
 		// AttackCommand.FromMonster already configures all-opponent targeting.
