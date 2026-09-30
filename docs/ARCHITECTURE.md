@@ -23,8 +23,12 @@
 ## 伤害管线
 
 1. 原版 `CreatureCmd.Damage` 被 `DamageTargetPatch`（改目标）与 `LibraryAttackChaoDamagePatch`（Priority.Last）拦截。
-   对玩家或怪物发出的、带 Move 且非 Unpowered 的非 Library 卡牌伤害：目标里有图书馆怪物，
-   或存在 `ILibraryIncomingDamageInterceptor` 且有非玩家目标时，改走 `LibraryCreatureCmd.Damage`。
+   对玩家或怪物发出的、带 Move 且非 Unpowered 的非 Library 卡牌伤害（`LibraryAttackChaoDamagePatch.AppliesTo`）：
+   目标里有图书馆怪物，或存在 `ILibraryIncomingDamageInterceptor` 且有非玩家目标时，改走 `LibraryCreatureCmd.Damage`。
+   - 每次命中只跑一次 `ModifyDamageTarget`：原版伤害在 `DamageTargetPatch`（普通优先级，好让下游的
+     Priority.Last 友方过滤看到改写结果）里跑，符合上述条件的攻击带实际伤害类型，其余为 `None`；
+     改走 `LibraryCreatureCmd.Damage` 时经 `DamageTargetHandoff` 交接“目标已选定”，不再重复。
+     `LibraryCreatureCmd.Damage` 自己发起的伤害在内部跑一次；把玩家目标交回原版时交接本次伤害类型。
 2. `LibraryCreatureCmd.Damage` 与原版同构（便于对照游戏更新）：修改伤害 → 受击前钩子 → 拦截 → 格挡 →
    物理抗性（`LibraryDamageCalculate`）→ HP 损失钩子（Osty 前后）→ 结算与表现 → 事后钩子。玩家目标直接交回原版。
 3. 攻击随后按「伤害 − 攻击前格挡」追加混乱伤害（`LibraryCreatureCmd.ChaoDamage`），混乱值归零即进入混乱。

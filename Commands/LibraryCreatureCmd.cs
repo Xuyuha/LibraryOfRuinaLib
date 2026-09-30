@@ -84,6 +84,8 @@ public static class LibraryCreatureCmd
 
 	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, IEnumerable<Creature> targets, decimal damageAmount, ValueProp props, Creature? dealer, CardModel? cardSource, LibraryDamageType type = LibraryDamageType.None, CardPlay? cardPlay = null, Func<Task>? beforeApplyingDamage = null)
 	{
+		// Vanilla damage rerouted here by LibraryAttackChaoDamagePatch already chose its targets.
+		bool targetsChosen = DamageTargetHandoff.Take() is { TargetsChosen: true };
 		if (dealer != null && dealer.IsDead)
 		{
 			return targets.Select((Creature t) => new DamageResult(t, props)).ToList();
@@ -99,17 +101,20 @@ public static class LibraryCreatureCmd
 		bool ranBeforeApplyingDamage = false;
 		foreach (Creature originalTarget in targetList)
 		{
-			// 玩家受伤直接走原版伤害管线，不经过Library的拦截/抗性/混乱系统
+			// 玩家受伤直接走原版伤害管线，不经过Library的拦截/抗性/混乱系统；
+			// 目标改写只做一次：交给 DamageTargetPatch（带本次伤害类型），或已做过则跳过。
 			if (originalTarget.IsPlayer)
 			{
-				results.AddRange(await CreatureCmd.Damage(
-					choiceContext,
-					originalTarget,
-					damageAmount,
-					props,
-					dealer,
-					cardSource,
-					cardPlay));
+				results.AddRange(await DamageTargetHandoff.Run(
+					new DamageTargetHandoff.Pending(targetsChosen, type),
+					() => CreatureCmd.Damage(
+						choiceContext,
+						originalTarget,
+						damageAmount,
+						props,
+						dealer,
+						cardSource,
+						cardPlay)));
 				continue;
 			}
 			if (originalTarget.IsDead)
@@ -117,7 +122,9 @@ public static class LibraryCreatureCmd
 				continue;
 			}
 			IEnumerable<AbstractModel> modifiers;
-			Creature modifiedTarget = LibraryHooks.ModifyDamageTarget(combatState, originalTarget, damageAmount, props, dealer,type);
+			Creature modifiedTarget = targetsChosen
+				? originalTarget
+				: LibraryHooks.ModifyDamageTarget(combatState, originalTarget, damageAmount, props, dealer, type);
 			decimal modifiedAmount = LibraryHooks.ModifyDamage(runState, combatState, modifiedTarget, dealer, damageAmount, props, cardSource, cardPlay, ModifyDamageHookType.All, CardPreviewMode.None, out modifiers,type);
 			await LibraryHooks.AfterModifyingDamageAmount(runState, combatState, cardSource, modifiers,type);
 			if (!ranBeforeApplyingDamage && beforeApplyingDamage != null)
