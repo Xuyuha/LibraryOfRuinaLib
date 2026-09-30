@@ -195,47 +195,19 @@ public class LibraryDice : DynamicVar
     }
 	public override void UpdateCardPreview(CardModel card, CardPreviewMode previewMode, Creature? target, bool runGlobalHooks)
 	{
-        if(DiceType != LibraryDiceType.Block){
-            decimal num = base.BaseValue;
-            decimal num1 = base.BaseValue;
-            EnchantmentModel enchantment = card.Enchantment;
-            if (enchantment != null)
+        if (DiceType != LibraryDiceType.Block)
+        {
+            (decimal damage, decimal chao) = LibraryDamagePreview.Calculate(this, card, previewMode, target, runGlobalHooks, Props, DamageType);
+            _shouldShowDamage = target is LibraryCreature;
+            _shouldShowChao = target is LibraryCreature { HasChaoResistance: true };
+            if (target is LibraryCreature libraryTarget)
             {
-                num += enchantment.EnchantDamageAdditive(num, Props);
-                num *= enchantment.EnchantDamageMultiplicative(num, Props);
-                if (!card.IsEnchantmentPreview)
-                {
-                    base.EnchantedValue = num;
-                }
-                if(enchantment is LibraryEnchantmentModel le){
-                    num1 +=le.EnchantChaoDamageAdditive(num1,Props);
-                    num1 *=le.EnchantChaoDamageMultiplicative(num1,Props);
-                }
+                DamageResistanceValue = libraryTarget.GetPhysicalResistanceLevel(DamageType).GetMultiplier();
+                if (_shouldShowChao)
+                    ChaoResistanceValue = libraryTarget.GetChaosResistanceLevel(DamageType).GetMultiplier();
             }
-            if (runGlobalHooks)
-            {
-                num = LibraryHooks.ModifyDamage(card.Owner.RunState, card.CombatState, target, card.Owner.Creature, base.BaseValue, Props, card, null, ModifyDamageHookType.All, previewMode, out IEnumerable<AbstractModel> _, DamageType);
-                num1 = LibraryHooks.ModifyChaoDamage(card.Owner.RunState, card.CombatState, target, card.Owner.Creature, base.BaseValue, Props, card, null, ModifyChaoDamageHookType.All, previewMode, out IEnumerable<AbstractModel> _, DamageType);
-            }
-            if(target is LibraryCreature lc)
-            {
-                _shouldShowDamage =true;
-                DamageResistanceValue = lc.GetPhysicalResistanceLevel(DamageType).GetMultiplier();
-                if (lc.HasChaoResistance)
-                {
-                    ChaoResistanceValue = lc.GetChaosResistanceLevel(DamageType).GetMultiplier();
-                    _shouldShowChao =true;
-                }
-                else
-                    _shouldShowChao =false;
-            }
-            else
-            {
-                _shouldShowChao =false;
-                _shouldShowDamage =false;
-            }
-            DamageAdditiveValue = (int)(num - BaseValue);
-            ChaoAdditiveValue = (int)(num1 - BaseValue);
+            DamageAdditiveValue = (int)(damage - BaseValue);
+            ChaoAdditiveValue = (int)(chao - BaseValue);
         }
         else{
             PreviewValue = BaseValue;
