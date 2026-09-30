@@ -269,7 +269,7 @@ public class LibraryCreature : Creature
     public void SetPhysicalResistance(LibraryDamageType type, LibraryResistanceLevel resistanceValue)
     {
         PostStunResistanceData.PhysicalResistance.Set(type, resistanceValue);
-        LibraryPhysicalResistanceIconsUi.Refresh(HealthBar);
+        LibraryResistanceIconsUi.Physical.Refresh(HealthBar);
     }
 
     public void SetChaoResistance(LibraryDamageType type, LibraryResistanceLevel resistanceValue)
@@ -277,12 +277,12 @@ public class LibraryCreature : Creature
         if (!HasChaoResistance)
             return;
         PostStunResistanceData.ChaosResistance.Set(type, resistanceValue);
-        LibraryChaosResistanceIconsUi.Refresh(HealthBar);
+        LibraryResistanceIconsUi.Chaos.Refresh(HealthBar);
     }
 
     private void RefreshResistanceIcons()
     {
-        LibraryPhysicalResistanceIconsUi.Refresh(HealthBar);
-        LibraryChaosResistanceIconsUi.Refresh(HealthBar);
+        LibraryResistanceIconsUi.Physical.Refresh(HealthBar);
+        LibraryResistanceIconsUi.Chaos.Refresh(HealthBar);
     }
 }

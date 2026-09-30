@@ -12,8 +12,8 @@ public static class ResistancePreview
 {
     public static void PulseResistanceIcons(LibraryCreature creature, LibraryDamageType damageType)
     {
-        LibraryPhysicalResistanceIconsUi.Pulse(creature, damageType);
-        LibraryChaosResistanceIconsUi.Pulse(creature, damageType);
+        LibraryResistanceIconsUi.Physical.Pulse(creature, damageType);
+        LibraryResistanceIconsUi.Chaos.Pulse(creature, damageType);
     }
     public static bool ShouldApplyResistance(ValueProp props, LibraryDamageType damageType)
     {
