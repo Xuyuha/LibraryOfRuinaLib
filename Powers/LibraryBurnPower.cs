@@ -56,22 +56,8 @@ public sealed class LibraryBurnPower :
             clampedAmount - (int)CalculateStackDecayByThird(clampedAmount));
     }
 
-    public IEnumerable<LibraryHealthBarDamageForecast>
-        GetLibraryHealthBarDamageForecasts(
-            LibraryHealthBarForecastContext context)
-    {
-        if (Amount <= 0 || context.CombatState == null)
-        {
-            return [];
-        }
-
-        return
-        [
-            LibraryHealthBarDamageForecast.FromLibraryPower(
-                this,
-                LibraryHealthBarForecastColors.Burn)
-        ];
-    }
+    public IEnumerable<LibraryHealthBarDamageForecast> GetLibraryHealthBarDamageForecasts(LibraryHealthBarForecastContext context) =>
+        LibraryPowerRules.NextTriggerForecast(this, context, LibraryHealthBarForecastColors.Burn);
 
     public override async Task AfterSideTurnEnd(PlayerChoiceContext choiceContext, CombatSide side, IEnumerable<Creature> participants,object?_ = null)
     {
