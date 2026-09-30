@@ -94,16 +94,17 @@ internal static class AttackExecuteContext
 
         // 原版 AttackCommand 区分点来自 beta 源码：
         // WithHitCount 修改 _hitCount；TargetingAllOpponents/TargetingRandomOpponents 设置 IsMultiTargeted。
-        if (GetHitCount(attackCommand) > 1)
-        {
-            return LibraryDamageType.Pierce;
-        }
-
+        // 全体攻击的每一段均为斩击，优先于多段攻击的突刺推断。
         if (GetObjectProperty(attackCommand, "ModelSource") is CardModel &&
             GetBoolProperty(attackCommand, "IsMultiTargeted") &&
             !GetBoolProperty(attackCommand, "IsRandomlyTargeted"))
         {
             return LibraryDamageType.Slash;
+        }
+
+        if (GetHitCount(attackCommand) > 1)
+        {
+            return LibraryDamageType.Pierce;
         }
 
         return LibraryDamageType.Blunt;

@@ -39,16 +39,17 @@ internal static class LibraryDamagePreviewFeedback
     {
         try
         {
-            if (card.Type == CardType.Attack && IsPreviewMultiHit(card, target))
-            {
-                return LibraryDamageType.Pierce;
-            }
-
+            // 与实际攻击一致：全体攻击无论段数，每段均按斩击预览。
             if (card.Type == CardType.Attack &&
                 (card.TargetType == TargetType.AllEnemies ||
                  card.TargetType == TargetType.AllAllies))
             {
                 return LibraryDamageType.Slash;
+            }
+
+            if (card.Type == CardType.Attack && IsPreviewMultiHit(card, target))
+            {
+                return LibraryDamageType.Pierce;
             }
         }
         catch

@@ -60,7 +60,8 @@ public static class LibraryDamageTypes
 
     /// <summary>
     /// Damage type of an attack card that is not a <c>LibraryCardModel</c> (Library cards carry their own
-    /// type): the library's inference (multi-hit is Pierce, all-enemies is Slash, otherwise Blunt), then
+    /// type): the library's inference (all-enemies/all-allies is Slash for every hit, other multi-hit
+    /// attacks are Pierce, otherwise Blunt), then
     /// registered modifiers. <paramref name="target"/> is the single target when known.
     /// </summary>
     public static LibraryDamageType ResolveForCard(CardModel card, Creature? target, bool isPreview)
