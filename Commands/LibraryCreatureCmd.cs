@@ -29,8 +29,6 @@ namespace LibraryLib.Commands;
 
 public static class LibraryCreatureCmd
 {
-	private const int MaxAdditionalDiceUses = 32;
-
 	public static async Task<List<DiceRollResult?>> GainBlock(Creature creature, CardPlay cardPlay, LibraryDice dice, bool fast = false)
 	{
 		ArgumentNullException.ThrowIfNull(cardPlay);
@@ -48,19 +46,10 @@ public static class LibraryCreatureCmd
 			int amount = rollResult.CurrentValue;
 			await CreatureCmd.GainBlock(creature, amount, ValueProp.Move, cardPlay, fast);
 			await dice.TriggerDiceEffect(new BlockingPlayerChoiceContext(), cardPlay,rollResult, [creature]);
-			if (LibraryHooks.ShouldReuse(combatState,[creature],dice,rollResult,out ILibraryAbstractModel? trigger1))
+			if (await dice.TryReuseAsync(combatState, new BlockingPlayerChoiceContext(), [creature], rollResult, additionalUses))
 			{
-				if (additionalUses >= MaxAdditionalDiceUses)
-				{
-					Log.Warn($"[LibraryOfRuinaLib.Dice] Reuse limit reached for {dice.Name}.");
-				}
-				else
-				{
-					additionalUses++;
-					blockTimes++;
-					if(trigger1 != null)
-						await trigger1.AfterReusing(new BlockingPlayerChoiceContext(), [creature] ,dice,rollResult);
-				}
+				additionalUses++;
+				blockTimes++;
 			}
 			list.Add(rollResult);
 		}

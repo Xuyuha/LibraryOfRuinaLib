@@ -23,7 +23,6 @@ using MegaCrit.Sts2.Core.ValueProps;
 namespace LibraryLib.Localization.LibraryDynamicVars;
 public class LibraryDice : DynamicVar
 {
-	private const int _maxAdditionalDiceRolls = 32;
     public const ValueProp Props = ValueProp.Move;
     public LibraryDice(decimal minValue, decimal floatValue, LibraryDiceType diceType, CardModel sourceCard, string name):
     base(name , minValue)
@@ -242,6 +241,27 @@ public class LibraryDice : DynamicVar
 			Props,
 			DamageType);
     }
+    /// <summary>Maximum extra uses (reuse) or extra rolls (reroll) per dice, so looping listeners cannot hang combat.</summary>
+    internal const int MaxAdditionalUses = 32;
+
+    /// <summary>
+    ///     Asks the listeners whether this dice is used again. When one does (and the limit is not reached),
+    ///     notifies it through AfterReusing and returns true; the caller then runs one more use.
+    /// </summary>
+    internal async Task<bool> TryReuseAsync(ICombatState combatState, PlayerChoiceContext choiceContext, IEnumerable<Creature> targets, DiceRollResult result, int additionalUsesSoFar)
+    {
+        if (!LibraryHooks.ShouldReuse(combatState, targets, this, result, out ILibraryAbstractModel? trigger))
+            return false;
+        if (additionalUsesSoFar >= MaxAdditionalUses)
+        {
+            Log.Warn($"[LibraryOfRuinaLib.Dice] Reuse limit reached for {Name}.");
+            return false;
+        }
+        if (trigger != null)
+            await trigger.AfterReusing(choiceContext, targets, this, result);
+        return true;
+    }
+
     public static async Task<DiceRollResult?> GetResultWithRoll(ICombatState combatState,PlayerChoiceContext? choiceContext,LibraryDice? dice,List<Creature> targets)
     {
         if(dice == null) return null;
@@ -260,7 +280,7 @@ public class LibraryDice : DynamicVar
             {
                 break;
             }
-            if (additionalRolls >= _maxAdditionalDiceRolls)
+            if (additionalRolls >= MaxAdditionalUses)
             {
                 Log.Warn($"[LibraryOfRuinaLib.Dice] Reroll limit reached for {dice.Name}.");
                 break;
