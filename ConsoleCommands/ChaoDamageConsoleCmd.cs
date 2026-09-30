@@ -79,13 +79,7 @@ public sealed class ChaoDamageConsoleCmd : AbstractConsoleCmd
 		// 第二个参数是目标索引（0 为玩家，之后为敌人），按当前战斗生物列表补全。
 		if (CombatManager.Instance.IsInProgress)
 		{
-			IReadOnlyList<Creature> creatures = CombatManager.Instance.DebugOnlyGetState()!.Creatures;
-			List<string> candidates = new List<string>(creatures.Count);
-			for (int i = 0; i < creatures.Count; i++)
-			{
-				candidates.Add(i.ToString());
-			}
-			return CompleteArgument(candidates, args.Take(args.Length - 1).ToArray(), args[^1]);
+			return CompleteArgument(CreatureIndexCandidates(), args.Take(args.Length - 1).ToArray(), args[^1]);
 		}
 		return new CompletionResult
 		{
@@ -93,6 +87,10 @@ public sealed class ChaoDamageConsoleCmd : AbstractConsoleCmd
 			ArgumentContext = CmdName
 		};
 	}
+
+	/// <summary>Indices of the current combat's creatures (0 is the player) for target-index completion.</summary>
+	internal static List<string> CreatureIndexCandidates() =>
+		Enumerable.Range(0, CombatManager.Instance.DebugOnlyGetState()!.Creatures.Count).Select(i => i.ToString()).ToList();
 
 	private static async Task ChaosDamageAndCheckWinCondition(IEnumerable<Creature> creatures, int amount)
 	{
