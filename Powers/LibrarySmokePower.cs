@@ -20,20 +20,17 @@ public sealed class LibrarySmokePower : LibraryPowerModel
     {
         description.Add("Multiplier",SmokeMultiplier);
     }
+    private const int MaxAmount = 10;
+
+    /// <summary>烟雾最多叠到 <see cref="MaxAmount"/> 层。</summary>
     public override bool TryModifyPowerAmountReceived(PowerModel canonicalPower, Creature target, decimal amount, Creature? _, out decimal modifiedAmount)
     {
-        if (canonicalPower != this)
-        {
-            modifiedAmount = amount;
-            return false;
-        }
-        if (Amount + amount > 10)
-        {
-            modifiedAmount = 10 - Amount;
-            return false;
-        }
         modifiedAmount = amount;
-        return false;
+        if (canonicalPower != this || Amount + amount <= MaxAmount)
+            return false;
+        // Returning true is what makes Hook.ModifyPowerAmountReceived apply the capped amount.
+        modifiedAmount = MaxAmount - Amount;
+        return true;
     }
     public override decimal ModifyDamageMultiplicative(Creature? target, decimal amount, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay)
     {
