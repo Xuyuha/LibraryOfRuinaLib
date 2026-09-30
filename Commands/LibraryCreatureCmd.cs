@@ -29,8 +29,6 @@ namespace LibraryLib.Commands;
 
 public static class LibraryCreatureCmd
 {
-	private const int MaxAdditionalDiceUses = 32;
-
 	public static async Task<List<DiceRollResult?>> GainBlock(Creature creature, CardPlay cardPlay, LibraryDice dice, bool fast = false)
 	{
 		ArgumentNullException.ThrowIfNull(cardPlay);
@@ -48,71 +46,46 @@ public static class LibraryCreatureCmd
 			int amount = rollResult.CurrentValue;
 			await CreatureCmd.GainBlock(creature, amount, ValueProp.Move, cardPlay, fast);
 			await dice.TriggerDiceEffect(new BlockingPlayerChoiceContext(), cardPlay,rollResult, [creature]);
-			if (LibraryHooks.ShouldReuse(combatState,[creature],dice,rollResult,out ILibraryAbstractModel? trigger1))
+			if (await dice.TryReuseAsync(combatState, new BlockingPlayerChoiceContext(), [creature], rollResult, additionalUses))
 			{
-				if (additionalUses >= MaxAdditionalDiceUses)
-				{
-					Log.Warn($"[LibraryOfRuinaLib.Dice] Reuse limit reached for {dice.Name}.");
-				}
-				else
-				{
-					additionalUses++;
-					blockTimes++;
-					if(trigger1 != null)
-						await trigger1.AfterReusing(new BlockingPlayerChoiceContext(), [creature] ,dice,rollResult);
-				}
+				additionalUses++;
+				blockTimes++;
 			}
 			list.Add(rollResult);
 		}
 		return list;
 	}
-	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, Creature target, DamageVar damageVar, CardModel cardSource, LibraryDamageType type = LibraryDamageType.None, CardPlay? cardPlay = null)
-	{
-		return await Damage(choiceContext, target, damageVar.BaseValue, damageVar.Props, cardSource, type, cardPlay);
-	}
+	public static Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, Creature target, DamageVar damageVar, CardModel cardSource, LibraryDamageType type = LibraryDamageType.None, CardPlay? cardPlay = null) =>
+		Damage(choiceContext, target, damageVar.BaseValue, damageVar.Props, cardSource, type, cardPlay);
 
-	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, Creature target, decimal amount, ValueProp props, CardModel cardSource, LibraryDamageType type = LibraryDamageType.None, CardPlay? cardPlay = null)
-	{
-		return await Damage(choiceContext, new List<Creature> { target }, amount, props, cardSource.Owner.Creature as Creature, cardSource, type, cardPlay);
-	}
+	public static Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, Creature target, decimal amount, ValueProp props, CardModel cardSource, LibraryDamageType type = LibraryDamageType.None, CardPlay? cardPlay = null) =>
+		Damage(choiceContext, new List<Creature> { target }, amount, props, cardSource.Owner.Creature as Creature, cardSource, type, cardPlay);
 
-	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, IEnumerable<Creature> targets, DamageVar damageVar, Creature dealer ,LibraryDamageType type = LibraryDamageType.None, CardPlay? cardPlay = null)
-	{
-		return await Damage(choiceContext, targets, damageVar.BaseValue, damageVar.Props, dealer,type, cardPlay);
-	}
+	public static Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, IEnumerable<Creature> targets, DamageVar damageVar, Creature dealer ,LibraryDamageType type = LibraryDamageType.None, CardPlay? cardPlay = null) =>
+		Damage(choiceContext, targets, damageVar.BaseValue, damageVar.Props, dealer,type, cardPlay);
 
-	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, IEnumerable<Creature> targets, decimal amount, ValueProp props, Creature dealer ,LibraryDamageType type = LibraryDamageType.None, CardPlay? cardPlay = null)
-	{
-		return await Damage(choiceContext, targets, amount, props, dealer, null, type, cardPlay);
-	}
+	public static Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, IEnumerable<Creature> targets, decimal amount, ValueProp props, Creature dealer ,LibraryDamageType type = LibraryDamageType.None, CardPlay? cardPlay = null) =>
+		Damage(choiceContext, targets, amount, props, dealer, null, type, cardPlay);
 
-	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, Creature target, DamageVar damageVar, Creature dealer ,LibraryDamageType type = LibraryDamageType.None, CardPlay? cardPlay = null)
-	{
-		return await Damage(choiceContext, target, damageVar.BaseValue, damageVar.Props, dealer,type, cardPlay);
-	}
+	public static Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, Creature target, DamageVar damageVar, Creature dealer ,LibraryDamageType type = LibraryDamageType.None, CardPlay? cardPlay = null) =>
+		Damage(choiceContext, target, damageVar.BaseValue, damageVar.Props, dealer,type, cardPlay);
 
-	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, Creature target, decimal amount, ValueProp props, Creature dealer ,LibraryDamageType type = LibraryDamageType.None, CardPlay? cardPlay = null)
-	{
-		return await Damage(choiceContext, new List<Creature> { target }, amount, props, dealer, null, type, cardPlay);
-	}
+	public static Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, Creature target, decimal amount, ValueProp props, Creature dealer ,LibraryDamageType type = LibraryDamageType.None, CardPlay? cardPlay = null) =>
+		Damage(choiceContext, new List<Creature> { target }, amount, props, dealer, null, type, cardPlay);
 
-	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, Creature target, DamageVar damageVar, Creature? dealer, CardModel? cardSource, LibraryDamageType type = LibraryDamageType.None, CardPlay? cardPlay = null)
-	{
-		return await Damage(choiceContext, new List<Creature> { target }, damageVar.BaseValue, damageVar.Props, dealer, cardSource, type, cardPlay);
-	}
+	public static Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, Creature target, DamageVar damageVar, Creature? dealer, CardModel? cardSource, LibraryDamageType type = LibraryDamageType.None, CardPlay? cardPlay = null) =>
+		Damage(choiceContext, new List<Creature> { target }, damageVar.BaseValue, damageVar.Props, dealer, cardSource, type, cardPlay);
 
-	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, Creature target, decimal amount, ValueProp props, Creature? dealer, CardModel? cardSource, LibraryDamageType type = LibraryDamageType.None, CardPlay? cardPlay = null)
-	{
-		return await Damage(choiceContext, new List<Creature> { target }, amount, props, dealer, cardSource, type, cardPlay);
-	}
+	public static Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, Creature target, decimal amount, ValueProp props, Creature? dealer, CardModel? cardSource, LibraryDamageType type = LibraryDamageType.None, CardPlay? cardPlay = null) =>
+		Damage(choiceContext, new List<Creature> { target }, amount, props, dealer, cardSource, type, cardPlay);
 
-	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, IEnumerable<Creature> targets, DamageVar damageVar, Creature? dealer, CardModel? cardSource, LibraryDamageType type = LibraryDamageType.None, CardPlay? cardPlay = null)
-	{
-		return await Damage(choiceContext, targets, damageVar.BaseValue, damageVar.Props, dealer, cardSource, type, cardPlay);
-	}
+	public static Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, IEnumerable<Creature> targets, DamageVar damageVar, Creature? dealer, CardModel? cardSource, LibraryDamageType type = LibraryDamageType.None, CardPlay? cardPlay = null) =>
+		Damage(choiceContext, targets, damageVar.BaseValue, damageVar.Props, dealer, cardSource, type, cardPlay);
 
 	public static async Task<IEnumerable<DamageResult>> Damage(PlayerChoiceContext choiceContext, IEnumerable<Creature> targets, decimal damageAmount, ValueProp props, Creature? dealer, CardModel? cardSource, LibraryDamageType type = LibraryDamageType.None, CardPlay? cardPlay = null, Func<Task>? beforeApplyingDamage = null)
 	{
+		// Vanilla damage rerouted here by LibraryAttackChaoDamagePatch already chose its targets.
+		bool targetsChosen = DamageTargetHandoff.Take() is { TargetsChosen: true };
 		if (dealer != null && dealer.IsDead)
 		{
 			return targets.Select((Creature t) => new DamageResult(t, props)).ToList();
@@ -128,17 +101,20 @@ public static class LibraryCreatureCmd
 		bool ranBeforeApplyingDamage = false;
 		foreach (Creature originalTarget in targetList)
 		{
-			// 玩家受伤直接走原版伤害管线，不经过Library的拦截/抗性/混乱系统
+			// 玩家受伤直接走原版伤害管线，不经过Library的拦截/抗性/混乱系统；
+			// 目标改写只做一次：交给 DamageTargetPatch（带本次伤害类型），或已做过则跳过。
 			if (originalTarget.IsPlayer)
 			{
-				results.AddRange(await CreatureCmd.Damage(
-					choiceContext,
-					originalTarget,
-					damageAmount,
-					props,
-					dealer,
-					cardSource,
-					cardPlay));
+				results.AddRange(await DamageTargetHandoff.Run(
+					new DamageTargetHandoff.Pending(targetsChosen, type),
+					() => CreatureCmd.Damage(
+						choiceContext,
+						originalTarget,
+						damageAmount,
+						props,
+						dealer,
+						cardSource,
+						cardPlay)));
 				continue;
 			}
 			if (originalTarget.IsDead)
@@ -146,7 +122,9 @@ public static class LibraryCreatureCmd
 				continue;
 			}
 			IEnumerable<AbstractModel> modifiers;
-			Creature modifiedTarget = LibraryHooks.ModifyDamageTarget(combatState, originalTarget, damageAmount, props, dealer,type);
+			Creature modifiedTarget = targetsChosen
+				? originalTarget
+				: LibraryHooks.ModifyDamageTarget(combatState, originalTarget, damageAmount, props, dealer, type);
 			decimal modifiedAmount = LibraryHooks.ModifyDamage(runState, combatState, modifiedTarget, dealer, damageAmount, props, cardSource, cardPlay, ModifyDamageHookType.All, CardPreviewMode.None, out modifiers,type);
 			await LibraryHooks.AfterModifyingDamageAmount(runState, combatState, cardSource, modifiers,type);
 			if (!ranBeforeApplyingDamage && beforeApplyingDamage != null)
@@ -217,23 +195,9 @@ public static class LibraryCreatureCmd
 				Node vfxContainer = receiver.GetVfxContainer();
 				if (damage > 0 || (modifiedAmount == 0m && item.Receiver == unblockedDamageTarget))
 				{
-					Node2D? damageVfx = receiver is LibraryCreature
-						? LibraryRuinaDamageNumberVfx.CreatePhysical(
-							receiver,
-							item,
-							type)
-						: NDamageNumVfx.Create(receiver, item);
-					if (damageVfx != null)
-					{
-						if (vfxContainer != null)
-						{
-							vfxContainer.AddChildSafely(damageVfx);
-						}
-						else
-						{
-							NRun.Instance.GlobalUi.AddChildSafely(damageVfx);
-						}
-					}
+					AddVfx(receiver, receiver is LibraryCreature
+						? LibraryRuinaDamageNumberVfx.CreatePhysical(receiver, item, type)
+						: NDamageNumVfx.Create(receiver, item));
 				}
 				if (damage > 0)
 				{
@@ -334,18 +298,12 @@ public static class LibraryCreatureCmd
 		await Cmd.CustomScaledWait(0.1f, 0.2f);
 		return results;
 	}
-	public static async Task<IEnumerable<LibraryChaoResult>?> ChaoDamage(PlayerChoiceContext choiceContext, IEnumerable<Creature> targets, decimal damageAmount, ValueProp props, Creature? dealer, CardModel? cardSource,LibraryDamageType type = LibraryDamageType.None, IEnumerable<DamageResult>? damageResults = null)
-	{
-		return await ChaoDamage(choiceContext, targets, damageAmount, props, dealer, cardSource,null,type);
-	}
-	public static async Task<IEnumerable<LibraryChaoResult>?> ChaoDamage(PlayerChoiceContext choiceContext, Creature target, decimal damageAmount, ValueProp props, Creature? dealer, CardModel? cardSource,LibraryDamageType type = LibraryDamageType.None, IEnumerable<DamageResult>? damageResults = null)
-	{
-		return await ChaoDamage(choiceContext, new List<Creature> { target }, damageAmount, props, dealer, cardSource,null,type);
-	}
-	public static async Task<IEnumerable<LibraryChaoResult>?> ChaoDamage(PlayerChoiceContext choiceContext, Creature target, decimal damageAmount, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay,LibraryDamageType type = LibraryDamageType.None, IEnumerable<DamageResult>? damageResults = null)
-	{
-		return await ChaoDamage(choiceContext, new List<Creature> { target }, damageAmount, props, dealer, cardSource, cardPlay,type);
-	}
+	public static Task<IEnumerable<LibraryChaoResult>?> ChaoDamage(PlayerChoiceContext choiceContext, IEnumerable<Creature> targets, decimal damageAmount, ValueProp props, Creature? dealer, CardModel? cardSource,LibraryDamageType type = LibraryDamageType.None, IEnumerable<DamageResult>? damageResults = null) =>
+		ChaoDamage(choiceContext, targets, damageAmount, props, dealer, cardSource,null,type);
+	public static Task<IEnumerable<LibraryChaoResult>?> ChaoDamage(PlayerChoiceContext choiceContext, Creature target, decimal damageAmount, ValueProp props, Creature? dealer, CardModel? cardSource,LibraryDamageType type = LibraryDamageType.None, IEnumerable<DamageResult>? damageResults = null) =>
+		ChaoDamage(choiceContext, new List<Creature> { target }, damageAmount, props, dealer, cardSource,null,type);
+	public static Task<IEnumerable<LibraryChaoResult>?> ChaoDamage(PlayerChoiceContext choiceContext, Creature target, decimal damageAmount, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay,LibraryDamageType type = LibraryDamageType.None, IEnumerable<DamageResult>? damageResults = null) =>
+		ChaoDamage(choiceContext, new List<Creature> { target }, damageAmount, props, dealer, cardSource, cardPlay,type);
 	public static async Task<IEnumerable<LibraryChaoResult>?> ChaoDamage(PlayerChoiceContext choiceContext, IEnumerable<Creature> targets, decimal damageAmount, ValueProp props, Creature? dealer, CardModel? cardSource , CardPlay? cardPlay,LibraryDamageType type = LibraryDamageType.None, IEnumerable<DamageResult>? damageResults = null)
 	{
 		List<LibraryChaoResult> results = [];
@@ -376,7 +334,6 @@ public static class LibraryCreatureCmd
 				continue;
 			}
 			IEnumerable<AbstractModel> modifiers;
-			Log.Info("LibraryChaoDamage");
 			Creature modifiedTarget = LibraryHooks.ModifyChaoDamageTarget(combatState, target, damageAmount, props, dealer,type);
 			if (modifiedTarget is not LibraryCreature libraryTarget
 				|| libraryTarget.IsChaoed
@@ -394,76 +351,33 @@ public static class LibraryCreatureCmd
 			{
 				continue;
 			}
-			List<Task> hitTriggers = [];
-			// 混乱伤害反馈
-			// foreach (DamageResult item in damageResults) 
-			// {
-			// 	int damage = item.UnblockedDamage + item.OverkillDamage;
-			// 	Creature receiver = item.Receiver;
-			// 	if (CombatManager.Instance.IsInProgress && !CombatManager.Instance.IsEnding)
-			// 	{
-			// 		CombatManager.Instance.History.DamageReceived(combatState, receiver, dealer, item, cardSource);
-			// 	}
-			// 	if (item.WasFullyBlocked)
-			// 	{
-			// 		continue;
-			// 	}
-			// 	Node vfxContainer = receiver.GetVfxContainer();
-			// 	if (damage > 0 || (modifiedAmount == 0m && item.Receiver == unblockedDamageTarget))
-			// 	{
-			// 		NDamageNumVfx nDamageNumVfx = NDamageNumVfx.Create(receiver, item);
-			// 		if (nDamageNumVfx != null)
-			// 		{
-			// 			if (vfxContainer != null)
-			// 			{
-			// 				vfxContainer.AddChildSafely(nDamageNumVfx);
-			// 			}
-			// 			else
-			// 			{
-			// 				NRun.Instance.GlobalUi.AddChildSafely(nDamageNumVfx);
-			// 			}
-			// 		}
-			// 	}
-			// }
 			if (chaoResult.ChaoValueAmount > 0 || modifiedAmount == 0m)
 			{
-				Node vfxContainer = modifiedTarget.GetVfxContainer();
-				LibraryRuinaDamageNumberVfx? chaoVfx = LibraryRuinaDamageNumberVfx.CreateChaos(modifiedTarget, chaoResult, type);
-				if (chaoVfx != null)
-				{
-					if (vfxContainer != null)
-					{
-						vfxContainer.AddChildSafely(chaoVfx);
-					}
-					else
-					{
-						NRun.Instance.GlobalUi.AddChildSafely(chaoVfx);
-					}
-				}
+				AddVfx(modifiedTarget, LibraryRuinaDamageNumberVfx.CreateChaos(modifiedTarget, chaoResult, type));
 			}
 			results.Add(chaoResult);
 		}
-		List<LibraryCreature> StunedCreatures = new List<LibraryCreature>();
-		foreach (LibraryChaoResult Result in results)
+		List<LibraryCreature> stunnedCreatures = [];
+		foreach (LibraryChaoResult result in results)
 		{
-			if (Result.Receiver is not LibraryCreature target || target.CombatState == null)
+			if (result.Receiver is not LibraryCreature target || target.CombatState == null)
 			{
 				continue;
 			}
 			if (combatState != null)
 			{
-				await LibraryHooks.AfterCurrentChaoValueChanged(runState, combatState, target, -Result.ChaoValueAmount,type);
-				await LibraryHooks.AfterChaoDamageGiven(choiceContext, combatState, dealer, Result, props, target, cardSource,type);	
-				await LibraryHooks.AfterChaoDamageReceived(choiceContext, runState, combatState, target, Result, props, dealer, cardSource,type);
+				await LibraryHooks.AfterCurrentChaoValueChanged(runState, combatState, target, -result.ChaoValueAmount,type);
+				await LibraryHooks.AfterChaoDamageGiven(choiceContext, combatState, dealer, result, props, target, cardSource,type);	
+				await LibraryHooks.AfterChaoDamageReceived(choiceContext, runState, combatState, target, result, props, dealer, cardSource,type);
 			}
-			if(Result.WasStun)
+			if (result.WasStun)
 			{
-				StunedCreatures.Add(target);
+				stunnedCreatures.Add(target);
 			}	
 		}
-		foreach (var c in StunedCreatures)
+		foreach (LibraryCreature stunned in stunnedCreatures)
 		{
-			await Stun(c);
+			await Stun(stunned);
 		}
 		await Cmd.CustomScaledWait(0.1f, 0.2f);
 		return results;
@@ -550,11 +464,6 @@ public static class LibraryCreatureCmd
 			throw new ArgumentException("amount must be non-negative. Use GainMaxHp for max HP gain.");
 		}
 		decimal newMaxChaoValue = (decimal)creature.MaxChaoValue - amount;
-		MapPointHistoryEntry mapPointHistoryEntry = creature.Player?.RunState.CurrentMapPointHistoryEntry;
-		if (mapPointHistoryEntry != null)
-		{
-			mapPointHistoryEntry.GetEntry(creature.Player.NetId).MaxHpLost += (int)amount;
-		}
 		if (newMaxChaoValue < (decimal)creature.CurrentChaoValue)
 		{
 			await ChaoDamage(choiceContext, new List<LibraryCreature>() { creature }, (decimal)creature.CurrentChaoValue - newMaxChaoValue, isFromCard ? (ValueProp.Unblockable | ValueProp.Unpowered | ValueProp.Move) : (ValueProp.Unblockable | ValueProp.Unpowered), null,null, null);
@@ -600,5 +509,17 @@ public static class LibraryCreatureCmd
 	{
 		await SetMaxChaoValue(creature, amount);
 		await SetCurrentChaoValue(creature, amount);
+	}
+
+	/// <summary>Spawns a vfx node on the creature, or on the global UI when the creature has no vfx container.</summary>
+	private static void AddVfx(Creature creature, Node? vfx)
+	{
+		if (vfx == null)
+			return;
+		Node? container = creature.GetVfxContainer();
+		if (container != null)
+			container.AddChildSafely(vfx);
+		else
+			NRun.Instance.GlobalUi.AddChildSafely(vfx);
 	}
 }

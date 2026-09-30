@@ -37,9 +37,6 @@ internal static class LibraryStaggerResistanceBarUi
 
     private const string FontPath = "res://themes/kreon_bold_glyph_space_one.tres";
 
-    private static readonly FieldInfo? CreatureField =
-        AccessTools.Field(typeof(NHealthBar), "_creature");
-
     private sealed class State
     {
         public Control? BarContainer;
@@ -116,18 +113,11 @@ internal static class LibraryStaggerResistanceBarUi
         }
     }
 
-    private static Creature? GetCreature(NHealthBar? healthBar)
-    {
-        if (healthBar == null) return null;
-
-        return CreatureField?.GetValue(healthBar) as Creature;
-    }
-
     public static void Refresh(NHealthBar? healthBar)
     {
         if (healthBar == null) return;
 
-        if (GetCreature(healthBar) is not LibraryCreature libCreature)
+        if (LibraryHealthBarAccess.GetCreature(healthBar) is not LibraryCreature libCreature)
         {
             if (States.TryGetValue(healthBar, out State? previousState))
             {

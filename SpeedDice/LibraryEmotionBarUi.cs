@@ -4,6 +4,7 @@ using Godot;
 using HarmonyLib;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Nodes.Combat;
+using LibraryLib.Patches;
 
 namespace LibraryLib.SpeedDice;
 
@@ -23,8 +24,6 @@ public static class LibraryEmotionBarUi
     private const float BadgeWidth = 44f;
     private const float BadgeHeight = 51f;
 
-    private static readonly FieldInfo? CreatureField =
-        AccessTools.Field(typeof(NHealthBar), "_creature");
     private static readonly ConditionalWeakTable<NHealthBar, UiState> States = new();
     private static readonly Color BackgroundColor = new("26183D");
     private static readonly Color FillColor = new("A84DE0");
@@ -46,7 +45,7 @@ public static class LibraryEmotionBarUi
 
     public static void Refresh(NHealthBar healthBar)
     {
-        Creature? creature = CreatureField?.GetValue(healthBar) as Creature;
+        Creature? creature = LibraryHealthBarAccess.GetCreature(healthBar);
         LibrarySpeedDiceCombatState? combatState = null;
         if (creature?.Player != null)
         {

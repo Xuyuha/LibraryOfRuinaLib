@@ -23,7 +23,6 @@ using MegaCrit.Sts2.Core.ValueProps;
 namespace LibraryLib.Localization.LibraryDynamicVars;
 public class LibraryDice : DynamicVar
 {
-	private const int _maxAdditionalDiceRolls = 32;
     public const ValueProp Props = ValueProp.Move;
     public LibraryDice(decimal minValue, decimal floatValue, LibraryDiceType diceType, CardModel sourceCard, string name):
     base(name , minValue)
@@ -195,47 +194,19 @@ public class LibraryDice : DynamicVar
     }
 	public override void UpdateCardPreview(CardModel card, CardPreviewMode previewMode, Creature? target, bool runGlobalHooks)
 	{
-        if(DiceType != LibraryDiceType.Block){
-            decimal num = base.BaseValue;
-            decimal num1 = base.BaseValue;
-            EnchantmentModel enchantment = card.Enchantment;
-            if (enchantment != null)
+        if (DiceType != LibraryDiceType.Block)
+        {
+            (decimal damage, decimal chao) = LibraryDamagePreview.Calculate(this, card, previewMode, target, runGlobalHooks, Props, DamageType);
+            _shouldShowDamage = target is LibraryCreature;
+            _shouldShowChao = target is LibraryCreature { HasChaoResistance: true };
+            if (target is LibraryCreature libraryTarget)
             {
-                num += enchantment.EnchantDamageAdditive(num, Props);
-                num *= enchantment.EnchantDamageMultiplicative(num, Props);
-                if (!card.IsEnchantmentPreview)
-                {
-                    base.EnchantedValue = num;
-                }
-                if(enchantment is LibraryEnchantmentModel le){
-                    num1 +=le.EnchantChaoDamageAdditive(num1,Props);
-                    num1 *=le.EnchantChaoDamageMultiplicative(num1,Props);
-                }
+                DamageResistanceValue = libraryTarget.GetPhysicalResistanceLevel(DamageType).GetMultiplier();
+                if (_shouldShowChao)
+                    ChaoResistanceValue = libraryTarget.GetChaosResistanceLevel(DamageType).GetMultiplier();
             }
-            if (runGlobalHooks)
-            {
-                num = LibraryHooks.ModifyDamage(card.Owner.RunState, card.CombatState, target, card.Owner.Creature, base.BaseValue, Props, card, null, ModifyDamageHookType.All, previewMode, out IEnumerable<AbstractModel> _, DamageType);
-                num1 = LibraryHooks.ModifyChaoDamage(card.Owner.RunState, card.CombatState, target, card.Owner.Creature, base.BaseValue, Props, card, null, ModifyChaoDamageHookType.All, previewMode, out IEnumerable<AbstractModel> _, DamageType);
-            }
-            if(target is LibraryCreature lc)
-            {
-                _shouldShowDamage =true;
-                DamageResistanceValue = lc.GetPhysicalResistanceLevel(DamageType).GetMultiplier();
-                if (lc.HasChaoResistance)
-                {
-                    ChaoResistanceValue = lc.GetChaosResistanceLevel(DamageType).GetMultiplier();
-                    _shouldShowChao =true;
-                }
-                else
-                    _shouldShowChao =false;
-            }
-            else
-            {
-                _shouldShowChao =false;
-                _shouldShowDamage =false;
-            }
-            DamageAdditiveValue = (int)(num - BaseValue);
-            ChaoAdditiveValue = (int)(num1 - BaseValue);
+            DamageAdditiveValue = (int)(damage - BaseValue);
+            ChaoAdditiveValue = (int)(chao - BaseValue);
         }
         else{
             PreviewValue = BaseValue;
@@ -270,6 +241,27 @@ public class LibraryDice : DynamicVar
 			Props,
 			DamageType);
     }
+    /// <summary>Maximum extra uses (reuse) or extra rolls (reroll) per dice, so looping listeners cannot hang combat.</summary>
+    internal const int MaxAdditionalUses = 32;
+
+    /// <summary>
+    ///     Asks the listeners whether this dice is used again. When one does (and the limit is not reached),
+    ///     notifies it through AfterReusing and returns true; the caller then runs one more use.
+    /// </summary>
+    internal async Task<bool> TryReuseAsync(ICombatState combatState, PlayerChoiceContext choiceContext, IEnumerable<Creature> targets, DiceRollResult result, int additionalUsesSoFar)
+    {
+        if (!LibraryHooks.ShouldReuse(combatState, targets, this, result, out ILibraryAbstractModel? trigger))
+            return false;
+        if (additionalUsesSoFar >= MaxAdditionalUses)
+        {
+            Log.Warn($"[LibraryOfRuinaLib.Dice] Reuse limit reached for {Name}.");
+            return false;
+        }
+        if (trigger != null)
+            await trigger.AfterReusing(choiceContext, targets, this, result);
+        return true;
+    }
+
     public static async Task<DiceRollResult?> GetResultWithRoll(ICombatState combatState,PlayerChoiceContext? choiceContext,LibraryDice? dice,List<Creature> targets)
     {
         if(dice == null) return null;
@@ -288,7 +280,7 @@ public class LibraryDice : DynamicVar
             {
                 break;
             }
-            if (additionalRolls >= _maxAdditionalDiceRolls)
+            if (additionalRolls >= MaxAdditionalUses)
             {
                 Log.Warn($"[LibraryOfRuinaLib.Dice] Reroll limit reached for {dice.Name}.");
                 break;

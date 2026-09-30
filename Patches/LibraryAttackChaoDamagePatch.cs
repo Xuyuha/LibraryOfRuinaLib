@@ -1,4 +1,5 @@
 #nullable enable
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using HarmonyLib;
 using LibraryLib.Combat;
@@ -199,19 +200,7 @@ internal static class LibraryAttackChaoDamagePatch
         ref Task<IEnumerable<DamageResult>> __result)
     {
         __state = null;
-        if (props.HasFlag(ValueProp.Unpowered))
-            return true;
-
-        if (!props.HasFlag(ValueProp.Move))
-            return true;
-
-        if (cardSource is LibraryCardModel)
-            return true;
-
-        if (dealer == null)
-            return true;
-
-        if (!dealer.IsPlayer && !dealer.IsMonster)
+        if (!AppliesTo(props, dealer, cardSource))
             return true;
 
         var targetList = targets as IReadOnlyList<Creature> ?? new List<Creature>(targets);
@@ -231,8 +220,10 @@ internal static class LibraryAttackChaoDamagePatch
         bool needsLibraryDamage =
             targetList.Any(static target =>
                 target is LibraryCreature { IsPlayer: false });
+        // LibraryCreatureCmd.Damage hands player targets straight back to CreatureCmd.Damage,
+        // so rerouting a player-only hit for interception would re-enter this prefix forever.
         bool hasInterceptor =
-            !LibraryIncomingDamageInterception.IsSuppressed
+            targetList.Any(static target => !target.IsPlayer)
             && LibraryHooks.HasIncomingDamageInterceptor(
                 runState,
                 combatState);
@@ -253,15 +244,18 @@ internal static class LibraryAttackChaoDamagePatch
         if (!needsLibraryDamage && !hasInterceptor)
             return true;
 
-        __result = LibraryCreatureCmd.Damage(
-            choiceContext: choiceContext,
-            targets: targetList,
-            damageAmount: amount,
-            props: props,
-            dealer: dealer,
-            cardSource: cardSource,
-            cardPlay: cardPlay,
-            type: damageType);
+        // DamageTargetPatch already ran ModifyDamageTarget on these targets.
+        __result = DamageTargetHandoff.Run(
+            new DamageTargetHandoff.Pending(TargetsChosen: true, damageType),
+            () => LibraryCreatureCmd.Damage(
+                choiceContext: choiceContext,
+                targets: targetList,
+                damageAmount: amount,
+                props: props,
+                dealer: dealer,
+                cardSource: cardSource,
+                cardPlay: cardPlay,
+                type: damageType));
 
         return false;
     }
@@ -279,25 +273,7 @@ internal static class LibraryAttackChaoDamagePatch
         DamagePatchState? __state,
         ref Task<IEnumerable<DamageResult>> __result)
     {
-        if (props.HasFlag(ValueProp.Unpowered))
-            return;
-
-        // 只对主攻击伤害生效（带有Move标记），排除Power等附加效果的伤害
-        if (!props.HasFlag(ValueProp.Move))
-            return;
-
-        // Library系统的卡牌已在LibraryAttackCommand中自行处理混乱伤害，不重复触发
-        if (cardSource is LibraryCardModel)
-            return;
-
-        // 只对原版玩家攻击牌（dealer是玩家且有cardSource）和怪物意图伤害（dealer是怪物）生效
-        if (dealer == null)
-            return;
-
-        if (!dealer.IsPlayer && !dealer.IsMonster)
-            return;
-
-        if (__state is not { HasLibraryTarget: true })
+        if (!AppliesTo(props, dealer, cardSource) || __state is not { HasLibraryTarget: true })
             return;
 
         __result = WrapWithChaoDamage(
@@ -347,7 +323,17 @@ internal static class LibraryAttackChaoDamagePatch
         return results;
     }
 
-    private static LibraryDamageType ResolveExecutionDamageType(
+    /// <summary>
+    ///     Vanilla damage that follows Library rules: a powered move by a player or monster, not from a
+    ///     Library card (LibraryAttackCommand applies those itself, chaos damage included).
+    /// </summary>
+    internal static bool AppliesTo(ValueProp props, [NotNullWhen(true)] Creature? dealer, CardModel? cardSource) =>
+        !props.HasFlag(ValueProp.Unpowered)
+        && props.HasFlag(ValueProp.Move)
+        && cardSource is not LibraryCardModel
+        && dealer is { IsPlayer: true } or { IsMonster: true };
+
+    internal static LibraryDamageType ResolveExecutionDamageType(
         CardModel? cardSource,
         Creature? dealer,
         IReadOnlyList<Creature> targets)
