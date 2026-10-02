@@ -312,7 +312,7 @@ internal static class LibraryManagedNetTypeRegistry
             }
 
             var owner = new AssemblyOwner(modId, mod.manifest?.affectsGameplay ?? true);
-            foreach (Assembly assembly in mod.assemblies)
+            foreach (Assembly assembly in LibraryLib.Compat.GameApi.Assemblies(mod))
             {
                 if (owners.TryGetValue(assembly, out AssemblyOwner existingOwner))
                 {

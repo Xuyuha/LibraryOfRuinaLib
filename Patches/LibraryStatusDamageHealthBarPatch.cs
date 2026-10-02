@@ -357,7 +357,7 @@ internal static class LibraryStatusDamageHealthBar
         IRunState runState = IRunState.GetFrom([originalTarget]);
         ValueProp props = forecast.Props;
 
-        decimal modifiedDamage = Hook.ModifyDamage(
+        decimal modifiedDamage = LibraryLib.Compat.GameApi.ModifyDamage(
             runState,
             combatState,
             originalTarget,

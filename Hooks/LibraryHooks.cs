@@ -295,7 +295,7 @@ public static class LibraryHooks
             var hookPhase = "AbstractModel.AfterBlockBroken";
             try
             {
-                await model.AfterBlockBroken(choiceContext, target, breaker);
+                await LibraryLib.Compat.GameApi.AfterBlockBroken(model, choiceContext, target, breaker);
                 if(model is ILibraryAbstractModel libraryAbstractModel)
                 {
                     hookPhase = "ILibraryAbstractModel.AfterBlockBroken";
@@ -911,7 +911,7 @@ public static class LibraryHooks
         {
             foreach (var item in runState.IterateHookListeners(combatState))
             {
-                var num2 = item.ModifyDamageAdditive(target, num, props, dealer, cardSource, cardPlay);
+                var num2 = LibraryLib.Compat.GameApi.ModifyDamageAdditive(item, target, num, props, dealer, cardSource, cardPlay);
                 if(item is ILibraryAbstractModel libraryAbstractModel)    
                     num2 += libraryAbstractModel.ModifyDamageAdditive(target, num, props, dealer, cardSource, cardPlay,type);
                 num += num2;
@@ -925,7 +925,7 @@ public static class LibraryHooks
         {
             foreach (var item2 in runState.IterateHookListeners(combatState))
             {
-                var num3 = item2.ModifyDamageMultiplicative(target, num, props, dealer, cardSource, cardPlay);
+                var num3 = LibraryLib.Compat.GameApi.ModifyDamageMultiplicative(item2, target, num, props, dealer, cardSource, cardPlay);
                 if(item2 is ILibraryAbstractModel libraryAbstractModel)    
                     num3 *= libraryAbstractModel.ModifyDamageMultiplicative(target, num, props, dealer, cardSource, cardPlay,type);
                 num *= num3;
@@ -938,7 +938,7 @@ public static class LibraryHooks
         var num4 = decimal.MaxValue;
         foreach (var item3 in runState.IterateHookListeners(combatState))
         {
-            var num5 = item3.ModifyDamageCap(target, props, dealer, cardSource, cardPlay);
+            var num5 = LibraryLib.Compat.GameApi.ModifyDamageCap(item3, target, props, dealer, cardSource, cardPlay);
             if(item3 is ILibraryAbstractModel libraryAbstractModel)    
                 num5 = Math.Min(num5, libraryAbstractModel.ModifyDamageCap(target, props, dealer, cardSource, cardPlay,type));
             if (num5 < num4)

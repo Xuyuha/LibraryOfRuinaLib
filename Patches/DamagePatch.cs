@@ -12,7 +12,8 @@ namespace LibraryLib.Patches;
 [HarmonyPatch(typeof(CreatureCmd), nameof(CreatureCmd.Damage))]
 public static class DamageTargetPatch
 {
-    [HarmonyPatch(typeof(CreatureCmd), "Damage", new Type[]
+    #if STS2_0_111_0
+[HarmonyPatch(typeof(CreatureCmd), "Damage", new Type[]
     {
         typeof(PlayerChoiceContext),
         typeof(IEnumerable<Creature>),
@@ -22,6 +23,17 @@ public static class DamageTargetPatch
         typeof(CardModel),
         typeof(CardPlay)
     })]
+#else
+[HarmonyPatch(typeof(CreatureCmd), "Damage", new Type[]
+    {
+        typeof(PlayerChoiceContext),
+        typeof(IEnumerable<Creature>),
+        typeof(decimal),
+        typeof(ValueProp),
+        typeof(Creature),
+        typeof(CardModel)
+    })]
+#endif
     private static void Prefix(
         PlayerChoiceContext choiceContext,
         ref IEnumerable<Creature> targets,

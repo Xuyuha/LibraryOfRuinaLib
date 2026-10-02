@@ -20,7 +20,7 @@ using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.ValueProps;
 
 namespace LibraryLib.Models;
-public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
+public abstract partial class LibraryMultipleModePowerModel : LibraryPowerModel
 {
 	protected LibraryPowerMode? _mode;
     protected abstract LibraryPowerMode DefaultMode{get;}
@@ -436,11 +436,7 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
         await AfterBlockGained(creature, amount, props, cardSource , null);
 	}
 
-	public sealed override async Task AfterBlockBroken(PlayerChoiceContext choiceContext, Creature target, Creature? breaker)
-	{
-        await Mode.AfterBlockBroken(choiceContext, target, breaker);
-        await AfterBlockBroken(choiceContext, target, breaker, null);
-	}
+
 
 	public sealed override async Task AfterCardChangedPiles(CardModel card, PileType oldPileType, AbstractModel? clonedBy)
 	{
@@ -655,11 +651,7 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
         await AfterModifyingCardPlayCount(card);
 	}
 
-	public sealed override async Task AfterModifyingCardPlayResultLocation(CardModel card, CardLocation cardLocation)
-	{
-        await Mode.AfterModifyingCardPlayResultLocation(card, cardLocation);
-        await AfterModifyingCardPlayResultLocation(card, cardLocation, null);
-	}
+
 
 	public sealed override async Task AfterModifyingOrbPassiveTriggerCount(OrbModel orb)
 	{
@@ -970,12 +962,7 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
 		return playCount;
 	}
 
-	public sealed override CardLocation ModifyCardPlayResultLocation(CardModel card, bool isAutoPlay, ResourceInfo resources, CardLocation cardLocation)
-	{
-        cardLocation = Mode.ModifyCardPlayResultLocation(card, isAutoPlay, resources, cardLocation);
-        cardLocation = ModifyCardPlayResultLocation(card, isAutoPlay, resources, cardLocation, null);
-		return cardLocation;
-	}
+
 
 	public sealed override int ModifyOrbPassiveTriggerCounts(OrbModel orb, int triggerCount)
 	{
@@ -1005,28 +992,11 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
 		return odds;
 	}
 
-	public sealed override decimal ModifyDamageAdditive(Creature? target, decimal amount, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay)
-	{
-		decimal n = 0;
-        n += Mode.ModifyDamageAdditive(target, amount+n, props, dealer, cardSource, cardPlay);
-        n += ModifyDamageAdditive(target, amount+n, props, dealer, cardSource, cardPlay, null);
-		return n;
-	}
 
-	public sealed override decimal ModifyDamageCap(Creature? target, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay)
-	{
-        decimal cap = Mode.ModifyDamageCap(target, props, dealer, cardSource, cardPlay);
-        cap = Math.Min(cap, ModifyDamageCap(target, props, dealer, cardSource, cardPlay, null));
-		return cap;
-	}
 
-	public sealed override decimal ModifyDamageMultiplicative(Creature? target, decimal amount, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay)
-	{
-		decimal n = 1m;
-        n *= Mode.ModifyDamageMultiplicative(target, amount*n, props, dealer, cardSource, cardPlay);
-        n *= ModifyDamageMultiplicative(target, amount*n, props, dealer, cardSource, cardPlay, null);
-		return n;
-	}
+
+
+
 
 
 	public sealed override decimal ModifyEnergyGain(Player player, decimal amount)
@@ -1035,14 +1005,12 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
         amount = ModifyEnergyGain(player, amount , null);
 		return amount;
 	}
-#if STS2_BETA
 	public sealed override decimal ModifyGoldGained(Player player, decimal amount)
 	{
 		amount = Mode.ModifyGoldGained(player, amount);
 		amount = ModifyGoldGained(player, amount , null);
 		return amount;
 	}
-#endif
 
 	public sealed override decimal ModifyHandDraw(Player player, decimal count)
 	{
@@ -1100,7 +1068,6 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
 		return value;
 	}
 
-#if STS2_BETA
 	public sealed override decimal ModifyPowerAmountGivenAdditive(PowerModel power, Creature giver, decimal amount, Creature? target, CardModel? cardSource)
 	{
 		decimal n = 0;
@@ -1116,7 +1083,6 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
         n *= ModifyPowerAmountGivenMultiplicative(power, giver, amount*n, target, cardSource , null);
 		return n;
 	}
-#endif
     public sealed override decimal ModifyEffectiveAmountAdditive(LibraryBasePowerModel power, decimal num, Creature? dealer, CardModel? cardSource)
     {
 		decimal n = 0;
@@ -1396,7 +1362,6 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
         flag |= ShouldForcePotionReward(player, roomType , null);   
 		return flag;
 	}
-#if STS2_BETA
 	public sealed override async Task AfterModifyingGoldGained(Player player, decimal amount)
 	{
 		await Mode.AfterModifyingGoldGained(player, amount);
@@ -1408,7 +1373,6 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
         flag |= TryModifyKeywordsInCombat(card, keywords , null);
 		return flag;
 	}
-#endif
     public sealed override async Task AfterDiceRoll(PlayerChoiceContext choiceContext,  IEnumerable<Creature>? targets, LibraryDice dice, DiceRollResult result)
     {
 		await Mode.AfterDiceRoll(choiceContext, targets, dice, result);
@@ -1671,14 +1635,7 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
 		return Task.CompletedTask;
 	}
 
-	public virtual Task AfterBlockBroken(
-		PlayerChoiceContext choiceContext,
-		Creature target,
-		Creature? breaker,
-		object? _ = null)
-	{
-		return Task.CompletedTask;
-	}
+
 
 	public virtual Task AfterCardChangedPiles(CardModel card, PileType oldPileType, AbstractModel? clonedBy, object? _ = null)
 	{
@@ -1860,10 +1817,7 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
 		return Task.CompletedTask;
 	}
 
-	public virtual Task AfterModifyingCardPlayResultLocation(CardModel card, CardLocation cardLocation, object? _ = null)
-	{
-		return Task.CompletedTask;
-	}
+
 
 	public virtual Task AfterModifyingOrbPassiveTriggerCount(OrbModel orb, object? _ = null)
 	{
@@ -2117,15 +2071,7 @@ public abstract class LibraryMultipleModePowerModel : LibraryPowerModel
 		return playCount;
 	}
 
-	public virtual CardLocation ModifyCardPlayResultLocation(
-		CardModel card,
-		bool isAutoPlay,
-		ResourceInfo resources,
-		CardLocation cardLocation,
-		object? _ = null)
-	{
-		return cardLocation;
-	}
+
 
 	public virtual int ModifyOrbPassiveTriggerCounts(OrbModel orb, int triggerCount, object? _ = null)
 	{

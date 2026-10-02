@@ -11,7 +11,12 @@ public sealed class LibraryWeakPower : LibraryTurnsPowerModel//虚弱，造成�
 {
     public override PowerType Type => PowerType.Debuff;
     public override PowerStackType StackType => PowerStackType.Counter;
-    public override decimal ModifyDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay){
+#if STS2_0_111_0
+    public override decimal ModifyDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay)
+#else
+    public override decimal ModifyDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource)
+#endif
+{
 		if (base.Owner != dealer)
 		{
 			return 0m;

@@ -176,9 +176,14 @@ internal static class LibraryAttackExecuteFlagPatch
 ///     otherwise friendly allies removed by earlier prefixes would still take
 ///     damage on some peers, which was observed as multiplayer state divergence.
 /// </remarks>
+#if STS2_0_111_0
 [HarmonyPatch(typeof(CreatureCmd), nameof(CreatureCmd.Damage),
     new[] { typeof(PlayerChoiceContext), typeof(IEnumerable<Creature>), typeof(decimal), typeof(ValueProp), typeof(Creature), typeof(CardModel), typeof(CardPlay) })]
-internal static class LibraryAttackChaoDamagePatch
+#else
+[HarmonyPatch(typeof(CreatureCmd), nameof(CreatureCmd.Damage),
+    new[] { typeof(PlayerChoiceContext), typeof(IEnumerable<Creature>), typeof(decimal), typeof(ValueProp), typeof(Creature), typeof(CardModel) })]
+#endif
+internal static partial class LibraryAttackChaoDamagePatch
 {
     private sealed record DamagePatchState(
         IReadOnlyList<Creature> Targets,
@@ -186,131 +191,9 @@ internal static class LibraryAttackChaoDamagePatch
         LibraryDamageType DamageType,
         bool HasLibraryTarget);
 
-    [HarmonyPrefix]
-    [HarmonyPriority(Priority.Last)]
-    private static bool Prefix(
-        PlayerChoiceContext choiceContext,
-        ref IEnumerable<Creature> targets,
-        decimal amount,
-        ValueProp props,
-        Creature? dealer,
-        CardModel? cardSource,
-        CardPlay? cardPlay,
-        out DamagePatchState? __state,
-        ref Task<IEnumerable<DamageResult>> __result)
-    {
-        __state = null;
-        if (props.HasFlag(ValueProp.Unpowered))
-            return true;
 
-        if (!props.HasFlag(ValueProp.Move))
-            return true;
 
-        if (cardSource is LibraryCardModel)
-            return true;
 
-        if (dealer == null)
-            return true;
-
-        if (!dealer.IsPlayer && !dealer.IsMonster)
-            return true;
-
-        var targetList = targets as IReadOnlyList<Creature> ?? new List<Creature>(targets);
-        if (targetList.Count == 0)
-            return true;
-
-        targets = targetList;
-
-        ICombatState? combatState = targetList
-            .Select(static target => target.CombatState)
-            .FirstOrDefault(static state => state != null);
-        if (combatState == null)
-            return true;
-
-        IRunState runState =
-            IRunState.GetFrom(targetList.Append(dealer).OfType<Creature>());
-        bool needsLibraryDamage =
-            targetList.Any(static target =>
-                target is LibraryCreature { IsPlayer: false });
-        bool hasInterceptor =
-            !LibraryIncomingDamageInterception.IsSuppressed
-            && LibraryHooks.HasIncomingDamageInterceptor(
-                runState,
-                combatState);
-
-        LibraryDamageType damageType = ResolveExecutionDamageType(
-            cardSource,
-            dealer,
-            targetList);
-        IReadOnlyList<int> preDamageBlocks = targetList
-            .Select(static target => target.Block)
-            .ToArray();
-        __state = new DamagePatchState(
-            targetList,
-            preDamageBlocks,
-            damageType,
-            needsLibraryDamage);
-
-        if (!needsLibraryDamage && !hasInterceptor)
-            return true;
-
-        __result = LibraryCreatureCmd.Damage(
-            choiceContext: choiceContext,
-            targets: targetList,
-            damageAmount: amount,
-            props: props,
-            dealer: dealer,
-            cardSource: cardSource,
-            cardPlay: cardPlay,
-            type: damageType);
-
-        return false;
-    }
-
-    [HarmonyPostfix]
-    [HarmonyPriority(Priority.Last)]
-    private static void Postfix(
-        PlayerChoiceContext choiceContext,
-        ref IEnumerable<Creature> targets,
-        decimal amount,
-        ValueProp props,
-        Creature? dealer,
-        CardModel? cardSource,
-        CardPlay? cardPlay,
-        DamagePatchState? __state,
-        ref Task<IEnumerable<DamageResult>> __result)
-    {
-        if (props.HasFlag(ValueProp.Unpowered))
-            return;
-
-        // 只对主攻击伤害生效（带有Move标记），排除Power等附加效果的伤害
-        if (!props.HasFlag(ValueProp.Move))
-            return;
-
-        // Library系统的卡牌已在LibraryAttackCommand中自行处理混乱伤害，不重复触发
-        if (cardSource is LibraryCardModel)
-            return;
-
-        // 只对原版玩家攻击牌（dealer是玩家且有cardSource）和怪物意图伤害（dealer是怪物）生效
-        if (dealer == null)
-            return;
-
-        if (!dealer.IsPlayer && !dealer.IsMonster)
-            return;
-
-        if (__state is not { HasLibraryTarget: true })
-            return;
-
-        __result = WrapWithChaoDamage(
-            __result,
-            choiceContext,
-            amount,
-            props,
-            dealer,
-            cardSource,
-            cardPlay,
-            __state);
-    }
 
     private static async Task<IEnumerable<DamageResult>> WrapWithChaoDamage(
         Task<IEnumerable<DamageResult>> prior,
