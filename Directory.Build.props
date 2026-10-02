@@ -1,8 +1,11 @@
 <Project>
   <PropertyGroup>
+    <Sts2Dir Condition="'$(Sts2Dir)' == ''">D:\SteamLibrary\steamapps\common\Slay the Spire 2</Sts2Dir>
+    <Sts2DataDir Condition="'$(Sts2DataDir)' == ''">$(Sts2Dir)\data_sts2_windows_x86_64</Sts2DataDir>
     <CompatibilityTarget Condition="'$(CompatibilityTarget)' == ''">0.111.0</CompatibilityTarget>
-    <GameRefsRoot Condition="'$(GameRefsRoot)' == ''">$(HOME)/sts2-mods/HextechRunes/versioned-dll-backups</GameRefsRoot>
-    <Sts2DataDir>$(GameRefsRoot)/$(CompatibilityTarget)/game-refs</Sts2DataDir>
+    <!-- 未指定 GameRefsRoot 时引用已安装的游戏，版本须与目标一致；跨版本构建用 GameRefsRoot 指向 <目标>/game-refs 备份。 -->
+    <Sts2DataDir Condition="'$(GameRefsRoot)' != ''">$(GameRefsRoot)/$(CompatibilityTarget)/game-refs</Sts2DataDir>
+    <InstalledGameVersion Condition="'$(GameRefsRoot)' == '' and Exists('$(Sts2Dir)/release_info.json')">$([System.Text.RegularExpressions.Regex]::Match($([System.IO.File]::ReadAllText('$(Sts2Dir)/release_info.json')), '&quot;version&quot;\s*:\s*&quot;v([^&quot;]+)&quot;').Groups[1].Value)</InstalledGameVersion>
     <!-- 防止仓库内 libs/sts2.dll 抢先于指定版本的 HintPath。 -->
     <AssemblySearchPath_UseCandidateAssemblyFiles>false</AssemblySearchPath_UseCandidateAssemblyFiles>
     <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)build/obj/$(MSBuildProjectName)/$(CompatibilityTarget)/</BaseIntermediateOutputPath>
@@ -18,6 +21,7 @@
   </ItemGroup>
   <Target Name="ValidateCompatibilityTarget" BeforeTargets="PrepareForBuild">
     <Error Condition="'$(CompatibilityTarget)' != '0.107.1' and '$(CompatibilityTarget)' != '0.111.0'" Text="仅支持 CompatibilityTarget=0.107.1 或 0.111.0。" />
+    <Error Condition="'$(GameRefsRoot)' == '' and '$(InstalledGameVersion)' != '$(CompatibilityTarget)'" Text="已安装游戏版本 $(InstalledGameVersion) 与 CompatibilityTarget=$(CompatibilityTarget) 不一致；请通过 GameRefsRoot 指定对应版本的引用备份。" />
     <Error Condition="!Exists('$(Sts2DataDir)/sts2.dll')" Text="缺少目标游戏引用：$(Sts2DataDir)/sts2.dll" />
   </Target>
 </Project>
