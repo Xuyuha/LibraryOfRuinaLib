@@ -27,3 +27,9 @@ libs/sts2.dll
 obj/
 /tests/
 Directory.Build.targets
+!LibraryLib.csproj
+!docs/双版本适配.md
+/bin/
+/dist/
+/loader/obj/
+/loader/bin/

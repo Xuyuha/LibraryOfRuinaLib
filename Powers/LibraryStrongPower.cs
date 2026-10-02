@@ -16,7 +16,12 @@ public sealed class LibraryStrongPower : LibraryTurnsPowerModel//威力增强，
     // 玩家侧延到敌方回合结束衰减，反击攻击骰仍享受加成；敌人保持自身回合结束衰减。
     protected override CombatSide DecaySide => Owner.IsPlayer ? OppositeSideOf(Owner) : Owner.Side;
 
-    public override decimal ModifyDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay){
+#if STS2_0_111_0
+    public override decimal ModifyDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay)
+#else
+    public override decimal ModifyDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource)
+#endif
+{
 		if (base.Owner != dealer)
 		{
 			return 0m;

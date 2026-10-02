@@ -131,7 +131,7 @@ public static class LibraryCreatureCmd
 			// 玩家受伤直接走原版伤害管线，不经过Library的拦截/抗性/混乱系统
 			if (originalTarget.IsPlayer)
 			{
-				results.AddRange(await CreatureCmd.Damage(
+				results.AddRange(await LibraryLib.Compat.GameApi.Damage(
 					choiceContext,
 					originalTarget,
 					damageAmount,

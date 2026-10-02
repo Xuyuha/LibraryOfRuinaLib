@@ -18,7 +18,7 @@ using MegaCrit.Sts2.Core.Runs;
 using MegaCrit.Sts2.Core.ValueProps;
 
 namespace LibraryLib.Powers.LibraryPowerMode;
-public abstract class LibraryPowerMode
+public abstract partial class LibraryPowerMode
 {
 	public LibraryMultipleModePowerModel? SourcePower ;
 	public LibraryPowerMode(LibraryMultipleModePowerModel sourcePower)
@@ -306,10 +306,7 @@ public abstract class LibraryPowerMode
 		return Task.CompletedTask;
 	}
 
-	public virtual Task AfterBlockBroken(PlayerChoiceContext choiceContext, Creature target, Creature? breaker)
-	{
-		return Task.CompletedTask;
-	}
+
 
 	public virtual Task AfterCardChangedPiles(CardModel card, PileType oldPileType, AbstractModel? clonedBy)
 	{
@@ -490,10 +487,7 @@ public abstract class LibraryPowerMode
 		return Task.CompletedTask;
 	}
 
-	public virtual Task AfterModifyingCardPlayResultLocation(CardModel card, CardLocation cardLocation)
-	{
-		return Task.CompletedTask;
-	}
+
 
 	public virtual Task AfterModifyingOrbPassiveTriggerCount(OrbModel orb)
 	{
@@ -740,10 +734,7 @@ public abstract class LibraryPowerMode
 		return playCount;
 	}
 
-	public virtual CardLocation ModifyCardPlayResultLocation(CardModel card, bool isAutoPlay, ResourceInfo resources, CardLocation cardLocation)
-	{
-		return cardLocation;
-	}
+
 
 	public virtual int ModifyOrbPassiveTriggerCounts(OrbModel orb, int triggerCount)
 	{

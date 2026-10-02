@@ -113,7 +113,7 @@ public class LibraryAttackCommand
 	public AttackCommand ToAttackCommand { get; private set; }
 	public LibraryAttackCommand FromCard(CardModel card, CardPlay? cardPlay = null)
 	{
-		ToAttackCommand = ToAttackCommand.FromCard(card, cardPlay);
+		ToAttackCommand = LibraryLib.Compat.GameApi.FromCard(ToAttackCommand, card, cardPlay);
 		if (Attacker != null)
 		{
 			throw new InvalidOperationException("Attacker has already been set.");
@@ -133,7 +133,7 @@ public class LibraryAttackCommand
 
 	public LibraryAttackCommand FromOsty(Creature osty, CardModel card, CardPlay? cardPlay = null)
 	{
-		ToAttackCommand = ToAttackCommand.FromOsty(osty, card, cardPlay);
+		ToAttackCommand = LibraryLib.Compat.GameApi.FromOsty(ToAttackCommand, osty, card, cardPlay);
 		if (!(osty.Monster is Osty))
 		{
 			throw new ArgumentException("Creature is not Osty");
@@ -351,7 +351,7 @@ public class LibraryAttackCommand
 
 	public static async Task<AttackContext> CreateContextAsync(ICombatState combatState, PlayerChoiceContext choiceContext, CardPlay cardPlay)
 	{	
-		return await AttackContext.CreateAsync(combatState, choiceContext, cardPlay);
+		return await LibraryLib.Compat.GameApi.CreateContext(combatState, choiceContext, cardPlay);
 	}
 
 

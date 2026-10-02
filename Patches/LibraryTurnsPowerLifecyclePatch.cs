@@ -6,7 +6,11 @@ using MegaCrit.Sts2.Core.Hooks;
 
 namespace LibraryLib.Patches;
 
+#if STS2_0_111_0
 [HarmonyPatch(typeof(Hook), nameof(Hook.AfterSideTurnEnd))]
+#else
+[HarmonyPatch(typeof(Hook), nameof(Hook.AfterTurnEnd))]
+#endif
 internal static class LibraryTurnsPowerLifecyclePatch
 {
     [HarmonyPostfix]

@@ -15,43 +15,9 @@ namespace LibraryLib.Patches;
 /// DynamicVar preview and CreatureCmd execution.
 /// </summary>
 [HarmonyPatch(typeof(Hook), nameof(Hook.ModifyDamage))]
-internal static class LibraryVanillaDamageResolutionPatch
+internal static partial class LibraryVanillaDamageResolutionPatch
 {
-    private static bool Prefix(
-        ICombatState? combatState,
-        Creature? target,
-        Creature? dealer,
-        decimal damage,
-        ValueProp props,
-        CardModel? cardSource,
-        CardPlay? cardPlay,
-        CardPreviewMode previewMode,
-        ref IEnumerable<AbstractModel> modifiers,
-        ref decimal __result)
-    {
-        LibraryCombatValueResolution resolution =
-            LibraryCombatValueResolver.Resolve(
-                combatState,
-                LibraryCombatValueKind.PhysicalDamage,
-                damage,
-                target,
-                dealer,
-                props,
-                cardSource,
-                cardPlay,
-                LibraryDamageType.None,
-                previewMode);
-        if (resolution == LibraryCombatValueResolution.Default)
-        {
-            return true;
-        }
 
-        modifiers = Array.Empty<AbstractModel>();
-        __result = LibraryCombatValueResolver.ResolveBaseValue(
-            resolution,
-            damage);
-        return false;
-    }
 }
 
 /// <summary>

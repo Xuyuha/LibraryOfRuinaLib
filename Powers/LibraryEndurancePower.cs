@@ -27,7 +27,12 @@ public sealed class LibraryEndurancePower : LibraryTurnsPowerModel//忍耐，玩
             return Amount;
         return 0m;
     }
+#if STS2_0_111_0
     public override decimal ModifyDamageAdditive(Creature? target, decimal amount, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay)
+#else
+    public override decimal ModifyDamageAdditive(Creature? target, decimal amount, ValueProp props, Creature? dealer, CardModel? cardSource)
+#endif
+
     {
         if(Owner != target)
             return 0m;
