@@ -1,7 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- Copied into the LibraryOfRuinaLib checkout by tools/build_lib.sh: the upstream repository does not commit
-       its project file. Only used to compile against the library's current source; the release build is the
-       library author's. -->
+  <!-- 自包含构建工程；Directory.Build.props 按 CompatibilityTarget 选择原版引用与输出目录。 -->
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <AssemblyName>LibraryOfRuinaLib</AssemblyName>
