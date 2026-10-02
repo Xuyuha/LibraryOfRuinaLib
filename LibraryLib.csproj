@@ -1,5 +1,10 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <!-- 自包含构建工程；Directory.Build.props 按 CompatibilityTarget 选择原版引用与输出目录。 -->
+<Project Sdk="Godot.NET.Sdk/4.5.1">
+  <!--
+    自包含构建工程；Directory.Build.props 按 CompatibilityTarget 选择原版引用与输出目录。
+    必须用 Godot.NET.Sdk：Godot 源码生成器为 Node 子类生成 MethodName/PropertyName/SignalName、
+    InvokeGodotClassMethod 等覆写和 ScriptPath，缺了它们引擎不会回调 _Ready/_Process/_Draw。
+    ScriptPath 以 GodotProjectDir（默认即本目录）为 res:// 根，与 1.3.1 发行版的 res://SpeedDice/... 一致。
+  -->
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <AssemblyName>LibraryOfRuinaLib</AssemblyName>
@@ -11,6 +16,10 @@
     <EnableDynamicLoading>true</EnableDynamicLoading>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);CS8632;CS0436</NoWarn>
+    <!-- GodotSharp 只能来自目标版本的 game-refs；SDK 自带的 NuGet GodotSharp 不随游戏版本切换。生成器保留。 -->
+    <DisableImplicitGodotSharpReferences>true</DisableImplicitGodotSharpReferences>
+    <!-- Godot SDK 默认不带 TFM 子目录；本体 Directory.Build.props 按 Release/net9.0/ 引用实现 DLL。 -->
+    <AppendTargetFrameworkToOutputPath>true</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="sts2" HintPath="$(Sts2DataDir)/sts2.dll" Private="false" />
