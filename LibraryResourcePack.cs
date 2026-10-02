@@ -31,6 +31,10 @@ internal static class LibraryResourcePack
             return;
         }
 
+        // 实现位于 lib/<目标>/，两个目标共用模组根目录的资源包。
+        if (Directory.GetParent(dir)?.Name == "lib")
+            dir = Directory.GetParent(dir)!.Parent!.FullName;
+
         foreach (string packFileName in PackFileNames)
         {
             string pckPath = Path.Combine(dir, packFileName);
