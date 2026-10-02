@@ -59,6 +59,9 @@ with tempfile.TemporaryDirectory(prefix="dual-stage-", dir=output.parent) as tem
         shutil.copy2(dll, dest)
         (directory / "compat-target.txt").write_text(target + "\n")
         variants.append({"compatTarget": target, "directory": "lib/" + target, "assembly": dest.name, "sha256": sha(dest)})
+    # 普通 SDK 编译同样零错误，但缺 Godot 生成代码时引擎不会回调 _Ready/_Process/_Draw，只能查发行产物。
+    checker = build(root / "tools/GodotGeneratedCheck/GodotGeneratedCheck.csproj", TARGETS[-1])
+    subprocess.run(["dotnet", str(checker), str(root), *(str(stage / "lib" / t / (mod_id + ".dll")) for t in TARGETS)], check=True, cwd=root)
     loader = build(root / "loader" / (mod_id + ".Loader.csproj"), "0.107.1")
     shutil.copy2(loader, stage / (mod_id + ".dll"))
     shutil.copy2(manifest_path, stage / manifest_path.name)
