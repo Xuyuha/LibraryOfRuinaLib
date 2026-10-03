@@ -32,14 +32,40 @@ internal static class LibraryManagedNetActionMessagePatch
 /// </summary>
 internal static class LibraryManagedCombatReplayListCodec
 {
+    private delegate void SerializeEventDelegate(
+        ref CombatReplayEvent replayEvent,
+        PacketWriter writer);
+
+    private delegate void DeserializeEventDelegate(
+        ref CombatReplayEvent replayEvent,
+        PacketReader reader);
+
+    // CombatReplayEvent 是值类型，直接调用 Serialize/Deserialize 会被 JIT 内联，
+    // 绕过其他模组（如 RitsuLib 托管动作）挂在这两个方法上的 Harmony 补丁。
+    // 经委托调用固定走方法入口，所有补丁都会执行。
+    private static readonly SerializeEventDelegate SerializeEvent =
+        AccessTools.Method(
+                typeof(CombatReplayEvent),
+                nameof(CombatReplayEvent.Serialize),
+                [typeof(PacketWriter)])
+            .CreateDelegate<SerializeEventDelegate>();
+
+    private static readonly DeserializeEventDelegate DeserializeEvent =
+        AccessTools.Method(
+                typeof(CombatReplayEvent),
+                nameof(CombatReplayEvent.Deserialize),
+                [typeof(PacketReader)])
+            .CreateDelegate<DeserializeEventDelegate>();
+
     internal static void WriteEvents(
         PacketWriter writer,
         IReadOnlyList<CombatReplayEvent> events,
         int lengthBits)
     {
         writer.WriteInt(events.Count, lengthBits);
-        foreach (CombatReplayEvent replayEvent in events)
+        for (int index = 0; index < events.Count; index++)
         {
+            CombatReplayEvent replayEvent = events[index];
             if (replayEvent.eventType == CombatReplayEventType.GameAction
                 && replayEvent.action != null
                 && LibraryManagedNetActionCodec.CanWrite(replayEvent.action))
@@ -50,7 +76,7 @@ internal static class LibraryManagedCombatReplayListCodec
                 continue;
             }
 
-            replayEvent.Serialize(writer);
+            SerializeEvent(ref replayEvent, writer);
         }
     }
 
@@ -81,7 +107,7 @@ internal static class LibraryManagedCombatReplayListCodec
             }
 
             var replayEvent = new CombatReplayEvent();
-            replayEvent.Deserialize(reader);
+            DeserializeEvent(ref replayEvent, reader);
             events.Add(replayEvent);
         }
 
