@@ -8,7 +8,7 @@ using MegaCrit.Sts2.Core.Models;
 namespace LibraryLib.Powers;
 public sealed class LibraryChargePower : LibraryBasePowerModel
 {
-    protected override LibraryPowerMode.LibraryPowerMode DefaultMode => new LibraryChargeModeDefault(this);
+    protected override LibraryPowerModeModel DefaultMode => new LibraryChargeModeDefault(this);
     public LibraryChargeMode CurrentMode => Mode as LibraryChargeMode;
     public override bool IsDynamic => true;
     public override PowerType Type => PowerType.Buff;
@@ -20,7 +20,7 @@ public sealed class LibraryChargePower : LibraryBasePowerModel
         SetAmount(Amount - (int)effectiveAmount);
         await CurrentMode.Effect(choiceContext, effectiveAmount);
     }
-    public override bool TryModifyPowerAmountReceived(PowerModel canonicalPower, Creature target, decimal amount, Creature? applier, out decimal modifiedAmount, object? _ = null)
+    public override bool TryModifyPowerAmountReceived(PowerModel canonicalPower, Creature target, decimal amount, Creature? applier, out decimal modifiedAmount)
     {
         if(canonicalPower != this)
         {

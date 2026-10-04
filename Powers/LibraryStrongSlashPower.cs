@@ -8,13 +8,13 @@ using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.ValueProps;
 
 namespace LibraryLib.Powers;
-public sealed class LibraryStrongSlashPower : LibraryTurnsPowerModel//穿刺威力增强，若本次伤害是穿刺伤害，则所造成的伤害与混乱伤害+1
+public sealed class LibraryStrongSlashPower : LibraryTurnsPowerModel,ILibraryAbstractModel//穿刺威力增强，若本次伤害是穿刺伤害，则所造成的伤害与混乱伤害+1
 {
     public override PowerType Type => PowerType.Buff;
     public override PowerStackType StackType => PowerStackType.Counter;
     protected override CombatSide DecaySide => Owner.IsPlayer ? OppositeSideOf(Owner) : Owner.Side;
 
-    public override decimal ModifyDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay, LibraryDamageType type){
+    public decimal ModifyDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay, LibraryDamageType type){
 		if (base.Owner != dealer)
 		{
 			return 0m;
@@ -25,7 +25,7 @@ public sealed class LibraryStrongSlashPower : LibraryTurnsPowerModel//穿刺威�
 		}
 		return base.Amount;
 	}
-    public override decimal ModifyChaoDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay, LibraryDamageType type)
+    public decimal ModifyChaoDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay, LibraryDamageType type)
     {
 		if (base.Owner != dealer)
 		{

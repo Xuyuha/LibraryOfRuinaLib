@@ -8,7 +8,7 @@ using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.ValueProps;
 
 namespace LibraryLib.Powers;
-public sealed class LibraryStrongPower : LibraryTurnsPowerModel//威力增强，造成的伤害与混乱伤害+1
+public sealed class LibraryStrongPower : LibraryTurnsPowerModel,ILibraryAbstractModel//威力增强，造成的伤害与混乱伤害+1
 {
     public override PowerType Type => PowerType.Buff;
     public override PowerStackType StackType => PowerStackType.Counter;
@@ -32,7 +32,7 @@ public sealed class LibraryStrongPower : LibraryTurnsPowerModel//威力增强，
 		}
 		return base.Amount;
 	}
-    public override decimal ModifyChaoDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay, LibraryDamageType type)
+    public decimal ModifyChaoDamageAdditive(Creature? target, decimal num, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay, LibraryDamageType type)
     {
 		if (base.Owner != dealer)
 		{

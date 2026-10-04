@@ -15,7 +15,6 @@ using MegaCrit.Sts2.Core.ValueProps;
 namespace LibraryLib.Entities.Creatures;
 public class LibraryCreature : Creature//扩展Creature，添加Chao值属性
 {
-//todo：后续改成与混乱相关的都改成resitanceData，删除_damageResistance和_chaoResistance
     public LibraryCreature(MonsterModel monster, CombatSide side, string? slotName) : base(monster, side, slotName)
     {
 		Log.Info("LibraryCreature Create");

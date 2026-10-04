@@ -512,7 +512,7 @@ public static class LibraryHooks
             }
         }
     }
-    public static async Task AfterSetPowerMode(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource, LibraryPowerMode mode)
+    public static async Task AfterSetPowerMode(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource, LibraryPowerModeModel mode)
     {
         foreach (var model in combatState.IterateHookListeners())
         {
@@ -722,7 +722,7 @@ public static class LibraryHooks
             }
         }
     }
-    public static async Task BeforeSetPowerMode(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource, LibraryPowerMode mode)
+    public static async Task BeforeSetPowerMode(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource, LibraryPowerModeModel mode)
     {
         foreach (var model in combatState.IterateHookListeners())
         {

@@ -14,7 +14,7 @@ public sealed class LibraryBleedingPower :
     LibraryBasePowerModel,
     ILibraryHealthBarDamageForecastSource
 {
-    protected override LibraryPowerMode.LibraryPowerMode DefaultMode => new LibraryBleedingModeDefault(this);
+    protected override LibraryPowerModeModel DefaultMode => new LibraryBleedingModeDefault(this);
     public LibraryBleedingMode CurrentMode => Mode as LibraryBleedingMode;
     public override bool IsDynamic => true;
     public override PowerType Type => PowerType.Debuff;
@@ -49,12 +49,12 @@ public sealed class LibraryBleedingPower :
         ];
     }
 
-    public override async Task AfterSideTurnEnd(PlayerChoiceContext choiceContext, CombatSide side, IEnumerable<Creature> participants,object?_ = null)
+    public override async Task AfterSideTurnEnd(PlayerChoiceContext choiceContext, CombatSide side, IEnumerable<Creature> participants)
     {
         if (side != CombatSide.Enemy) return;
         await TriggerReduce(choiceContext, Owner, null);
     }
-    public override async Task AfterDamageGiven(PlayerChoiceContext choiceContext, Creature? dealer, DamageResult result, ValueProp props, Creature target, CardModel? cardSource,object?_ = null)
+    public override async Task AfterDamageGiven(PlayerChoiceContext choiceContext, Creature? dealer, DamageResult result, ValueProp props, Creature target, CardModel? cardSource)
     {
         if (!props.IsPoweredAttack()) return;
         if (dealer == Owner && target != Owner)

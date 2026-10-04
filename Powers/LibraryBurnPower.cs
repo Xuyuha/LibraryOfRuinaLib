@@ -16,7 +16,7 @@ public sealed class LibraryBurnPower :
 {
     private static readonly AsyncLocal<Creature?> ResolvingDamageTarget = new();
 
-    protected override LibraryPowerMode.LibraryPowerMode DefaultMode => new LibraryBurnModeDefault(this);
+    protected override LibraryPowerModeModel DefaultMode => new LibraryBurnModeDefault(this);
     public LibraryBurnMode CurrentMode => Mode as LibraryBurnMode;
     public override bool IsDynamic => true;
     public override PowerType Type => PowerType.Debuff;
@@ -73,7 +73,7 @@ public sealed class LibraryBurnPower :
         ];
     }
 
-    public override async Task AfterSideTurnEnd(PlayerChoiceContext choiceContext, CombatSide side, IEnumerable<Creature> participants,object?_ = null)
+    public override async Task AfterSideTurnEnd(PlayerChoiceContext choiceContext, CombatSide side, IEnumerable<Creature> participants)
     {
         if (side != Owner.Side) return;
         await TriggerEffect(choiceContext, Owner, null);
