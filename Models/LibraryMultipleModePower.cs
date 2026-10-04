@@ -13,13 +13,33 @@ public abstract partial class LibraryMultipleModePowerModel : LibraryPowerModel
     protected abstract LibraryPowerModeModel DefaultMode{get;}
     public LibraryPowerModeModel Mode
 	{
-		get => _mode ?? DefaultMode;
+		get => _mode ??= BindMode(DefaultMode);
 		set
 		{
-			_mode = value;
+			_mode = BindMode(value);
             RefreshIcon();
 		}
 	}
+    private LibraryPowerModeModel BindMode(LibraryPowerModeModel mode)
+    {
+        // 可变能力持有独立模式，避免克隆或图鉴实例共享战斗状态。
+        if (IsMutable && (!mode.IsMutable || mode.SourcePower != this))
+        {
+            mode = (LibraryPowerModeModel)mode.MutableClone();
+        }
+
+        mode.SourcePower = this;
+        return mode;
+    }
+
+    protected override void AfterCloned()
+    {
+        base.AfterCloned();
+        if (_mode != null)
+        {
+            _mode = BindMode(_mode);
+        }
+    }
     public override string Suffix{
 		get => Mode.Name;
 	}
@@ -51,12 +71,16 @@ public abstract partial class LibraryMultipleModePowerModel : LibraryPowerModel
     public async Task SetPowerMode(PlayerChoiceContext choiceContext, LibraryPowerModeModel mode, Creature? dealer, CardModel? cardSource)
     {
         ICombatState? combatState = Owner?.CombatState;
-        if(combatState == null)
+        if (combatState == null)
+        {
             return;
-        LibraryHookSubscribers.UnsubscribeForCombatStateHooks(Mode);
-        LibraryHookSubscribers.SubscribeForCombatStateHooks(mode);
+        }
+
+        mode = BindMode(mode);
         await LibraryHooks.BeforeSetPowerMode(combatState, choiceContext, this, dealer, cardSource, mode);
+        LibraryHookSubscribers.UnsubscribeForCombatStateHooks(Mode);
         Mode = mode;
+        LibraryHookSubscribers.SubscribeForCombatStateHooks(Mode);
         await LibraryHooks.AfterSetPowerMode(combatState, choiceContext, this, dealer, cardSource, mode);
     }
     public override Task AfterApplied(Creature applier, CardModel cardSource)

@@ -41,7 +41,14 @@ public static class LibraryHookSubscribers
 
     public static IEnumerable<AbstractModel> IterateAllCombatStateSubscribers()
     {
-        return _combatStateSubscribers;
+        // 钩子可以施加、移除能力或切换模式；遍历时避免集合被修改，并跳过已退订项。
+        foreach (AbstractModel model in _combatStateSubscribers.ToArray())
+        {
+            if (_combatStateSubscribers.Contains(model))
+            {
+                yield return model;
+            }
+        }
     }
     public static void CleanCombatStateSubscribers()
     {
