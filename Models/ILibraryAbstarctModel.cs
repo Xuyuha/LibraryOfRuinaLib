@@ -198,7 +198,7 @@ public interface ILibraryAbstractModel//库模型接口，定义了库里的钩�
     /// <summary>
 	///     设置混乱伤害上限
 	/// </summary>      
-    public decimal ModifyChaoDamageCap(Creature? target, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay, LibraryDamageType type) => 0;
+    public decimal ModifyChaoDamageCap(Creature? target, ValueProp props, Creature? dealer, CardModel? cardSource, CardPlay? cardPlay, LibraryDamageType type) => decimal.MaxValue;
     /// <summary>
 	///     设置混乱伤害乘区
 	/// </summary>      
