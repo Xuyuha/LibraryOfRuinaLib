@@ -14,7 +14,7 @@ public sealed class LibraryBleedingPower :
     LibraryBasePowerModel,
     ILibraryHealthBarDamageForecastSource
 {
-    protected override LibraryPowerModeModel DefaultMode => new LibraryBleedingModeDefault(this);
+    protected override LibraryPowerModeModel DefaultMode => LibraryPowerModeModel.Canonical<LibraryBleedingModeDefault>();
     public LibraryBleedingMode CurrentMode => Mode as LibraryBleedingMode;
     public override bool IsDynamic => true;
     public override PowerType Type => PowerType.Debuff;

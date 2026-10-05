@@ -60,13 +60,9 @@ public abstract partial class LibraryMultipleModePowerModel : LibraryPowerModel
         }
     }
     public async Task SetPowerMode<T>(PlayerChoiceContext choiceContext, Creature? dealer, CardModel? cardSource)
-    where T:LibraryPowerModeModel,new()
+    where T:LibraryPowerModeModel
 	{
-        T mode = new()
-        {
-            SourcePower = this
-        };
-        await SetPowerMode(choiceContext, mode, dealer, cardSource);
+        await SetPowerMode(choiceContext, LibraryPowerModeModel.Canonical<T>(), dealer, cardSource);
     }	
     public async Task SetPowerMode(PlayerChoiceContext choiceContext, LibraryPowerModeModel mode, Creature? dealer, CardModel? cardSource)
     {

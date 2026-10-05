@@ -8,7 +8,7 @@ using MegaCrit.Sts2.Core.Models;
 namespace LibraryLib.Powers;
 public sealed class LibraryChargePower : LibraryBasePowerModel
 {
-    protected override LibraryPowerModeModel DefaultMode => new LibraryChargeModeDefault(this);
+    protected override LibraryPowerModeModel DefaultMode => LibraryPowerModeModel.Canonical<LibraryChargeModeDefault>();
     public LibraryChargeMode CurrentMode => Mode as LibraryChargeMode;
     public override bool IsDynamic => true;
     public override PowerType Type => PowerType.Buff;

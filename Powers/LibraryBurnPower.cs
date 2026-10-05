@@ -16,7 +16,7 @@ public sealed class LibraryBurnPower :
 {
     private static readonly AsyncLocal<Creature?> ResolvingDamageTarget = new();
 
-    protected override LibraryPowerModeModel DefaultMode => new LibraryBurnModeDefault(this);
+    protected override LibraryPowerModeModel DefaultMode => LibraryPowerModeModel.Canonical<LibraryBurnModeDefault>();
     public LibraryBurnMode CurrentMode => Mode as LibraryBurnMode;
     public override bool IsDynamic => true;
     public override PowerType Type => PowerType.Debuff;

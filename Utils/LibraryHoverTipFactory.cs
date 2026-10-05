@@ -10,9 +10,9 @@ public static class LibraryHoverTipFactory
 	/// </summary>
     public static IHoverTip FromPower<T,U>(int? amount = null) 
     where T : LibraryMultipleModePowerModel
-    where U : LibraryPowerModeModel,new()
+    where U : LibraryPowerModeModel
     {
-        U mode = new();
+        U mode = LibraryPowerModeModel.Canonical<U>();
         return FromPower<T>(mode,amount);
     }
 	/// <summary>
