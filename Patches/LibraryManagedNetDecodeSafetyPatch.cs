@@ -2,10 +2,10 @@
 using System.Reflection;
 using HarmonyLib;
 using LibraryLib.Multiplayer;
-using MegaCrit.Sts2.Core.Helpers;
+using MegaCrit.Sts2.Core.Entities.Multiplayer;
 using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Multiplayer;
-using MegaCrit.Sts2.Core.Multiplayer.Messages.Game;
+using MegaCrit.Sts2.Core.Multiplayer.Game;
 using MegaCrit.Sts2.Core.Multiplayer.Serialization;
 
 namespace LibraryLib.Patches;
@@ -63,69 +63,48 @@ internal static class LibraryManagedNetDecodeSafetyPatch
         __result = true;
         return false;
     }
+}
 
+// 托管动作解码失败必须终止对应连接；丢弃入队广播后继续运行会使动作编号永久错位。
+[HarmonyPatch(typeof(NetHostGameService), nameof(NetHostGameService.OnPacketReceived))]
+internal static class LibraryManagedNetHostActionDecodeFailurePatch
+{
     [HarmonyFinalizer]
     private static Exception? Finalizer(
-        Exception? __exception,
-        byte[] packetBytes,
-        ref INetMessage? message,
-        ref ulong? overrideSenderId,
-        ref bool __result)
+        NetHostGameService __instance,
+        ulong senderId,
+        Exception? __exception)
     {
-        LibraryManagedNetDecodeFailure? failure = __exception switch
-        {
-            null => null,
-            LibraryManagedNetDecodeException managedException => managedException.Failure,
-            _ when IsManagedActionCarrierPacket(packetBytes, out Type? carrierType) =>
-                new LibraryManagedNetDecodeFailure(
-                    "malformed_action_carrier",
-                    (carrierType?.FullName ?? "unknown")
-                    + ": "
-                    + __exception.GetType().Name
-                    + ": "
-                    + __exception.Message),
-            _ => null,
-        };
-        if (!failure.HasValue)
+        if (__exception is not LibraryManagedNetDecodeException decodeException)
         {
             return __exception;
         }
 
-        message = null;
-        overrideSenderId = null;
-        __result = false;
-        LibraryManagedNetDiagnostics.WarnOnce(failure.Value);
+        Log.Error(
+            $"[LibraryOfRuinaLib.Multiplayer] Disconnecting peer {senderId} after managed action decode failure: "
+            + decodeException.Failure);
+        __instance.DisconnectClient(senderId, NetError.InternalError, now: true);
         return null;
     }
+}
 
-    private static bool IsManagedActionCarrierPacket(
-        byte[] packetBytes,
-        out Type? messageType)
+[HarmonyPatch(typeof(NetClientGameService), nameof(NetClientGameService.OnPacketReceived))]
+internal static class LibraryManagedNetClientActionDecodeFailurePatch
+{
+    [HarmonyFinalizer]
+    private static Exception? Finalizer(
+        NetClientGameService __instance,
+        Exception? __exception)
     {
-        messageType = null;
-        if (!LibraryManagedNetTypeRegistry.IsReady
-            || packetBytes.Length == 0
-            || !MessageTypes.TryGetMessageType(packetBytes[0], out messageType)
-            || (messageType != typeof(RequestEnqueueActionMessage)
-                && messageType != typeof(ActionEnqueuedMessage)))
+        if (__exception is not LibraryManagedNetDecodeException decodeException)
         {
-            return false;
+            return __exception;
         }
 
-        try
-        {
-            return LibraryManagedNetActionTransport.TryDecodeManagedCarrier(
-                packetBytes,
-                out _,
-                out _);
-        }
-        catch (LibraryManagedNetDecodeException)
-        {
-            return true;
-        }
-        catch
-        {
-            return false;
-        }
+        Log.Error(
+            "[LibraryOfRuinaLib.Multiplayer] Disconnecting from host after managed action decode failure: "
+            + decodeException.Failure);
+        __instance.Disconnect(NetError.InternalError, now: true);
+        return null;
     }
 }

@@ -179,7 +179,10 @@ internal sealed class LibraryManagedNetTypeCatalog
                 throw new InvalidOperationException(
                     $"Vanilla net {kind} type cannot be registered as managed: {type.FullName}");
             }
-            if (type.IsAbstract || type.IsInterface || !typeof(TBase).IsAssignableFrom(type))
+            if (type.IsAbstract
+                || type.IsInterface
+                || type.ContainsGenericParameters
+                || !typeof(TBase).IsAssignableFrom(type))
             {
                 throw new InvalidOperationException(
                     $"Invalid managed net {kind} type: {type.FullName}");
@@ -213,6 +216,18 @@ internal sealed class LibraryManagedNetTypeCatalog
             {
                 excludedTypes.Add(type);
                 continue;
+            }
+
+            // 接收端用 Activator.CreateInstance(nonPublic: true) 创建实例，注册时检查同一构造约束。
+            if (!type.IsValueType
+                && type.GetConstructor(
+                    BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                    binder: null,
+                    types: Type.EmptyTypes,
+                    modifiers: null) == null)
+            {
+                throw new InvalidOperationException(
+                    $"Managed net {kind} type requires a parameterless constructor: {key}");
             }
 
             typeToKey.Add(type, key);
@@ -292,7 +307,11 @@ internal static class LibraryManagedNetTypeRegistry
         Type baseType = typeof(TBase);
         return assemblies
             .SelectMany(static assembly => assembly.GetTypes())
-            .Where(type => type != baseType && baseType.IsAssignableFrom(type));
+            .Where(type => type != baseType
+                && baseType.IsAssignableFrom(type)
+                && !type.IsAbstract
+                && !type.IsInterface
+                && !type.ContainsGenericParameters);
     }
 
     private readonly record struct AssemblyOwner(string ModId, bool AffectsGameplay);

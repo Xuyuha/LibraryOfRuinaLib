@@ -32,30 +32,18 @@ internal static class LibraryManagedNetActionMessagePatch
 /// </summary>
 internal static class LibraryManagedCombatReplayListCodec
 {
-    private delegate void SerializeEventDelegate(
-        ref CombatReplayEvent replayEvent,
-        PacketWriter writer);
-
-    private delegate void DeserializeEventDelegate(
-        ref CombatReplayEvent replayEvent,
-        PacketReader reader);
-
-    // CombatReplayEvent 是值类型，直接调用 Serialize/Deserialize 会被 JIT 内联，
-    // 绕过其他模组（如 RitsuLib 托管动作）挂在这两个方法上的 Harmony 补丁。
-    // 经委托调用固定走方法入口，所有补丁都会执行。
-    private static readonly SerializeEventDelegate SerializeEvent =
+    // 值类型方法和固定目标委托都可能被 JIT 内联；反射调用保留当前已打补丁的方法入口。
+    private static readonly MethodInfo SerializeEvent =
         AccessTools.Method(
-                typeof(CombatReplayEvent),
-                nameof(CombatReplayEvent.Serialize),
-                [typeof(PacketWriter)])
-            .CreateDelegate<SerializeEventDelegate>();
+            typeof(CombatReplayEvent),
+            nameof(CombatReplayEvent.Serialize),
+            [typeof(PacketWriter)]);
 
-    private static readonly DeserializeEventDelegate DeserializeEvent =
+    private static readonly MethodInfo DeserializeEvent =
         AccessTools.Method(
-                typeof(CombatReplayEvent),
-                nameof(CombatReplayEvent.Deserialize),
-                [typeof(PacketReader)])
-            .CreateDelegate<DeserializeEventDelegate>();
+            typeof(CombatReplayEvent),
+            nameof(CombatReplayEvent.Deserialize),
+            [typeof(PacketReader)]);
 
     internal static void WriteEvents(
         PacketWriter writer,
@@ -76,7 +64,12 @@ internal static class LibraryManagedCombatReplayListCodec
                 continue;
             }
 
-            SerializeEvent(ref replayEvent, writer);
+            SerializeEvent.Invoke(
+                replayEvent,
+                BindingFlags.DoNotWrapExceptions,
+                binder: null,
+                parameters: [writer],
+                culture: null);
         }
     }
 
@@ -106,9 +99,15 @@ internal static class LibraryManagedCombatReplayListCodec
                 }
             }
 
-            var replayEvent = new CombatReplayEvent();
-            DeserializeEvent(ref replayEvent, reader);
-            events.Add(replayEvent);
+            // Deserialize 修改装箱实例；读取完成后必须取回该实例，保留事件字段。
+            object replayEvent = new CombatReplayEvent();
+            DeserializeEvent.Invoke(
+                replayEvent,
+                BindingFlags.DoNotWrapExceptions,
+                binder: null,
+                parameters: [reader],
+                culture: null);
+            events.Add((CombatReplayEvent)replayEvent);
         }
 
         return events;

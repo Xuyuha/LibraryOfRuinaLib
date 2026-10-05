@@ -1,5 +1,7 @@
 #nullable enable
+using System.Text;
 using LibraryLib.Models;
+using LibraryLib.Multiplayer;
 using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Multiplayer;
 using MegaCrit.Sts2.Core.Entities.Players;
@@ -165,6 +167,9 @@ public sealed class LibraryRelicRightClickAction : GameAction
 
 public struct NetLibraryRelicRightClickAction : INetAction, IPacketSerializable
 {
+    // 遗物右键元数据的 UTF-8 长度上限为 64 KiB；收发两端在分配字符串缓冲区前校验。
+    private const int MaxMetadataByteLength = 64 * 1024;
+
     public ModelId RelicId;
     public int RelicIndex;
     public bool IsController;
@@ -190,7 +195,14 @@ public struct NetLibraryRelicRightClickAction : INetAction, IPacketSerializable
         writer.WriteBool(HasMetadata);
         if (HasMetadata)
         {
-            writer.WriteString(Metadata ?? string.Empty);
+            string metadata = Metadata ?? string.Empty;
+            if (Encoding.UTF8.GetByteCount(metadata) > MaxMetadataByteLength)
+            {
+                throw new InvalidOperationException(
+                    $"Relic right-click metadata exceeds {MaxMetadataByteLength} UTF-8 bytes.");
+            }
+
+            writer.WriteString(metadata);
         }
         writer.WriteEnum(ActionType);
     }
@@ -201,8 +213,41 @@ public struct NetLibraryRelicRightClickAction : INetAction, IPacketSerializable
         RelicIndex = reader.ReadInt();
         IsController = reader.ReadBool();
         HasMetadata = reader.ReadBool();
-        Metadata = HasMetadata ? reader.ReadString() : string.Empty;
+        Metadata = HasMetadata ? ReadMetadata(reader) : string.Empty;
         ActionType = reader.ReadEnum<GameActionType>();
+    }
+
+    private static string ReadMetadata(PacketReader reader)
+    {
+        if (!LibraryManagedNetPayloadCodec.HasRemainingBytes(reader, sizeof(int)))
+        {
+            throw new LibraryManagedNetDecodeException(new LibraryManagedNetDecodeFailure(
+                "truncated_relic_metadata_length",
+                "Relic right-click action ended before its metadata length."));
+        }
+
+        int byteLength = reader.ReadInt();
+        if (byteLength < 0 || byteLength > MaxMetadataByteLength)
+        {
+            throw new LibraryManagedNetDecodeException(new LibraryManagedNetDecodeFailure(
+                "invalid_relic_metadata_length",
+                $"Relic right-click metadata length {byteLength} is outside 0..{MaxMetadataByteLength}."));
+        }
+        if (!LibraryManagedNetPayloadCodec.HasRemainingBytes(reader, byteLength))
+        {
+            throw new LibraryManagedNetDecodeException(new LibraryManagedNetDecodeFailure(
+                "truncated_relic_metadata",
+                $"Relic right-click action declared {byteLength} metadata bytes but ended early."));
+        }
+
+        if (byteLength == 0)
+        {
+            return string.Empty;
+        }
+
+        byte[] bytes = new byte[byteLength];
+        reader.ReadBytes(bytes, byteLength);
+        return Encoding.UTF8.GetString(bytes);
     }
 
     public override string ToString()
