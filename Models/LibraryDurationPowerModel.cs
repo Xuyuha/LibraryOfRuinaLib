@@ -13,7 +13,7 @@ namespace LibraryLib.Models;
 /// <summary>
 ///     带持续回合的 power 抽象基类。
 /// </summary>
-public abstract class LibraryDurationPowerModel : LibraryPowerModel, ISecondaryDisplayAmountPower
+public abstract class LibraryDurationPowerModel : DynamicPowerModel, ISecondaryDisplayAmountPower
 {
     private sealed class Data
     {

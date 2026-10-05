@@ -10,7 +10,7 @@ using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.ValueProps;
 
 namespace LibraryLib.Powers;
-public sealed class LibrarySmokePower : LibraryPowerModel
+public sealed class LibrarySmokePower : DynamicPowerModel
 {
     public override PowerType Type => PowerType.None;
     public override PowerStackType StackType => PowerStackType.Counter;

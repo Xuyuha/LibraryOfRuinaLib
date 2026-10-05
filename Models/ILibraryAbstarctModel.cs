@@ -146,15 +146,15 @@ public interface ILibraryAbstractModel//库模型接口，定义了库里的钩�
 	/// <summary>
 	///     触发能力效果后
 	/// </summary>      
-    public Task AfterPowerEffect(PlayerChoiceContext choiceContext, LibraryPowerModel power,decimal amount, Creature? dealer, CardModel? cardSource) => Task.CompletedTask;
+    public Task AfterPowerEffect(PlayerChoiceContext choiceContext, LibraryBasePowerModel power,decimal amount, Creature? dealer, CardModel? cardSource) => Task.CompletedTask;
 	/// <summary>
 	///     能力层数减少方法被触发后
 	/// </summary>      
-    public Task AfterPowerReduce(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource) => Task.CompletedTask;
+    public Task AfterPowerReduce(PlayerChoiceContext choiceContext, LibraryBasePowerModel power, Creature? dealer, CardModel? cardSource) => Task.CompletedTask;
 	/// <summary>
 	///     设置能力模式后
 	/// </summary>      
-    public Task AfterSetPowerMode(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource, LibraryPowerModeModel mode) => Task.CompletedTask;
+    public Task AfterSetPowerMode(PlayerChoiceContext choiceContext, LibraryMultipleModePowerModel power, Creature? dealer, CardModel? cardSource, LibraryPowerModeModel mode) => Task.CompletedTask;
 	/// <summary>
 	///     眩晕后
 	/// </summary>      
@@ -174,15 +174,15 @@ public interface ILibraryAbstractModel//库模型接口，定义了库里的钩�
     /// <summary>
 	///     触发能力效果前
 	/// </summary>      
-    public Task BeforePowerEffect(PlayerChoiceContext choiceContext, LibraryPowerModel power,decimal amount, Creature? dealer, CardModel? cardSource) => Task.CompletedTask;
+    public Task BeforePowerEffect(PlayerChoiceContext choiceContext, LibraryBasePowerModel power,decimal amount, Creature? dealer, CardModel? cardSource) => Task.CompletedTask;
     /// <summary>
 	///     能力层数减少方法被触发前
 	/// </summary>      
-    public Task BeforePowerReduce(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource) => Task.CompletedTask;
+    public Task BeforePowerReduce(PlayerChoiceContext choiceContext, LibraryBasePowerModel power, Creature? dealer, CardModel? cardSource) => Task.CompletedTask;
     /// <summary>
 	///     设置能力模式前
 	/// </summary>      
-    public Task BeforeSetPowerMode(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource, LibraryPowerModeModel mode) => Task.CompletedTask;
+    public Task BeforeSetPowerMode(PlayerChoiceContext choiceContext, LibraryMultipleModePowerModel power, Creature? dealer, CardModel? cardSource, LibraryPowerModeModel mode) => Task.CompletedTask;
     /// <summary>
 	///     眩晕前
 	/// </summary>      
@@ -250,9 +250,9 @@ public interface ILibraryAbstractModel//库模型接口，定义了库里的钩�
     /// <summary>
 	///     询问是否触发能力效果
 	/// </summary>      
-    public bool TryPowerEffect(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource) => true;
+    public bool TryPowerEffect(PlayerChoiceContext choiceContext, LibraryBasePowerModel power, Creature? dealer, CardModel? cardSource) => true;
     /// <summary>
 	///     询问是否触发减少方法
 	/// </summary>      
-    public bool TryPowerReduce(PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource) => true;
+    public bool TryPowerReduce(PlayerChoiceContext choiceContext, LibraryBasePowerModel power, Creature? dealer, CardModel? cardSource) => true;
 }

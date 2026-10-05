@@ -10,7 +10,7 @@ public static class PowerDescriptionPatch
 {
     static void Postfix(PowerModel __instance, LocString description, int? amountOverride = null)
     {
-        if(__instance is LibraryPowerModel power){
+        if(__instance is DynamicPowerModel power){
             power.AddVariablesToDescription(description, amountOverride);
         }
     }

@@ -9,7 +9,7 @@ internal static class PackedPowerIconPathGetterPatch
 {
     private static void Postfix(PowerModel __instance, ref string __result)
     {
-        if (__instance is LibraryPowerModel powerModel
+        if (__instance is DynamicPowerModel powerModel
             && powerModel.ShouldOverrideBaseIcon)
         {
             __result = powerModel.PackedIconPath;
@@ -22,7 +22,7 @@ internal static class ResolvedBigPowerIconPathGetterPatch
 {
     private static void Postfix(PowerModel __instance, ref string __result)
     {
-        if (__instance is LibraryPowerModel powerModel
+        if (__instance is DynamicPowerModel powerModel
             && powerModel.ShouldOverrideBaseIcon)
         {
             __result = powerModel.ResolvedBigIconPath;

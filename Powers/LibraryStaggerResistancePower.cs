@@ -1,6 +1,7 @@
 #nullable enable
 using LibraryLib.Models;
 using MegaCrit.Sts2.Core.Entities.Powers;
+using MegaCrit.Sts2.Core.Models;
 
 namespace LibraryLib.Powers;
 
@@ -8,7 +9,7 @@ namespace LibraryLib.Powers;
 ///     混乱抗性能力——仅用于图标和本地化描述的展示壳。
 ///     计算逻辑已移至 LibraryCreature / LibraryCreatureCmd / LibraryDamageCalculate。
 /// </summary>
-public sealed class LibraryStaggerResistancePower : LibraryPowerModel
+public sealed class LibraryStaggerResistancePower : DynamicPowerModel
 {
     private const string StaggerIconPath =
         "res://LibraryOfRuinaLib/images/powers/library_stagger_resistance.png";

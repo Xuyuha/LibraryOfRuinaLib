@@ -44,7 +44,7 @@ public static class LibraryPowerCmd
         int turns,
         Creature? applier,
         CardModel? cardSource
-    ) where T : LibraryPowerModel
+    ) where T : PowerModel
     {
         if (typeof(LibraryTurnsPowerModel).IsAssignableFrom(typeof(T)))
         {
@@ -158,7 +158,7 @@ public static class LibraryPowerCmd
         int turns,
         Creature? applier,
         CardModel? cardSource,
-        bool silent = false) where T : LibraryPowerModel
+        bool silent = false) where T : PowerModel
     {
         if (typeof(LibraryTurnsPowerModel).IsAssignableFrom(typeof(T)))
         {
@@ -259,7 +259,7 @@ public static class LibraryPowerCmd
         int turns,
         Creature? applier,
         CardModel? cardSource,
-        bool silent = false) where T : LibraryPowerModel
+        bool silent = false) where T : PowerModel
     {
         if (typeof(LibraryTurnsPowerModel).IsAssignableFrom(typeof(T)))
         {

@@ -430,7 +430,7 @@ public static class LibraryHooks
             }
         }
     }
-    public static async Task AfterPowerEffect(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryPowerModel power,decimal amount, Creature? dealer, CardModel? cardSource)
+    public static async Task AfterPowerEffect(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryBasePowerModel power,decimal amount, Creature? dealer, CardModel? cardSource)
     {
         foreach (var model in combatState.IterateHookListeners())
         {
@@ -501,7 +501,7 @@ public static class LibraryHooks
             }
         }
     }
-    public static async Task AfterPowerReduce(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource)
+    public static async Task AfterPowerReduce(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryBasePowerModel power, Creature? dealer, CardModel? cardSource)
     {
         foreach (var model in combatState.IterateHookListeners())
         {
@@ -512,7 +512,7 @@ public static class LibraryHooks
             }
         }
     }
-    public static async Task AfterSetPowerMode(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource, LibraryPowerModeModel mode)
+    public static async Task AfterSetPowerMode(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryMultipleModePowerModel power, Creature? dealer, CardModel? cardSource, LibraryPowerModeModel mode)
     {
         foreach (var model in combatState.IterateHookListeners())
         {
@@ -700,7 +700,7 @@ public static class LibraryHooks
             }
         }
     }
-    public static async Task BeforePowerEffect(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryPowerModel power,decimal amount, Creature? dealer, CardModel? cardSource)
+    public static async Task BeforePowerEffect(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryBasePowerModel power,decimal amount, Creature? dealer, CardModel? cardSource)
     {
         foreach (var model in combatState.IterateHookListeners())
         {
@@ -711,7 +711,7 @@ public static class LibraryHooks
             }
         }
     }
-    public static async Task BeforePowerReduce(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource)
+    public static async Task BeforePowerReduce(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryBasePowerModel power, Creature? dealer, CardModel? cardSource)
     {
         foreach (var model in combatState.IterateHookListeners())
         {
@@ -722,7 +722,7 @@ public static class LibraryHooks
             }
         }
     }
-    public static async Task BeforeSetPowerMode(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource, LibraryPowerModeModel mode)
+    public static async Task BeforeSetPowerMode(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryMultipleModePowerModel power, Creature? dealer, CardModel? cardSource, LibraryPowerModeModel mode)
     {
         foreach (var model in combatState.IterateHookListeners())
         {
@@ -1262,7 +1262,7 @@ public static class LibraryHooks
         }
         return true;
     }
-    public static bool TryPowerEffect(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource)
+    public static bool TryPowerEffect(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryBasePowerModel power, Creature? dealer, CardModel? cardSource)
     {
         foreach (var model in combatState.IterateHookListeners())
         {
@@ -1276,7 +1276,7 @@ public static class LibraryHooks
         }
         return true;
     }
-    public static bool TryPowerReduce(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryPowerModel power, Creature? dealer, CardModel? cardSource)
+    public static bool TryPowerReduce(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryBasePowerModel power, Creature? dealer, CardModel? cardSource)
     {
         foreach (var model in combatState.IterateHookListeners())
         {

@@ -27,7 +27,7 @@ namespace LibraryLib.Models;
 ///     </list>
 ///     同时通过 Harmony 绑定的 NPower 引用提供动态图标刷新功能。
 /// </summary>
-public abstract class LibraryPowerModel : PowerModel
+public abstract class DynamicPowerModel : PowerModel
 {
     public virtual void AddVariablesToDescription(LocString description, int? amountOverride = null){}
     private NPower? _boundNPower;
@@ -41,7 +41,7 @@ public abstract class LibraryPowerModel : PowerModel
     // Dynamic subclasses need their current suffix-specific icon. Static icon
     // overrides are limited to models whose assets are owned by this library.
     internal bool ShouldOverrideBaseIcon =>
-        IsDynamic || GetType().Assembly == typeof(LibraryPowerModel).Assembly;
+        IsDynamic || GetType().Assembly == typeof(DynamicPowerModel).Assembly;
 
     /// <summary>
     ///     重写此属性可提供自定义本地化键前缀，替代模型的 Id.Entry。
@@ -91,7 +91,7 @@ public abstract class LibraryPowerModel : PowerModel
                 + (IsDynamic ? $"_{LowSuffix}" : string.Empty)
                 + ".png";
 
-            if (GetType().Assembly != typeof(LibraryPowerModel).Assembly)
+            if (GetType().Assembly != typeof(DynamicPowerModel).Assembly)
             {
                 return ImageHelper.GetImagePath($"powers/{fileName}");
             }

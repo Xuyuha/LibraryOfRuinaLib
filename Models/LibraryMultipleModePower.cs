@@ -7,7 +7,7 @@ using MegaCrit.Sts2.Core.Helpers;
 using MegaCrit.Sts2.Core.Models;
 
 namespace LibraryLib.Models;
-public abstract partial class LibraryMultipleModePowerModel : LibraryPowerModel
+public abstract partial class LibraryMultipleModePowerModel : DynamicPowerModel
 {
 	protected LibraryPowerModeModel? _mode;
     protected abstract LibraryPowerModeModel DefaultMode{get;}
@@ -51,7 +51,7 @@ public abstract partial class LibraryMultipleModePowerModel : LibraryPowerModel
                 + (IsDynamic ? $"_{LowSuffix}" : string.Empty)
                 + ".png";
 
-            if (Mode.GetType().Assembly != typeof(LibraryPowerModel).Assembly)
+            if (Mode.GetType().Assembly != typeof(DynamicPowerModel).Assembly)
             {
                 return ImageHelper.GetImagePath($"powers/{fileName}");
             }

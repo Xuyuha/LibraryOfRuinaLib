@@ -12,7 +12,7 @@ namespace LibraryLib.Models;
 /// <summary>
 ///     用原版方法施加相当于施加永久buff
 /// </summary>
-public abstract class LibraryTurnsPowerModel : LibraryPowerModel, ISecondaryDisplayAmountPower
+public abstract class LibraryTurnsPowerModel : DynamicPowerModel, ISecondaryDisplayAmountPower
 {
     public bool ShowSecondaryDisplayAmount => AmountPlan.Count != 0;
     public int SecondaryDisplayAmount => TurnsRemaining;
