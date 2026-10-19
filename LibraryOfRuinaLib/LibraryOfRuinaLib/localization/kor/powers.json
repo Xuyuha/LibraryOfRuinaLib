@@ -79,8 +79,11 @@
   "LIBRARY_SMOKE_POWER.title": "연기",
   "LIBRARY_SMOKE_POWER.description": "자신이 주는 공격 피해와 받는 공격 피해에 [blue]1+이 효과의 스택 수*0.05[/blue]를 곱한다.",
   "LIBRARY_SMOKE_POWER.smartDescription": "자신이 주는 공격 피해와 받는 공격 피해*{Multiplier}",
-  "LIBRARY_DECAY_POWER.title": "부식",
-  "LIBRARY_DECAY_POWER.description": "피해를 받을 때 추가로 자신에게 피해와 혼란 피해를 줍니다. 턴 종료 시 자신에게 피해를 줍니다.",
-  "LIBRARY_DECAY_POWER.smartDescription": "피해를 받을 때 추가로 자신에게 {Amount} 피해와 혼란 피해를 줍니다. 턴 종료 시 자신에게 {Amount} 피해를 주고 이 중첩을 1 감소시킵니다.",
-  "LIBRARY_TURN_POWER_PROMPT": "이 효과는 [blue]{Turns}[/blue]턴 후에 [blue]{Amount}[/blue]층 감소한다."
+  "LIBRARY_DECAY_POWER.title": "침식",
+  "LIBRARY_DECAY_POWER.description": "턴 종료 시 수치만큼 피해를 받고 수치가 1 감소한다. 공격에 적중당하면 수치만큼 추가 피해를 받는다.",
+  "LIBRARY_DECAY_POWER.smartDescription": "턴 종료 시 [blue]{Amount}[/blue] 피해를 받고 1 감소한다. 공격에 적중당하면 [blue]{Amount}[/blue]의 추가 피해를 받는다.",
+  "LIBRARY_TURN_POWER_PROMPT": "이 효과는 [blue]{Turns}[/blue]턴 후에 [blue]{Amount}[/blue]층 감소한다.",
+  "LIBRARY_NULLIFY_POWER.title": "위력 무효",
+  "LIBRARY_NULLIFY_POWER.description": "이번 턴 동안 이 캐릭터의 카드 공격, 카드 [gold]방어도[/gold] 및 몬스터 행동은 [gold]위력 증감[/gold]의 영향을 받지 않는다. 유물, 능력, 포션 등이 독립적으로 제공하는 피해와 [gold]방어도[/gold]는 정상적으로 적용된다.",
+  "LIBRARY_NULLIFY_POWER.smartDescription": "이번 턴 동안 이 캐릭터의 카드 공격, 카드 [gold]방어도[/gold] 및 몬스터 행동은 [gold]위력 증감[/gold]의 영향을 받지 않는다. 유물, 능력, 포션 등이 독립적으로 제공하는 피해와 [gold]방어도[/gold]는 정상적으로 적용된다."
 }

@@ -75,4 +75,5 @@ public static class LibraryHealthBarForecastColors
 {
     public static readonly Color Burn = new("F2A52B");
     public static readonly Color Bleeding = new("761C24");
+    public static readonly Color Corrosion = new(0.09f, 0.10f, 0.10f);
 }
