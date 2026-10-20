@@ -1262,32 +1262,36 @@ public static class LibraryHooks
         }
         return true;
     }
-    public static bool TryPowerEffect(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryBasePowerModel power, Creature? dealer, CardModel? cardSource)
+    public static bool TryPowerEffect(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryBasePowerModel power, Creature? dealer, CardModel? cardSource, out ILibraryAbstractModel? modifier)
     {
         foreach (var model in combatState.IterateHookListeners())
         {
             if (model is ILibraryAbstractModel libraryModel)
             {
-                if (!libraryModel.TryPowerEffect(choiceContext, power, dealer, cardSource))
+                if (!libraryModel.TryPowerEffect(choiceContext, power, dealer, cardSource, out ILibraryAbstractModel modifier1))
                 {
+                    modifier = modifier1;
                     return false;
                 }
             }
         }
+        modifier = null;
         return true;
     }
-    public static bool TryPowerReduce(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryBasePowerModel power, Creature? dealer, CardModel? cardSource)
+    public static bool TryPowerReduce(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryBasePowerModel power, Creature? dealer, CardModel? cardSource, out ILibraryAbstractModel? modifier)
     {
         foreach (var model in combatState.IterateHookListeners())
         {
             if (model is ILibraryAbstractModel libraryModel)
             {
-                if (!libraryModel.TryPowerReduce(choiceContext, power, dealer, cardSource))
+                if (!libraryModel.TryPowerReduce(choiceContext, power, dealer, cardSource,out ILibraryAbstractModel modifier1))
                 {
+                    modifier = modifier1;
                     return false;
                 }
             }
         }
+        modifier = null;
         return true;
     }
 
