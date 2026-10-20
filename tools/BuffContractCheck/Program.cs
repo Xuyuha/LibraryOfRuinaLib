@@ -22,7 +22,7 @@ var teammate = new Creature { IsPlayer = true, Side = CombatSide.Player, CombatS
 var enemy = new Creature { Side = CombatSide.Enemy, CombatState = combat };
 var context = new PlayerChoiceContext();
 var powered = ValueProp.Move | ValueProp.Powered;
-var decay = new LibraryDecayPower { Owner = owner, Applier = enemy, Amount = 3 };
+var decay = new LibraryCorrosionPower { Owner = owner, Applier = enemy, Amount = 3 };
 
 await decay.AfterSideTurnEnd(context, CombatSide.Enemy, [enemy]);
 Check(GameApi.Hits.Count == 0 && decay.Amount == 3, "corrosion does not tick on opposite side");

@@ -7,8 +7,9 @@ Source attribution and license are in `THIRD_PARTY_NOTICES`.
 
 ## Public powers
 
-`LibraryLib.Powers.LibraryDecayPower` keeps its existing class name and model ID.
-It now follows the content mod's `RnfmabjCorrosionPower`:
+`LibraryLib.Powers.LibraryDecayPower` keeps the original library corrosion behavior.
+The content mod's current `RnfmabjCorrosionPower` behavior is exposed separately as
+`LibraryLib.Powers.LibraryCorrosionPower`:
 
 - An owner's turn end deals unpowered, blockable damage equal to its stacks,
   then decrements once. Teammates' extra turns do not tick it; pets follow their owner.
@@ -34,7 +35,8 @@ than `NULLIFY_POWER` so both mods can load without model/localization collisions
 
 Both icons and zhs/eng/jpn/kor descriptions come from the content mod.
 No content-mod assembly reference or dependency is introduced. Existing callers
-can use `PowerCmd.Apply<LibraryDecayPower>` and `PowerCmd.Apply<LibraryNullifyPower>`.
+ can use `PowerCmd.Apply<LibraryCorrosionPower>` and `PowerCmd.Apply<LibraryNullifyPower>`;
+ existing library content may continue using `LibraryDecayPower`.
 This does not migrate independently defined downstream corrosion classes.
 
 ## Build prerequisite repair

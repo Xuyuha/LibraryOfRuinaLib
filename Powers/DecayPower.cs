@@ -1,5 +1,6 @@
 using LibraryLib.Combat;
 using LibraryLib.Combat.HealthBars;
+using LibraryLib.Commands;
 using LibraryLib.Compat;
 using LibraryLib.Models;
 using MegaCrit.Sts2.Core.Combat;
@@ -12,11 +13,33 @@ using MegaCrit.Sts2.Core.ValueProps;
 
 namespace LibraryLib.Powers;
 
-// Adapted from LibraryOfRuina's CorrosionFollowUpRules / RnfmabjCorrosionPower.
-// See THIRD_PARTY_NOTICES for the source revision and license.
-// Keep the existing type and model ID so downstream mods and saves remain valid.
-public sealed class LibraryDecayPower : DynamicPowerModel, ILibraryHealthBarDamageForecastSource
+// Original library corrosion behavior. Keep this type and model ID for existing library content.
+public sealed class LibraryDecayPower : PowerModel
 {
+    public override PowerType Type => PowerType.Debuff;
+    public override PowerStackType StackType => PowerStackType.Counter;
+
+    public override async Task AfterDamageReceived(PlayerChoiceContext choiceContext, Creature target,
+        DamageResult result, ValueProp props, Creature? dealer, CardModel? cardSource)
+    {
+        if (target != Owner || !props.IsPoweredAttack()) return;
+        await CreatureCmd.Damage(choiceContext, Owner, Amount, ValueProp.Unpowered, Owner);
+        await LibraryCreatureCmd.ChaoDamage(choiceContext, Owner, Amount, ValueProp.Unpowered, Owner, null);
+    }
+
+    public override async Task AfterSideTurnEnd(PlayerChoiceContext choiceContext, CombatSide side,
+        IEnumerable<Creature> participants)
+    {
+        await CreatureCmd.Damage(choiceContext, Owner, Amount, ValueProp.Unpowered, Owner);
+        await PowerCmd.Decrement(this);
+    }
+}
+
+// Adapted from LibraryOfRuina's CorrosionFollowUpRules / RnfmabjCorrosionPower.
+// This is intentionally separate from LibraryDecayPower so old and new corrosion can coexist.
+public sealed class LibraryCorrosionPower : DynamicPowerModel, ILibraryHealthBarDamageForecastSource
+{
+    protected override string LegacyPowerId => "LIBRARY_CORROSION_POWER";
     public override PowerType Type => PowerType.Debuff;
     public override PowerStackType StackType => PowerStackType.Counter;
 
@@ -44,12 +67,22 @@ public sealed class LibraryDecayPower : DynamicPowerModel, ILibraryHealthBarDama
     public override async Task AfterSideTurnEnd(
         PlayerChoiceContext choiceContext, CombatSide side, IEnumerable<Creature> participants)
     {
-        if (Owner.IsDead || Amount <= 0 || !LibraryTurnParticipants.IsOwnTurn(Owner, side, participants))
+        if (Owner.IsDead || Amount <= 0 || !IsOwnTurn(Owner, side, participants))
             return;
 
         Flash();
         await GameApi.Damage(choiceContext, Owner, Amount, ValueProp.Unpowered,
             Applier ?? Owner, null, null);
         await PowerCmd.Decrement(this);
+    }
+
+    private static bool IsOwnTurn(Creature creature, CombatSide side, IEnumerable<Creature> participants)
+    {
+        if (creature.Side != side) return false;
+        if (side != CombatSide.Player) return true;
+        Creature anchor = creature.PetOwner?.Creature ?? creature;
+        return anchor.IsPlayer
+            ? participants.Contains(anchor)
+            : CombatManager.Instance.PlayersTakingExtraTurn.Count == 0;
     }
 }
