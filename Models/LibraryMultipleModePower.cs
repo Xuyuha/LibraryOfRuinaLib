@@ -74,13 +74,14 @@ public abstract partial class LibraryMultipleModePowerModel : DynamicPowerModel
 
         mode = BindMode(mode);
         await LibraryHooks.BeforeSetPowerMode(combatState, choiceContext, this, dealer, cardSource, mode);
-        LibraryHookSubscribers.UnsubscribeForCombatStateHooks(Mode,combatState);
+        LibraryHookSubscribers.UnsubscribeForCombatStateHooks(Mode, combatState as CombatState);
         Mode = mode;
-        LibraryHookSubscribers.SubscribeForCombatStateHooks(Mode,combatState);
+        LibraryHookSubscribers.SubscribeForCombatStateHooks(Mode, combatState as CombatState);
         await LibraryHooks.AfterSetPowerMode(combatState, choiceContext, this, dealer, cardSource, mode);
     }
     public override Task AfterApplied(Creature applier, CardModel cardSource)
     {
+        LibraryHookSubscribers.SubscribeForCombatStateHooks(Mode, Owner?.CombatState as CombatState);
         ICombatState? combatState = Owner?.CombatState;
         if (combatState == null)
         {
@@ -91,6 +92,7 @@ public abstract partial class LibraryMultipleModePowerModel : DynamicPowerModel
     }
     public override Task AfterRemoved(Creature oldOwner)
     {
+        LibraryHookSubscribers.UnsubscribeForCombatStateHooks(Mode, oldOwner.CombatState as CombatState);
         ICombatState? combatState = Owner?.CombatState;
         if (combatState == null)
         {
