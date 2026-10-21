@@ -82,11 +82,23 @@ public abstract partial class LibraryMultipleModePowerModel : DynamicPowerModel
     public override Task AfterApplied(Creature applier, CardModel cardSource)
     {
         LibraryHookSubscribers.SubscribeForCombatStateHooks(Mode, Owner?.CombatState as CombatState);
+        ICombatState? combatState = Owner?.CombatState;
+        if (combatState == null)
+        {
+            return base.AfterApplied(applier,cardSource);
+        }
+        LibraryHookSubscribers.SubscribeForCombatStateHooks(Mode,combatState);
         return base.AfterApplied(applier, cardSource);
     }
     public override Task AfterRemoved(Creature oldOwner)
     {
         LibraryHookSubscribers.UnsubscribeForCombatStateHooks(Mode, oldOwner.CombatState as CombatState);
+        ICombatState? combatState = Owner?.CombatState;
+        if (combatState == null)
+        {
+            return base.AfterRemoved(oldOwner);;
+        }
+        LibraryHookSubscribers.UnsubscribeForCombatStateHooks(Mode,combatState);
         return base.AfterRemoved(oldOwner);
     }
 }

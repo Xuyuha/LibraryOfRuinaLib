@@ -1,3 +1,4 @@
+using System.Reflection.Metadata.Ecma335;
 using LibraryLib.Commands;
 using LibraryLib.Entities.Creatures;
 using LibraryLib.Localization.Dice;
@@ -250,9 +251,18 @@ public interface ILibraryAbstractModel//库模型接口，定义了库里的钩�
     /// <summary>
 	///     询问是否触发能力效果
 	/// </summary>      
-    public bool TryPowerEffect(PlayerChoiceContext choiceContext, LibraryBasePowerModel power, Creature? dealer, CardModel? cardSource) => true;
-    /// <summary>
+    public bool TryPowerEffect(PlayerChoiceContext choiceContext, LibraryBasePowerModel power, Creature? dealer, CardModel? cardSource, out ILibraryAbstractModel modifier)
+	{
+		modifier = null;
+		return true;
+	}
 	///     询问是否触发减少方法
 	/// </summary>      
-    public bool TryPowerReduce(PlayerChoiceContext choiceContext, LibraryBasePowerModel power, Creature? dealer, CardModel? cardSource) => true;
+    public bool TryPowerReduce(PlayerChoiceContext choiceContext, LibraryBasePowerModel power, Creature? dealer, CardModel? cardSource, out ILibraryAbstractModel modifier)
+	{
+		modifier = null;
+		return true;
+	}
+	public Task AfterModifyingPowerReduce() => Task.CompletedTask;
+	public Task AfterModifyingPowerEffect() => Task.CompletedTask;
 }
