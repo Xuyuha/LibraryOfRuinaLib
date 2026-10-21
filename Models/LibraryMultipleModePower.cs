@@ -74,31 +74,31 @@ public abstract partial class LibraryMultipleModePowerModel : DynamicPowerModel
 
         mode = BindMode(mode);
         await LibraryHooks.BeforeSetPowerMode(combatState, choiceContext, this, dealer, cardSource, mode);
-        LibraryHookSubscribers.UnsubscribeForCombatStateHooks(Mode, combatState as CombatState);
+        LibraryHookSubscribers.UnsubscribeForCombatStateHooks(Mode, combatState);
         Mode = mode;
-        LibraryHookSubscribers.SubscribeForCombatStateHooks(Mode, combatState as CombatState);
+        LibraryHookSubscribers.SubscribeForCombatStateHooks(Mode, combatState);
         await LibraryHooks.AfterSetPowerMode(combatState, choiceContext, this, dealer, cardSource, mode);
     }
     public override Task AfterApplied(Creature applier, CardModel cardSource)
     {
-        LibraryHookSubscribers.SubscribeForCombatStateHooks(Mode, Owner?.CombatState as CombatState);
+        
         ICombatState? combatState = Owner?.CombatState;
         if (combatState == null)
         {
             return base.AfterApplied(applier,cardSource);
         }
-        LibraryHookSubscribers.SubscribeForCombatStateHooks(Mode,combatState);
+        LibraryHookSubscribers.SubscribeForCombatStateHooks(Mode, combatState);
         return base.AfterApplied(applier, cardSource);
     }
     public override Task AfterRemoved(Creature oldOwner)
     {
-        LibraryHookSubscribers.UnsubscribeForCombatStateHooks(Mode, oldOwner.CombatState as CombatState);
-        ICombatState? combatState = Owner?.CombatState;
+       
+        ICombatState? combatState = oldOwner?.CombatState;
         if (combatState == null)
         {
             return base.AfterRemoved(oldOwner);;
         }
-        LibraryHookSubscribers.UnsubscribeForCombatStateHooks(Mode,combatState);
+        LibraryHookSubscribers.UnsubscribeForCombatStateHooks(Mode, combatState);
         return base.AfterRemoved(oldOwner);
     }
 }
