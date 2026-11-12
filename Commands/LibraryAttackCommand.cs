@@ -1,6 +1,8 @@
 #nullable enable
 using Godot;
+using HarmonyLib;
 using LibraryLib.Combat;
+using LibraryLib.Compat;
 using LibraryLib.Entities.Creatures;
 using LibraryLib.Hooks;
 using LibraryLib.Localization.Dice;
@@ -20,320 +22,60 @@ using MegaCrit.Sts2.Core.Localization.DynamicVars;
 using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Models;
 using MegaCrit.Sts2.Core.Models.Monsters;
-using MegaCrit.Sts2.Core.Multiplayer.Transport.ENet;
 using MegaCrit.Sts2.Core.Random;
 using MegaCrit.Sts2.Core.ValueProps;
 
 namespace LibraryLib.Commands;
 
-public class LibraryAttackCommand
+public class LibraryAttackCommand : AttackCommand
 {
 	private const int _maxAdditionalDiceUses = 32;
-
-	private enum SourceType
-	{
-		None,
-		Card,
-		Monster
-	}
 	private LibraryDamageType _damageType = LibraryDamageType.None;
-	private decimal _damagePerHit;
-	private readonly CalculatedDamageVar? _calculatedDamageVar;
-
-	private int _hitCount = 1;
-
-	private SourceType _sourceType;
-
-	private ICombatState? _combatState;
-
-	private Creature? _singleTarget;
-
-	private bool _spawnVfxOnEachCreature;
-
-	private bool _spawnVfxOnCreatureCenter = true;
-
-	private bool _doesRandomTargetingAllowDuplicates = true;
-
-	private bool _shouldPlayAnimation = true;
 	private readonly List<DiceRollResult> _rollResults = new List<DiceRollResult>();
-	private readonly List<List<DamageResult>> _damageResults = new List<List<DamageResult>>();
 	private readonly List<List<LibraryChaoResult>> _chaoResults = new List<List<LibraryChaoResult>>();
-
-	private string? _attackerAnimName;
-
-	private float _attackerAnimDelay;
-
-	private LibraryCreature? _visualAttacker;
-
-	private bool _playOnEveryHit = true;
-
-	private string? _attackerVfx;
-
-	private string? _attackerSfx;
-
-	private string? _tmpAttackerSfx;
-
-	private readonly float[] _waitBeforeHit = new float[2] { -1f, -1f };
-
-	private readonly List<Func<Node2D?>> _customAttackerVfxNodes = new List<Func<Node2D?>>();
-
-	private readonly List<Func<Creature, Node2D?>> _customHitVfxNodes = new List<Func<Creature, Node2D?>>();
-
-	private Func<Task>? _afterAttackerAnim;
-
-	private Func<Task>? _beforeDamage;
 
 	private Func<Task>? _afterDiceResult;
 	public LibraryDice? Dice { get; private set; }
-
-	public Creature? Attacker { get; private set; }
-
-	public AbstractModel? ModelSource { get; private set; }
-
-	public CombatSide TargetSide { get; private set; }
-
-	public ValueProp DamageProps { get; private set; } = ValueProp.Move;
-
-	public bool IsSingleTargeted => _singleTarget != null;
-
-	public bool IsMultiTargeted => _combatState != null;
-
-	public bool IsRandomlyTargeted { get; private set; }
 	public List<DiceRollResult> RollResults => _rollResults;
-
-	public IEnumerable<List<DamageResult>> DamageResults => _damageResults;
-
 	public IEnumerable<List<LibraryChaoResult>> ChaoResults => _chaoResults;
-
-	public string? HitSfx { get; private set; }
-
-	public string? TmpHitSfx { get; private set; }
-
-	public string? HitVfx { get; private set; }
-	public AttackCommand ToAttackCommand { get; private set; }
-	public LibraryAttackCommand FromCard(CardModel card, CardPlay? cardPlay = null)
+	public IEnumerable<List<DamageResult>> DamageResults => Results;
+	public LibraryAttackCommand FromPetMonster(MonsterModel monster, CardModel card, CardPlay? cardPlay = null)
 	{
-		ToAttackCommand = LibraryLib.Compat.GameApi.FromCard(ToAttackCommand, card, cardPlay);
+		AttackCommandAccess.AttackerSetter(this,monster.Creature);
+        AttackCommandAccess.ModelSourceSetter(this,card);
+        AttackCommandAccess.CardPlaySetter(this,cardPlay);
+        AttackCommandAccess.AttackerAnimNameRef(this) = "Attack";
+        AttackCommandAccess.AttackerAnimDelayRef(this) = 0.3f;
+        AttackCommandAccess.SourceTypeRef(this) = 2;
+        return this;
+	}
+	public LibraryAttackCommand FromCreature(Creature creature)
+	{
 		if (Attacker != null)
 		{
 			throw new InvalidOperationException("Attacker has already been set.");
 		}
-		if (ModelSource != null)
-		{
-			throw new InvalidOperationException("ModelSource has already been set.");
-		}
-		Player owner = card.Owner;
-		Attacker = owner.Creature;
-		_attackerAnimName = "Attack";
-		_attackerAnimDelay = owner.Character.AttackAnimDelay;
-		ModelSource = card;
-		_sourceType = SourceType.Card;
-		return this;
+		AttackCommandAccess.AttackerSetter(this,creature);
+        AttackCommandAccess.AttackerAnimNameRef(this) = "Attack";
+        AttackCommandAccess.AttackerAnimDelayRef(this) = creature.Player?.Character.AttackAnimDelay ?? 0.3f;
+        AttackCommandAccess.SourceTypeRef(this) = 2;
+        return this;
 	}
-
-	public LibraryAttackCommand FromOsty(Creature osty, CardModel card, CardPlay? cardPlay = null)
-	{
-		ToAttackCommand = LibraryLib.Compat.GameApi.FromOsty(ToAttackCommand, osty, card, cardPlay);
-		if (!(osty.Monster is Osty))
-		{
-			throw new ArgumentException("Creature is not Osty");
-		}
-		Attacker = osty as LibraryCreature;
-		ModelSource = card;
-		_attackerAnimName = "Attack";
-		_attackerAnimDelay = 0.3f;
-		_sourceType = SourceType.Card;
-		return WithAttackerFx(null, "event:/sfx/characters/osty/osty_attack");
-	}
-
-	public LibraryAttackCommand FromMonster(MonsterModel monster)
-	{
-		ToAttackCommand = ToAttackCommand.FromMonster(monster);
-		if (Attacker != null)
-		{
-			throw new InvalidOperationException("Attacker has already been set.");
-		}
-		Attacker = monster.Creature as LibraryCreature;
-		_attackerAnimName = "Attack";
-		_sourceType = SourceType.Monster;
-		// AttackCommand.FromMonster already configures all-opponent targeting.
-		// Mirror that state locally without calling its targeting method twice.
-		_combatState = monster.Creature.CombatState;
-		TargetSide = monster.Creature.Side == CombatSide.Enemy
-			? CombatSide.Player
-			: CombatSide.Enemy;
-		return this;
-	}
-
-	public LibraryAttackCommand Targeting(Creature target )
-	{
-		ToAttackCommand = ToAttackCommand.Targeting(target);	
-		if (_singleTarget != null)
-		{
-			throw new InvalidOperationException("Targets already set.");
-		}
-		if (_combatState != null)
-		{
-			throw new InvalidOperationException("Already set to target opponents of attacker");
-		}
-		_singleTarget = target;
-		TargetSide = target.Side;
-		return this;
-	}
-
-	public LibraryAttackCommand TargetingAllOpponents(ICombatState combatState)
-	{	
-		ToAttackCommand = ToAttackCommand.TargetingAllOpponents(combatState);
-		if (_singleTarget != null)
-		{
-			throw new InvalidOperationException("Targets already set.");
-		}
-		if (_combatState != null)
-		{
-			throw new InvalidOperationException("Already set to target opponents of attacker");
-		}
-		if (Attacker == null)
-		{
-			throw new InvalidOperationException("We require an attacker to be able to grab its opponents");
-		}
-		_combatState = combatState;
-		TargetSide = (Attacker.Side == CombatSide.Enemy) ? CombatSide.Player : CombatSide.Enemy;
-		return this;
-	}
-
-	public LibraryAttackCommand TargetingRandomOpponents(ICombatState combatState, bool allowDuplicates = true)
-	{	
-		ToAttackCommand = ToAttackCommand.TargetingRandomOpponents(combatState, allowDuplicates);
-		if (_singleTarget != null)
-		{
-			throw new InvalidOperationException("Targets already set.");
-		}
-		if (_combatState != null)
-		{
-			throw new InvalidOperationException("Already set to target opponents of attacker");
-		}
-		if (Attacker == null)
-		{
-			throw new InvalidOperationException("We require an attacker to be able to grab its opponents");
-		}
-		_combatState = combatState;
-		IsRandomlyTargeted = true;
-		_doesRandomTargetingAllowDuplicates = allowDuplicates;
-		return this;
-	}
-
-	public LibraryAttackCommand Unpowered()
-	{
-		ToAttackCommand = ToAttackCommand.Unpowered();
-		DamageProps |= ValueProp.Unpowered;
-		return this;
-	}
-
 	public LibraryAttackCommand Unblockable()
 	{
-		DamageProps |= ValueProp.Unblockable;
+		AttackCommandAccess.DamagePropsSetter(this,DamageProps|ValueProp.Unblockable) ;
 		return this;
 	}
 
 	public LibraryAttackCommand WithAttackerAnim(string? animName, float delay, LibraryCreature? visualAttacker = null)
 	{
-		ToAttackCommand = ToAttackCommand.WithAttackerAnim(animName, delay, visualAttacker);
-		if (_attackerAnimName == null)
+		if (AttackCommandAccess.AttackerAnimNameRef(this) == null)
 		{
 			throw new InvalidOperationException("WithAttackerAnim was called before FromCard/FromMonster/FromOsty, should be called after.");
 		}
-		_attackerAnimName = animName;
-		_attackerAnimDelay = delay;
-		_visualAttacker = visualAttacker;
-		return this;
-	}
-
-	public LibraryAttackCommand WithNoAttackerAnim()
-	{
-		ToAttackCommand = ToAttackCommand.WithNoAttackerAnim();
-		_shouldPlayAnimation = false;
-		return this;
-	}
-
-	public LibraryAttackCommand AfterAttackerAnim(Func<Task> afterAttackerAnim)
-	{
-		ToAttackCommand = ToAttackCommand.AfterAttackerAnim(afterAttackerAnim);
-		_afterAttackerAnim = afterAttackerAnim;
-		return this;
-	}
-
-	public LibraryAttackCommand WithAttackerFx(string? vfx = null, string? sfx = null, string? tmpSfx = null)
-	{
-		ToAttackCommand = ToAttackCommand.WithAttackerFx(vfx, sfx, tmpSfx);
-		_attackerVfx = vfx;
-		_attackerSfx = sfx;
-		_tmpAttackerSfx = tmpSfx;
-		return this;
-	}
-
-	public LibraryAttackCommand WithAttackerFx(Func<Node2D?> createAttackerVfx)
-	{
-		ToAttackCommand = ToAttackCommand.WithAttackerFx(createAttackerVfx);
-		_customAttackerVfxNodes.Add(createAttackerVfx);
-		return this;
-	}
-
-	public LibraryAttackCommand WithWaitBeforeHit(float fastSeconds, float standardSeconds)
-	{
-		ToAttackCommand = ToAttackCommand.WithWaitBeforeHit(fastSeconds, standardSeconds);
-		_waitBeforeHit[0] = fastSeconds;
-		_waitBeforeHit[1] = standardSeconds;
-		return this;
-	}
-
-	public LibraryAttackCommand WithHitFx(string? vfx = null, string? sfx = null, string? tmpSfx = null)
-	{
-		ToAttackCommand = ToAttackCommand.WithHitFx(vfx, sfx, tmpSfx);
-		HitVfx = vfx;
-		HitSfx = sfx;
-		TmpHitSfx = tmpSfx;
-		return this;
-	}
-
-	public LibraryAttackCommand SpawningHitVfxOnEachCreature()
-	{
-		ToAttackCommand = ToAttackCommand.SpawningHitVfxOnEachCreature();
-		_spawnVfxOnEachCreature = true;
-		return this;
-	}
-
-	public LibraryAttackCommand WithHitVfxSpawnedAtBase()
-	{
-		ToAttackCommand = ToAttackCommand.WithHitVfxSpawnedAtBase();
-		_spawnVfxOnCreatureCenter = false;
-		return this;
-	}
-
-	public LibraryAttackCommand WithHitVfxNode(Func<Creature, Node2D?> createHitVfxNode)
-	{
-		ToAttackCommand = ToAttackCommand.WithHitVfxNode(createHitVfxNode);
-		_customHitVfxNodes.Add(createHitVfxNode);
-		return this;
-	}
-
-	public LibraryAttackCommand OnlyPlayAnimOnce()
-	{
-		ToAttackCommand = ToAttackCommand.OnlyPlayAnimOnce();
-		_playOnEveryHit = false;
-		return this;
-	}
-
-	public LibraryAttackCommand WithHitCount(int hitCount)
-	{
-		ToAttackCommand = ToAttackCommand.WithHitCount(hitCount);
-		_hitCount = hitCount;
-		return this;
-	}
-
-	public LibraryAttackCommand BeforeDamage(Func<Task> beforeDamage)
-	{
-		ToAttackCommand = ToAttackCommand.BeforeDamage(beforeDamage);
-		_beforeDamage = beforeDamage;
+		AttackCommandAccess.AttackerAnimNameRef(this) = animName;
+		AttackCommandAccess.AttackerAnimDelayRef(this) = delay;
+		AttackCommandAccess.VisualAttackerRef(this) = visualAttacker;
 		return this;
 	}
 
@@ -347,24 +89,6 @@ public class LibraryAttackCommand
 		}
 		_afterDiceResult = afterDiceResult;
 		return this;
-	}
-
-	public static async Task<AttackContext> CreateContextAsync(ICombatState combatState, PlayerChoiceContext choiceContext, CardPlay cardPlay)
-	{	
-		return await LibraryLib.Compat.GameApi.CreateContext(combatState, choiceContext, cardPlay);
-	}
-
-
-	public void IncrementHitsInternal()
-	{
-		ToAttackCommand.IncrementHitsInternal();
-		_hitCount++;
-	}
-
-	public void AddDamageResultsInternal(IEnumerable<DamageResult> results)
-	{
-		ToAttackCommand.AddResultsInternal(results);
-		_damageResults.Add(results.ToList());
 	}
 	public void AddChaoResultsInternal(IEnumerable<LibraryChaoResult> results)
 	{
@@ -383,19 +107,19 @@ public class LibraryAttackCommand
 	{
 		if (IsSingleTargeted)
 		{
-			return new List<Creature>{_singleTarget!};
+			return new List<Creature>{AttackCommandAccess.SingleTargetRef(this)!};
 		}
 		if (IsMultiTargeted)
 		{
-			if (_sourceType == SourceType.Monster)
+			if (AttackCommandAccess.SourceTypeRef(this) == 2)
 			{
-				return _combatState!.PlayerCreatures;
+				return AttackCommandAccess.CombatStateRef(this)!.PlayerCreatures;
 			}
 			if (Attacker == null)
 			{
 				throw new InvalidOperationException("We require an attacker to be able to grab its opponents");
 			}
-			return _combatState!.GetOpponentsOf(Attacker);
+			return AttackCommandAccess.CombatStateRef(this)!.GetOpponentsOf(Attacker);
 		}
 		throw new InvalidOperationException("No targets set, a Targeting method must be called before Execute");
 	}
@@ -415,34 +139,22 @@ public class LibraryAttackCommand
 		_damageType = type;
 		return this;
 	}
-
-	public LibraryAttackCommand(decimal damagePerHit)
+	public LibraryAttackCommand(decimal damagePerHit):base(damagePerHit)
 	{
-		Dice = null;
-		ToAttackCommand = new AttackCommand(damagePerHit);
-		_damagePerHit = damagePerHit;
-		_calculatedDamageVar = null;
 	}	
-	public LibraryAttackCommand(LibraryDice dice)
+	public LibraryAttackCommand(LibraryDice dice):base(dice.BaseValue)
 	{
 		Dice = dice;
-		ToAttackCommand = new AttackCommand(dice.BaseValue);
 		_damageType = dice.DamageType;
-		_damagePerHit = 0;
-		_calculatedDamageVar = null;
 	}	
-	public LibraryAttackCommand(CalculatedDamageVar calculatedDamageVar)
+	public LibraryAttackCommand(CalculatedDamageVar calculatedDamageVar):base(calculatedDamageVar)
 	{
-		Dice = null;
-		ToAttackCommand = new AttackCommand(calculatedDamageVar);
-		_damagePerHit = -1m;
-		_calculatedDamageVar = calculatedDamageVar;
 	}
 
 
 
 	public async Task<LibraryAttackCommand> Execute(PlayerChoiceContext? choiceContext,CardPlay? cardPlay = null)
-	{
+	{ 
 		ICombatState? combatState = Attacker?.CombatState;
 		if (Attacker == null)
 		{
@@ -467,9 +179,9 @@ public class LibraryAttackCommand
 		await LibraryHooks.BeforeAttack(combatState, this);
 		// Registered ILibraryDamageTypeModifier implementations can change the type; see LibraryDamageTypes.
 		LibraryDamageType damageType = LibraryDamageTypes.Modify(
-			new LibraryDamageTypeContext(ModelSource as CardModel, Attacker, IsSingleTargeted ? _singleTarget : null, null, this, false),
+			new LibraryDamageTypeContext(ModelSource as CardModel, Attacker, IsSingleTargeted ? AttackCommandAccess.SingleTargetRef(this) : null, null, this, false),
 			_damageType);
-		decimal attackCount = LibraryHooks.ModifyAttackHitCount(combatState, this, (Dice?.EnableCustomUseTimes ?? false) ? Dice.UseTimes : _hitCount);
+		decimal attackCount = LibraryHooks.ModifyAttackHitCount(combatState, this, (Dice?.EnableCustomUseTimes ?? false) ? Dice.UseTimes : AttackCommandAccess.HitCountRef(this));
 		int additionalUses = 0;
 		for (int i = 0; i < attackCount; i++)
 		{
@@ -491,9 +203,9 @@ public class LibraryAttackCommand
 			}
 			else
 			{
-				if (!_doesRandomTargetingAllowDuplicates)
+				if (!AttackCommandAccess.DoesRandomTargetingAllowDuplicatesRef(this))
 				{
-					validTargets = validTargets.Where((Creature c) => _damageResults.SelectMany((List<DamageResult> r) => r).All((DamageResult r) => r.Receiver != c)).ToList();
+					validTargets = validTargets.Where((Creature c) => Results.SelectMany((List<DamageResult> r) => r).All((DamageResult r) => r.Receiver != c)).ToList();
 					if (validTargets.Count == 0)
 					{
 						throw new InvalidOperationException("No valid targets for attack with duplicates disallowed. If you're in a test, you probably need to add more enemies. If you're in real gameplay, something is wrong.");
@@ -505,31 +217,31 @@ public class LibraryAttackCommand
 
 			async Task PlayAttackPresentationAsync()
 			{
-				if (_playOnEveryHit || i == 0)
+				if (AttackCommandAccess.PlayOnEveryHitRef(this) || i == 0)
 				{
-					if (_attackerVfx != null)
+					if (AttackCommandAccess.AttackerVfxRef(this) != null)
 					{
-						VfxCmd.PlayOnCreatureCenter(Attacker, _attackerVfx);
+						VfxCmd.PlayOnCreatureCenter(Attacker, AttackCommandAccess.AttackerVfxRef(this));
 					}
-					foreach (Func<Node2D> customAttackerVfxNode in _customAttackerVfxNodes)
+					foreach (Func<Node2D> customAttackerVfxNode in AttackCommandAccess.CustomAttackerVfxNodesRef(this))
 					{
 						Attacker.GetVfxContainer()?.AddChildSafely(customAttackerVfxNode());
 					}
-					if (_attackerSfx != null)
+					if (AttackCommandAccess.AttackerSfxRef(this) != null)
 					{
-						SfxCmd.Play(_attackerSfx);
+						SfxCmd.Play(AttackCommandAccess.AttackerSfxRef(this));
 					}
-					else if (_tmpAttackerSfx != null)
+					else if (AttackCommandAccess.TmpAttackerSfxRef(this) != null)
 					{
-						NDebugAudioManager.Instance?.Play(_tmpAttackerSfx);
+						NDebugAudioManager.Instance?.Play(AttackCommandAccess.TmpAttackerSfxRef(this));
 					}
-					if (_attackerAnimName != null && _shouldPlayAnimation)
+					if (AttackCommandAccess.AttackerAnimNameRef(this) != null && AttackCommandAccess.ShouldPlayAnimationRef(this))
 					{
-						await CreatureCmd.TriggerAnim(_visualAttacker ?? Attacker, _attackerAnimName, _attackerAnimDelay);
+						await CreatureCmd.TriggerAnim(AttackCommandAccess.VisualAttackerRef(this) ?? Attacker, AttackCommandAccess.AttackerAnimNameRef(this), AttackCommandAccess.AttackerAnimDelayRef(this));
 					}
-					if (_afterAttackerAnim != null)
+					if (AttackCommandAccess.AfterAttackerAnimRef(this) != null)
 					{
-						await _afterAttackerAnim();
+						await AttackCommandAccess.AfterAttackerAnimRef(this)();
 					}
 				}
 				if (HitSfx != null)
@@ -540,11 +252,11 @@ public class LibraryAttackCommand
 				{
 					NDebugAudioManager.Instance?.Play(TmpHitSfx);
 				}
-				if (_waitBeforeHit.Any((float w) => w > 0f))
+				if (AttackCommandAccess.WaitBeforeHitRef(this).Any((float w) => w > 0f))
 				{
-					await Cmd.CustomScaledWait(_waitBeforeHit[0], _waitBeforeHit[1]);
+					await Cmd.CustomScaledWait(AttackCommandAccess.WaitBeforeHitRef(this)[0], AttackCommandAccess.WaitBeforeHitRef(this)[1]);
 				}
-				foreach (Func<Creature, Node2D> customHitVfxNode in _customHitVfxNodes)
+				foreach (Func<Creature, Node2D> customHitVfxNode in AttackCommandAccess.CustomHitVfxNodesRef(this))
 				{
 					if (singleTarget != null)
 					{
@@ -560,7 +272,7 @@ public class LibraryAttackCommand
 				{
 					if (singleTarget != null)
 					{
-						if (_spawnVfxOnCreatureCenter)
+						if (AttackCommandAccess.SpawnVfxOnCreatureCenterRef(this))
 						{
 							VfxCmd.PlayOnCreatureCenter(singleTarget, HitVfx);
 						}
@@ -569,9 +281,9 @@ public class LibraryAttackCommand
 							VfxCmd.PlayOnCreature(singleTarget, HitVfx);
 						}
 					}
-					else if (_spawnVfxOnEachCreature)
+					else if (AttackCommandAccess.SpawnVfxOnEachCreatureRef(this))
 					{
-						if (_spawnVfxOnCreatureCenter)
+						if (AttackCommandAccess.SpawnVfxOnCreatureCenterRef(this))
 						{
 							VfxCmd.PlayOnCreatureCenters(validTargets, HitVfx);
 						}
@@ -585,9 +297,9 @@ public class LibraryAttackCommand
 						VfxCmd.PlayOnSide(GetOppositeSide(Attacker.Side), HitVfx, combatState);
 					}
 				}
-				if (_beforeDamage != null)
+				if (AttackCommandAccess.BeforeDamageRef(this) != null)
 				{
-					await _beforeDamage();
+					await AttackCommandAccess.BeforeDamageRef(this)();
 				}
 			}
 			bool deferAttackPresentation =
@@ -599,7 +311,7 @@ public class LibraryAttackCommand
 			IReadOnlyList<Creature> targets = singleTarget != null ? [singleTarget] : validTargets;
 			DiceRollResult? rollResult = await LibraryDice.GetResultWithRoll(combatState,choiceContext,Dice,targets.ToList());
 			AddRollResultsInternal(rollResult);
-			decimal damage = Dice != null ? rollResult.CurrentValue:((_calculatedDamageVar == null) ?_damagePerHit : _calculatedDamageVar.Calculate(singleTarget));
+			decimal damage = Dice != null ? rollResult.CurrentValue:((AttackCommandAccess.CalculatedDamageVarRef(this) == null) ?AttackCommandAccess.DamagePerHitRef(this) : AttackCommandAccess.CalculatedDamageVarRef(this).Calculate(singleTarget));
 			List<int> Blocks = targets.Select(c => c.Block).ToList();
 			Func<Task>? beforeApplyingDamage = null;
 			if (deferAttackPresentation)
@@ -611,7 +323,7 @@ public class LibraryAttackCommand
 				};
 			}
 			IEnumerable<DamageResult> damageResults = await LibraryCreatureCmd.Damage(damageAmount: damage, choiceContext: choiceContext ?? new BlockingPlayerChoiceContext(), targets: targets, props: DamageProps, dealer: Attacker ,cardSource: ModelSource as CardModel, cardPlay: cardPlay, type : damageType, beforeApplyingDamage: beforeApplyingDamage);
-			AddDamageResultsInternal(damageResults);
+			AddResultsInternal(damageResults);
 			List<LibraryChaoResult> chaoResults = [];
 			for (int j = 0 ; j < Blocks.Count ; j++){
 				decimal chaoDamage = DamageProps.HasFlag(ValueProp.Unblockable)
@@ -644,8 +356,200 @@ public class LibraryAttackCommand
 				}
 			}
 		}
-		CombatManager.Instance.History.CreatureAttacked(combatState, Attacker, _damageResults.SelectMany((List<DamageResult> r) => r).ToList());
+		CombatManager.Instance.History.CreatureAttacked(combatState, Attacker, Results.SelectMany((List<DamageResult> r) => r).ToList());
 		await LibraryHooks.AfterAttack(combatState, choiceContext ?? new BlockingPlayerChoiceContext(), this);
 		return this;
+	}
+	private static class AttackCommandAccess
+	{
+		public static readonly AccessTools.FieldRef<AttackCommand, decimal> DamagePerHitRef =
+			AccessTools.FieldRefAccess<AttackCommand, decimal>("_damagePerHit");
+
+		public static readonly AccessTools.FieldRef<AttackCommand, CalculatedDamageVar?> CalculatedDamageVarRef =
+			AccessTools.FieldRefAccess<AttackCommand, CalculatedDamageVar?>("_calculatedDamageVar");
+
+
+		public static readonly AccessTools.FieldRef<AttackCommand, float[]> WaitBeforeHitRef =
+			AccessTools.FieldRefAccess<AttackCommand, float[]>("_waitBeforeHit");
+
+		public static readonly AccessTools.FieldRef<AttackCommand, List<Func<Node2D?>>> CustomAttackerVfxNodesRef =
+			AccessTools.FieldRefAccess<AttackCommand, List<Func<Node2D?>>>("_customAttackerVfxNodes");
+
+		public static readonly AccessTools.FieldRef<AttackCommand, List<Func<Creature, Node2D?>>> CustomHitVfxNodesRef =
+			AccessTools.FieldRefAccess<AttackCommand, List<Func<Creature, Node2D?>>>("_customHitVfxNodes");
+
+
+		public static readonly AccessTools.FieldRef<AttackCommand, int> HitCountRef =
+			AccessTools.FieldRefAccess<AttackCommand, int>("_hitCount");
+
+		public static readonly AccessTools.FieldRef<AttackCommand, ICombatState?> CombatStateRef =
+			AccessTools.FieldRefAccess<AttackCommand, ICombatState?>("_combatState");
+
+		public static readonly AccessTools.FieldRef<AttackCommand, Creature?> SingleTargetRef =
+			AccessTools.FieldRefAccess<AttackCommand, Creature?>("_singleTarget");
+
+		public static readonly AccessTools.FieldRef<AttackCommand, bool> SpawnVfxOnEachCreatureRef =
+			AccessTools.FieldRefAccess<AttackCommand, bool>("_spawnVfxOnEachCreature");
+
+		public static readonly AccessTools.FieldRef<AttackCommand, bool> SpawnVfxOnCreatureCenterRef =
+			AccessTools.FieldRefAccess<AttackCommand, bool>("_spawnVfxOnCreatureCenter");
+
+		public static readonly AccessTools.FieldRef<AttackCommand, bool> DoesRandomTargetingAllowDuplicatesRef =
+			AccessTools.FieldRefAccess<AttackCommand, bool>("_doesRandomTargetingAllowDuplicates");
+
+		public static readonly AccessTools.FieldRef<AttackCommand, bool> ShouldPlayAnimationRef =
+			AccessTools.FieldRefAccess<AttackCommand, bool>("_shouldPlayAnimation");
+
+		public static readonly AccessTools.FieldRef<AttackCommand, string?> AttackerAnimNameRef =
+			AccessTools.FieldRefAccess<AttackCommand, string?>("_attackerAnimName");
+
+		public static readonly AccessTools.FieldRef<AttackCommand, float> AttackerAnimDelayRef =
+			AccessTools.FieldRefAccess<AttackCommand, float>("_attackerAnimDelay");
+
+		public static readonly AccessTools.FieldRef<AttackCommand, Creature?> VisualAttackerRef =
+			AccessTools.FieldRefAccess<AttackCommand, Creature?>("_visualAttacker");
+
+		public static readonly AccessTools.FieldRef<AttackCommand, bool> PlayOnEveryHitRef =
+			AccessTools.FieldRefAccess<AttackCommand, bool>("_playOnEveryHit");
+
+		public static readonly AccessTools.FieldRef<AttackCommand, string?> AttackerVfxRef =
+			AccessTools.FieldRefAccess<AttackCommand, string?>("_attackerVfx");
+
+		public static readonly AccessTools.FieldRef<AttackCommand, string?> AttackerSfxRef =
+			AccessTools.FieldRefAccess<AttackCommand, string?>("_attackerSfx");
+
+		public static readonly AccessTools.FieldRef<AttackCommand, string?> TmpAttackerSfxRef =
+			AccessTools.FieldRefAccess<AttackCommand, string?>("_tmpAttackerSfx");
+
+		public static readonly AccessTools.FieldRef<AttackCommand, Func<Task>?> AfterAttackerAnimRef =
+			AccessTools.FieldRefAccess<AttackCommand, Func<Task>?>("_afterAttackerAnim");
+
+		public static readonly AccessTools.FieldRef<AttackCommand, Func<Task>?> BeforeDamageRef =
+			AccessTools.FieldRefAccess<AttackCommand, Func<Task>?>("_beforeDamage");
+
+		public static readonly Action<AttackCommand, Creature?> AttackerSetter =
+			AccessTools.MethodDelegate<Action<AttackCommand, Creature?>>(
+				AccessTools.PropertySetter(typeof(AttackCommand), "Attacker"));
+
+		public static readonly Action<AttackCommand, AbstractModel?> ModelSourceSetter =
+			AccessTools.MethodDelegate<Action<AttackCommand, AbstractModel?>>(
+				AccessTools.PropertySetter(typeof(AttackCommand), "ModelSource"));
+		public static readonly Action<AttackCommand, CardPlay?> CardPlaySetter =
+			AccessTools.MethodDelegate<Action<AttackCommand, CardPlay?>>(
+				AccessTools.PropertySetter(typeof(AttackCommand), "CardPlay"));
+
+		public static readonly Action<AttackCommand, CombatSide> TargetSideSetter =
+			AccessTools.MethodDelegate<Action<AttackCommand, CombatSide>>(
+				AccessTools.PropertySetter(typeof(AttackCommand), "TargetSide"));
+
+		public static readonly Action<AttackCommand, ValueProp> DamagePropsSetter =
+			AccessTools.MethodDelegate<Action<AttackCommand, ValueProp>>(
+				AccessTools.PropertySetter(typeof(AttackCommand), "DamageProps"));
+		public static readonly AccessTools.FieldRef<AttackCommand, int> SourceTypeRef =
+			AccessTools.FieldRefAccess<AttackCommand, int>("_sourceType");
+	}
+	public new LibraryAttackCommand FromCard(CardModel card, CardPlay? cardPlay = null)
+	{
+		return (LibraryAttackCommand)base.FromCard(card,cardPlay);
+	}
+
+	public new LibraryAttackCommand FromOsty(Creature osty, CardModel card, CardPlay? cardPlay = null)
+	{
+		return (LibraryAttackCommand)base.FromOsty(osty,card,cardPlay);
+	}
+
+	public new LibraryAttackCommand FromMonster(MonsterModel monster)
+	{
+		return (LibraryAttackCommand)base.FromMonster(monster);
+	}
+
+	public new LibraryAttackCommand Targeting(Creature target )
+	{
+		return (LibraryAttackCommand)base.Targeting(target);
+	}
+
+	public new LibraryAttackCommand TargetingAllOpponents(ICombatState combatState)
+	{	
+		return (LibraryAttackCommand)base.TargetingAllOpponents(combatState);
+	}
+
+	public new LibraryAttackCommand TargetingRandomOpponents(ICombatState combatState, bool allowDuplicates = true)
+	{	
+		return (LibraryAttackCommand)base.TargetingRandomOpponents(combatState,allowDuplicates);
+	}
+
+	public new LibraryAttackCommand Unpowered()
+	{
+		return (LibraryAttackCommand)base.Unpowered();
+	}
+	public new LibraryAttackCommand WithNoAttackerAnim()
+	{
+		return (LibraryAttackCommand)base.WithNoAttackerAnim();
+	}
+
+	public new LibraryAttackCommand AfterAttackerAnim(Func<Task> afterAttackerAnim)
+	{
+		return (LibraryAttackCommand)base.AfterAttackerAnim(afterAttackerAnim);
+	}
+
+	public new LibraryAttackCommand WithAttackerFx(string? vfx = null, string? sfx = null, string? tmpSfx = null)
+	{
+		return (LibraryAttackCommand)base.WithAttackerFx(vfx,sfx,tmpSfx);
+	}
+
+	public new LibraryAttackCommand WithAttackerFx(Func<Node2D?> createAttackerVfx)
+	{
+		return (LibraryAttackCommand)base.WithAttackerFx(createAttackerVfx);
+	}
+
+	public new LibraryAttackCommand WithWaitBeforeHit(float fastSeconds, float standardSeconds)
+	{
+		return (LibraryAttackCommand)base.WithWaitBeforeHit(fastSeconds,standardSeconds);
+	}
+
+	public new LibraryAttackCommand WithHitFx(string? vfx = null, string? sfx = null, string? tmpSfx = null)
+	{
+		return (LibraryAttackCommand)base.WithHitFx(vfx,sfx,tmpSfx);
+	}
+
+	public new LibraryAttackCommand SpawningHitVfxOnEachCreature()
+	{
+		return (LibraryAttackCommand)base.SpawningHitVfxOnEachCreature();
+	}
+
+	public new LibraryAttackCommand WithHitVfxSpawnedAtBase()
+	{
+		return (LibraryAttackCommand)base.WithHitVfxSpawnedAtBase();
+	}
+
+	public new LibraryAttackCommand WithHitVfxNode(Func<Creature, Node2D?> createHitVfxNode)
+	{
+		return (LibraryAttackCommand)base.WithHitVfxNode(createHitVfxNode);
+	}
+
+	public new LibraryAttackCommand OnlyPlayAnimOnce()
+	{
+		return (LibraryAttackCommand)base.OnlyPlayAnimOnce();
+	}
+
+	public new LibraryAttackCommand WithHitCount(int hitCount)
+	{
+		return (LibraryAttackCommand)base.WithHitCount(hitCount);
+	}
+
+	public new LibraryAttackCommand BeforeDamage(Func<Task> beforeDamage)
+	{
+		return (LibraryAttackCommand)base.BeforeDamage(beforeDamage);
+	}
+
+	public new static async Task<AttackContext> CreateContextAsync(ICombatState combatState, PlayerChoiceContext choiceContext, CardPlay cardPlay)
+	{	
+		return await LibraryLib.Compat.GameApi.CreateContext(combatState, choiceContext, cardPlay);
+	}
+
+
+	public new void IncrementHitsInternal()
+	{
+		base.IncrementHitsInternal();
 	}
 }
