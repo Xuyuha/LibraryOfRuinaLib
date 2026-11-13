@@ -176,7 +176,11 @@ internal static class LibraryAttackExecuteFlagPatch
 ///     otherwise friendly allies removed by earlier prefixes would still take
 ///     damage on some peers, which was observed as multiplayer state divergence.
 /// </remarks>
-#if STS2_0_111_0
+#if STS2_0_113_0
+// 0.113.0 的伤害统一汇入以 DamageTargetData 为目标的重载，AttackCommand 直接调用它。
+[HarmonyPatch(typeof(CreatureCmd), nameof(CreatureCmd.Damage),
+    new[] { typeof(PlayerChoiceContext), typeof(IEnumerable<DamageTargetData>), typeof(decimal), typeof(ValueProp), typeof(Creature), typeof(CardModel), typeof(CardPlay), typeof(MegaCrit.Sts2.Core.Hooks.ModifyDamageHookType) })]
+#elif STS2_0_111_0
 [HarmonyPatch(typeof(CreatureCmd), nameof(CreatureCmd.Damage),
     new[] { typeof(PlayerChoiceContext), typeof(IEnumerable<Creature>), typeof(decimal), typeof(ValueProp), typeof(Creature), typeof(CardModel), typeof(CardPlay) })]
 #else

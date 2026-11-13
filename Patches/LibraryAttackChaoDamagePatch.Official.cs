@@ -21,9 +21,47 @@ using MegaCrit.Sts2.Core.ValueProps;
 namespace LibraryLib.Patches;
 internal static partial class LibraryAttackChaoDamagePatch
 {
+#if STS2_0_113_0
     [HarmonyPrefix]
     [HarmonyPriority(Priority.Last)]
     private static bool Prefix(
+        PlayerChoiceContext choiceContext,
+        ref IEnumerable<DamageTargetData> targetData,
+        decimal amount,
+        ValueProp props,
+        Creature? dealer,
+        CardModel? cardSource,
+        CardPlay? cardPlay,
+        out DamagePatchState? __state,
+        ref Task<IEnumerable<DamageResult>> __result)
+    {
+        if (targetData == null)
+        {
+            __state = null;
+            return true;
+        }
+
+        IEnumerable<Creature> targets = LibraryLib.Compat.DamageTargetDataCompat.ToCreatures(targetData, out var snapshot)!;
+        bool runOriginal = PrefixCore(
+            choiceContext,
+            ref targets,
+            amount,
+            props,
+            dealer,
+            cardSource,
+            cardPlay,
+            out __state,
+            ref __result);
+        targetData = LibraryLib.Compat.DamageTargetDataCompat.Rebuild(snapshot, targets)!;
+        return runOriginal;
+    }
+
+    private static bool PrefixCore(
+#else
+    [HarmonyPrefix]
+    [HarmonyPriority(Priority.Last)]
+    private static bool Prefix(
+#endif
         PlayerChoiceContext choiceContext,
         ref IEnumerable<Creature> targets,
         decimal amount,
@@ -106,7 +144,9 @@ internal static partial class LibraryAttackChaoDamagePatch
     [HarmonyPriority(Priority.Last)]
     private static void Postfix(
         PlayerChoiceContext choiceContext,
+#if !STS2_0_113_0
         ref IEnumerable<Creature> targets,
+#endif
         decimal amount,
         ValueProp props,
         Creature? dealer,
