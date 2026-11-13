@@ -12,7 +12,33 @@ namespace LibraryLib.Patches;
 [HarmonyPatch(typeof(CreatureCmd), nameof(CreatureCmd.Damage))]
 public static class DamageTargetPatch
 {
-    #if STS2_0_111_0
+#if STS2_0_113_0
+    // 0.113.0 的伤害统一汇入以 DamageTargetData 为目标的重载。
+    [HarmonyPatch(typeof(CreatureCmd), "Damage", new Type[]
+    {
+        typeof(PlayerChoiceContext),
+        typeof(IEnumerable<DamageTargetData>),
+        typeof(decimal),
+        typeof(ValueProp),
+        typeof(Creature),
+        typeof(CardModel),
+        typeof(CardPlay),
+        typeof(MegaCrit.Sts2.Core.Hooks.ModifyDamageHookType)
+    })]
+    private static void Prefix(
+        PlayerChoiceContext choiceContext,
+        ref IEnumerable<DamageTargetData> targetData,
+        decimal amount,
+        ValueProp props,
+        Creature dealer)
+    {
+        IEnumerable<Creature> targets = LibraryLib.Compat.DamageTargetDataCompat.ToCreatures(targetData, out var snapshot);
+        RedirectTargets(choiceContext, ref targets, amount, props, dealer);
+        targetData = LibraryLib.Compat.DamageTargetDataCompat.Rebuild(snapshot, targets);
+    }
+
+    private static void RedirectTargets(
+#elif STS2_0_111_0
 [HarmonyPatch(typeof(CreatureCmd), "Damage", new Type[]
     {
         typeof(PlayerChoiceContext),
@@ -34,7 +60,9 @@ public static class DamageTargetPatch
         typeof(CardModel)
     })]
 #endif
+#if !STS2_0_113_0
     private static void Prefix(
+#endif
         PlayerChoiceContext choiceContext,
         ref IEnumerable<Creature> targets,
         decimal amount,

@@ -166,11 +166,23 @@ public class LibraryDice : DynamicVar
 	///     骰子的提示，设置了WithDiceEffect或HasUniqueDescriptionTip会显示自定义提示，反之则显示默认提示。
     ///     自定义提示在卡牌描述中定义，如CARD1需给Name为Dice1的骰子添加自定义,则key为CARD1_DICE1.description。
 	/// </summary>
+#if STS2_0_113_0
+    private static readonly System.Reflection.FieldInfo HoverTipIdField =
+        HarmonyLib.AccessTools.Field(typeof(HoverTip), "<Id>k__BackingField")
+        ?? throw new MissingFieldException(nameof(HoverTip), "<Id>k__BackingField");
+#endif
     public HoverTip DiceTip {
         get
         {
         var tip = new HoverTip(Title, GetDescriptionForPile(SourceCard.Pile?.Type ?? PileType.None, SourceCard.CurrentTarget), PackedIcon);
+#if STS2_0_113_0
+        // 0.113.0 起 HoverTip.Id 只读，改写装箱副本的自动属性字段后取回。
+        object boxedTip = tip;
+        HoverTipIdField.SetValue(boxedTip, tip.Id + '_' + Name + '_' + IdNumber++);
+        tip = (HoverTip)boxedTip;
+#else
         tip.Id += '_' +Name + '_' + IdNumber++;
+#endif
         return tip;
         }
     }

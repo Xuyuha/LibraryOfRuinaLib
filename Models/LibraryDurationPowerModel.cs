@@ -20,6 +20,31 @@ public abstract class LibraryDurationPowerModel : DynamicPowerModel, ISecondaryD
         public int TurnsRemaining = 1;
     }
 
+#if STS2_0_113_0
+    // 0.113.0 的 DynamicVar 数值转换不再可重写，统一读取 PreviewValue；剩余回合数由 SyncTurnsVar 写回变量。
+    private sealed class TurnsVar() : DynamicVar("Turns", 0m)
+    {
+        public override string ToString()
+        {
+            if (_owner is LibraryDurationPowerModel { IsPermanentByDesign: true })
+                return string.Empty;
+            return base.ToString();
+        }
+    }
+
+    private void SyncTurnsVar()
+    {
+        if (!IsPermanentByDesign)
+            DynamicVars["Turns"].BaseValue = TurnsRemaining;
+    }
+
+    protected override void DeepCloneFields()
+    {
+        base.DeepCloneFields();
+        // 克隆会重建内部数据，剩余回合数回到初始值，显示变量随之对齐。
+        SyncTurnsVar();
+    }
+#else
     private sealed class TurnsVar() : DynamicVar("Turns", 0m)
     {
         protected override decimal GetBaseValueForIConvertible()
@@ -36,6 +61,7 @@ public abstract class LibraryDurationPowerModel : DynamicPowerModel, ISecondaryD
             return GetBaseValueForIConvertible().ToString();
         }
     }
+#endif
     public decimal Turns
     {
         get => DynamicVars["Turns"].BaseValue;
@@ -80,6 +106,9 @@ public abstract class LibraryDurationPowerModel : DynamicPowerModel, ISecondaryD
             return false;
 
         data.TurnsRemaining = clamped;
+#if STS2_0_113_0
+        SyncTurnsVar();
+#endif
         if (notifyDisplay)
             InvokeDisplayAmountChanged();
         return true;
