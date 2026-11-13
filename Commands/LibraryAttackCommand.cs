@@ -450,12 +450,12 @@ public class LibraryAttackCommand : AttackCommand
 	}
 	public new LibraryAttackCommand FromCard(CardModel card, CardPlay? cardPlay = null)
 	{
-		return (LibraryAttackCommand)base.FromCard(card,cardPlay);
+		return (LibraryAttackCommand)LibraryLib.Compat.GameApi.FromCard(this, card, cardPlay);
 	}
 
 	public new LibraryAttackCommand FromOsty(Creature osty, CardModel card, CardPlay? cardPlay = null)
 	{
-		return (LibraryAttackCommand)base.FromOsty(osty,card,cardPlay);
+		return (LibraryAttackCommand)LibraryLib.Compat.GameApi.FromOsty(this, osty, card, cardPlay);
 	}
 
 	public new LibraryAttackCommand FromMonster(MonsterModel monster)
