@@ -106,7 +106,7 @@ public abstract class LibraryDurationPowerModel : DynamicPowerModel, ISecondaryD
             return false;
 
         data.TurnsRemaining = clamped;
-#if STS2_0_113_0
+#if STS2_0_113_1
         SyncTurnsVar();
 #endif
         if (notifyDisplay)

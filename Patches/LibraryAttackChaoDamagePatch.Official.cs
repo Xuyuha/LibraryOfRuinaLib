@@ -144,7 +144,7 @@ internal static partial class LibraryAttackChaoDamagePatch
     [HarmonyPriority(Priority.Last)]
     private static void Postfix(
         PlayerChoiceContext choiceContext,
-#if !STS2_0_113_0
+#if !STS2_0_113_1
         ref IEnumerable<Creature> targets,
 #endif
         decimal amount,
