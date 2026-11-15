@@ -21,7 +21,7 @@ using MegaCrit.Sts2.Core.ValueProps;
 namespace LibraryLib.Patches;
 internal static partial class LibraryAttackChaoDamagePatch
 {
-#if STS2_0_113_0
+#if STS2_0_113_1
     [HarmonyPrefix]
     [HarmonyPriority(Priority.Last)]
     private static bool Prefix(

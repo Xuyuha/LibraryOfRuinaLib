@@ -717,7 +717,8 @@ internal sealed partial class LibrarySpeedDiceUi : Control
             NHoverTipSet.CreateAndShow(
                 owner,
                 HoverTipFactory.FromCard(card),
-                HoverTipAlignment.Center);
+                //新版本删掉了Center，为了保证能够编译，先设置成left
+                HoverTipAlignment.Left);
         }
     }
 }

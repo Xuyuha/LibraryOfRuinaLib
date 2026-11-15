@@ -46,7 +46,7 @@ public class LibraryAttackCommand : AttackCommand
         AttackCommandAccess.CardPlaySetter(this,cardPlay);
         AttackCommandAccess.AttackerAnimNameRef(this) = "Attack";
         AttackCommandAccess.AttackerAnimDelayRef(this) = 0.3f;
-        AttackCommandAccess.SourceTypeRef(this) = 2;
+        AttackCommandAccess.SourceTypeRef(this) = 1;
         return this;
 	}
 	public LibraryAttackCommand FromCreature(Creature creature)
@@ -58,7 +58,7 @@ public class LibraryAttackCommand : AttackCommand
 		AttackCommandAccess.AttackerSetter(this,creature);
         AttackCommandAccess.AttackerAnimNameRef(this) = "Attack";
         AttackCommandAccess.AttackerAnimDelayRef(this) = creature.Player?.Character.AttackAnimDelay ?? 0.3f;
-        AttackCommandAccess.SourceTypeRef(this) = 2;
+        AttackCommandAccess.SourceTypeRef(this) = 1;
         return this;
 	}
 	public LibraryAttackCommand Unblockable()
