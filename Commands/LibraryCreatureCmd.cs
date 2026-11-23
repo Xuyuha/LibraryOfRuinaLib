@@ -128,6 +128,8 @@ public static class LibraryCreatureCmd
 		bool ranBeforeApplyingDamage = false;
 		foreach (Creature originalTarget in targetList)
 		{
+			if (LibraryLib.Combat.LibraryUntargetable.BlocksHit(originalTarget))
+				continue;
 			// 玩家受伤直接走原版伤害管线，不经过Library的拦截/抗性/混乱系统
 			if (originalTarget.IsPlayer)
 			{
@@ -147,6 +149,8 @@ public static class LibraryCreatureCmd
 			}
 			IEnumerable<AbstractModel> modifiers;
 			Creature modifiedTarget = LibraryHooks.ModifyDamageTarget(combatState, originalTarget, damageAmount, props, dealer,type);
+			if (LibraryLib.Combat.LibraryUntargetable.BlocksHit(modifiedTarget))
+				continue;
 			decimal modifiedAmount = LibraryHooks.ModifyDamage(runState, combatState, modifiedTarget, dealer, damageAmount, props, cardSource, cardPlay, ModifyDamageHookType.All, CardPreviewMode.None, out modifiers,type);
 			await LibraryHooks.AfterModifyingDamageAmount(runState, combatState, cardSource, modifiers,type);
 			if (!ranBeforeApplyingDamage && beforeApplyingDamage != null)
@@ -175,6 +179,8 @@ public static class LibraryCreatureCmd
 			decimal unblockedDamage = LibraryHooks.ModifyHpLostBeforeOsty(runState, combatState, modifiedTarget, unblockedDamageAfterResistance, props, dealer, cardSource, out modifiers,type);
 			await LibraryHooks.AfterModifyingHpLostBeforeOsty(runState, combatState, modifiers,type);
 			Creature unblockedDamageTarget = ((combatState == null) ? modifiedTarget : LibraryHooks.ModifyUnblockedDamageTarget(combatState, modifiedTarget, unblockedDamage, props, dealer,type));
+			if (LibraryUntargetable.BlocksHit(unblockedDamageTarget))
+				continue;
 			unblockedDamage = LibraryHooks.ModifyHpLostAfterOsty(runState, combatState, unblockedDamageTarget, unblockedDamage, props, dealer, cardSource, out modifiers,type);
 			await LibraryHooks.AfterModifyingHpLostAfterOsty(runState, combatState, modifiers,type);
 			DamageResult unblockedDamageResult = unblockedDamageTarget.LoseHpInternal(unblockedDamage, props);
@@ -368,6 +374,7 @@ public static class LibraryCreatureCmd
 		foreach (Creature target in targetList)
 		{
 			if (!ReferenceEquals(target.CombatState, combatState)
+				|| LibraryLib.Combat.LibraryUntargetable.BlocksHit(target)
 				|| !combatState.ContainsCreature(target)
 				|| !target.IsMonster
 				|| target is LibraryCreature { IsChaoed: true }
@@ -379,6 +386,7 @@ public static class LibraryCreatureCmd
 			Log.Info("LibraryChaoDamage");
 			Creature modifiedTarget = LibraryHooks.ModifyChaoDamageTarget(combatState, target, damageAmount, props, dealer,type);
 			if (modifiedTarget is not LibraryCreature libraryTarget
+				|| LibraryLib.Combat.LibraryUntargetable.BlocksHit(modifiedTarget)
 				|| libraryTarget.IsChaoed
 				|| !ReferenceEquals(modifiedTarget.CombatState, combatState)
 				|| !combatState.ContainsCreature(modifiedTarget))
@@ -511,6 +519,8 @@ public static class LibraryCreatureCmd
 
 	public static async Task Stun(LibraryCreature creature, Func<IReadOnlyList<Creature>, Task> stunMove, string? nextMoveId = null)
 	{
+		if (LibraryLib.Combat.LibraryUntargetable.BlocksHit(creature))
+			return;
 		await LibraryHooks.BeforeStun(creature.CombatState, creature);
 		creature.StunInternal(Wrapper, nextMoveId);
 		await LibraryHooks.AfterStun(creature.CombatState, creature);

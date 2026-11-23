@@ -73,6 +73,9 @@ internal static partial class LibraryAttackChaoDamagePatch
         ref Task<IEnumerable<DamageResult>> __result)
     {
         __state = null;
+        // Also guard unpowered/direct damage and Library cards before the early exits below.
+        // On 0.113.1 the outer Prefix rebuilds DamageTargetData from the retained snapshot.
+        targets = LibraryUntargetable.FilterHittable(targets);
         if (props.HasFlag(ValueProp.Unpowered))
             return true;
 

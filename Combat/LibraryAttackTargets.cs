@@ -50,6 +50,7 @@ public static class LibraryAttackTargets
             }
         }
 
-        return targets;
+        // Run after downstream filters, which may have replaced/reintroduced targets.
+        return LibraryUntargetable.FilterHittable(targets);
     }
 }

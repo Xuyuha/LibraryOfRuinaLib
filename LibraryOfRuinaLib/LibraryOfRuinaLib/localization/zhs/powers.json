@@ -88,5 +88,8 @@
   "LIBRARY_TURN_POWER_PROMPT": "该效果将在[blue]{Turns}[/blue]回合后减少[blue]{Amount}[/blue]层",
   "LIBRARY_NULLIFY_POWER.title": "威力无效",
   "LIBRARY_NULLIFY_POWER.description": "本回合中，该角色的卡牌攻击、卡牌[gold]格挡[/gold]与怪物招式不受[gold]威力增减[/gold]效果影响。遗物、能力、药水等独立提供的伤害与[gold]格挡[/gold]照常生效。",
-  "LIBRARY_NULLIFY_POWER.smartDescription": "本回合中，该角色的卡牌攻击、卡牌[gold]格挡[/gold]与怪物招式不受[gold]威力增减[/gold]效果影响。遗物、能力、药水等独立提供的伤害与[gold]格挡[/gold]照常生效。"
+  "LIBRARY_NULLIFY_POWER.smartDescription": "本回合中，该角色的卡牌攻击、卡牌[gold]格挡[/gold]与怪物招式不受[gold]威力增减[/gold]效果影响。遗物、能力、药水等独立提供的伤害与[gold]格挡[/gold]照常生效。",
+  "LIBRARY_UNTARGETABLE_POWER.description": "无法被选中或命中。",
+  "LIBRARY_UNTARGETABLE_POWER.smartDescription": "无法被[gold]选中[/gold]或命中。",
+  "LIBRARY_UNTARGETABLE_POWER.title": "无法选中"
 }
