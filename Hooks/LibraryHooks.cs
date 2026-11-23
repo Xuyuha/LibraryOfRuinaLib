@@ -275,7 +275,7 @@ public static class LibraryHooks
     {
         foreach (var model in combatState.IterateHookListeners())
         {
-            await model.AfterAttack(choiceContext, command.ToAttackCommand);
+            await model.AfterAttack(choiceContext, command);
             if(model is ILibraryAbstractModel libraryAbstractModel)
             {
                 await libraryAbstractModel.AfterAttack(choiceContext, command);
@@ -559,7 +559,7 @@ public static class LibraryHooks
     {
         foreach (var model in combatState.IterateHookListeners())
         {
-            await model.BeforeAttack(command.ToAttackCommand);
+            await model.BeforeAttack(command);
             if (model is ILibraryAbstractModel libraryModel)    
             {
                 await libraryModel.BeforeAttack(command);
@@ -751,7 +751,7 @@ public static class LibraryHooks
         var num = originalHitCount;
         foreach (var item in combatState.IterateHookListeners())
         {
-            num = item.ModifyAttackHitCount(attackCommand.ToAttackCommand, num);
+            num = item.ModifyAttackHitCount(attackCommand, num);
             if(item is ILibraryAbstractModel libraryAbstractModel)    
                 num = libraryAbstractModel.ModifyAttackHitCount(attackCommand, num);
         }
@@ -1262,7 +1262,7 @@ public static class LibraryHooks
         }
         return true;
     }
-    public static bool TryPowerEffect(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryBasePowerModel power, Creature? dealer, CardModel? cardSource)
+    public static bool TryPowerEffect(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryBasePowerModel power, Creature? dealer, CardModel? cardSource, out ILibraryAbstractModel? modifier)
     {
         foreach (var model in combatState.IterateHookListeners())
         {
@@ -1270,13 +1270,15 @@ public static class LibraryHooks
             {
                 if (!libraryModel.TryPowerEffect(choiceContext, power, dealer, cardSource))
                 {
+                    modifier = libraryModel;
                     return false;
                 }
             }
         }
+        modifier = null;
         return true;
     }
-    public static bool TryPowerReduce(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryBasePowerModel power, Creature? dealer, CardModel? cardSource)
+    public static bool TryPowerReduce(ICombatState combatState, PlayerChoiceContext choiceContext, LibraryBasePowerModel power, Creature? dealer, CardModel? cardSource, out ILibraryAbstractModel? modifier)
     {
         foreach (var model in combatState.IterateHookListeners())
         {
@@ -1284,10 +1286,12 @@ public static class LibraryHooks
             {
                 if (!libraryModel.TryPowerReduce(choiceContext, power, dealer, cardSource))
                 {
+                    modifier = libraryModel;
                     return false;
                 }
             }
         }
+        modifier = null;
         return true;
     }
 

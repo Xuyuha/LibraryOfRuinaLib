@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <RollForward>Major</RollForward>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <!-- Test the actual production hook implementations against recorded command boundaries.
+       The library is separately compiled against the real game assemblies. -->
+  <ItemGroup>
+    <Compile Include="../../Powers/DecayPower.cs" Link="Production/DecayPower.cs" />
+    <Compile Include="../../Powers/LibraryNullifyPower.cs" Link="Production/LibraryNullifyPower.cs" />
+    <Compile Include="../../Combat/LibraryTurnParticipants.cs" Link="Production/LibraryTurnParticipants.cs" />
+    <Compile Include="../../Combat/LibraryCombatValueResolution.cs" Link="Production/LibraryCombatValueResolution.cs" />
+  </ItemGroup>
+</Project>

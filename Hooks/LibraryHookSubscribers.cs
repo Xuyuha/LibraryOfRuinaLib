@@ -6,12 +6,12 @@ using MegaCrit.Sts2.Core.Runs;
 
 public static class LibraryHookSubscribers
 {
-    private static ConditionalWeakTable<CombatState,List<AbstractModel>> _combatStateSubscribers = []; 
-    private static ConditionalWeakTable<RunState,List<AbstractModel>> _runStateSubscribers = []; 
+    private static ConditionalWeakTable<ICombatState,List<AbstractModel>> _combatStateSubscribers = []; 
+    private static ConditionalWeakTable<IRunState,List<AbstractModel>> _runStateSubscribers = []; 
     /// <summary>
     ///     整场战斗生效
     /// </summary>
-    public static void SubscribeForCombatStateHooks(AbstractModel model,CombatState combatState)
+    public static void SubscribeForCombatStateHooks(AbstractModel model,ICombatState combatState)
     {
         if (model == null || combatState == null) return;
         if (!_combatStateSubscribers.TryGetValue(combatState, out var modifiers))
@@ -25,7 +25,7 @@ public static class LibraryHookSubscribers
     /// <summary>
     ///     整场游戏生效
     /// </summary>
-    public static void SubscribeForRunStateHooksPersistent(AbstractModel model,RunState runState)
+    public static void SubscribeForRunStateHooks(AbstractModel model,IRunState runState)
     {
         if (model == null || runState == null) return;
         if (!_runStateSubscribers.TryGetValue(runState, out var modifiers))
@@ -39,20 +39,20 @@ public static class LibraryHookSubscribers
     /// <summary>
     ///     取消订阅CombatState的钩子。
     /// </summary>
-    public static void UnsubscribeForCombatStateHooks(AbstractModel model,CombatState combatState)
+    public static void UnsubscribeForCombatStateHooks(AbstractModel model,ICombatState combatState)
     {
         if (model == null || combatState == null) return;
         if (!_combatStateSubscribers.TryGetValue(combatState,out List<AbstractModel> modifiers)) return;
         modifiers.Remove(model);
     }    
-    public static void UnsubscribeForRunStateHooks(AbstractModel model,RunState runState)
+    public static void UnsubscribeForRunStateHooks(AbstractModel model,IRunState runState)
     {
         if (model == null || runState == null) return;
         if (!_runStateSubscribers.TryGetValue(runState,out List<AbstractModel> modifiers)) return;
         modifiers.Remove(model);
     }
 
-    public static IEnumerable<AbstractModel> IterateAllCombatStateSubscribers(CombatState combatState)
+    public static IEnumerable<AbstractModel> IterateAllCombatStateSubscribers(ICombatState combatState)
     {
         if (combatState == null) yield break;
         if (!_combatStateSubscribers.TryGetValue(combatState, out var modifiers)) yield break;
@@ -62,7 +62,7 @@ public static class LibraryHookSubscribers
                 yield return model;
         }
     }
-    public static IEnumerable<AbstractModel> IterateAllRunStateSubscribers(RunState runState)
+    public static IEnumerable<AbstractModel> IterateAllRunStateSubscribers(IRunState runState)
     {
         if (runState == null) yield break;
         if (!_runStateSubscribers.TryGetValue(runState, out var modifiers)) yield break;

@@ -1,0 +1,51 @@
+Adapted from s1f102500012/LibraryOfRuina, revision 9cab269d83cd0ab58ca85efe2ef983e514cdc27d.
+https://github.com/s1f102500012/LibraryOfRuina
+
+Sources: CorrosionFollowUpPower.cs, RnfmabjPowers.cs, TurnParticipants.cs, NullifyPower.cs and powers localization.
+Icons nullify_power.png and rnfmabj_corrosion_power.png retain their original third-party terms below.
+
+MIT License
+
+Copyright (c) 2026 ShuiMuNianHua
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+--------------------------------------------------------------------------------
+Scope of this license / 许可范围
+--------------------------------------------------------------------------------
+
+The MIT license above covers the mod's own source code and project files
+(C# sources, Godot scenes/resources, shaders, localization text and build
+files) written for this mod.
+
+It does NOT cover third-party material that is included only so the project
+can be opened and built. Those items remain the property of their respective
+rights holders and are used under their own terms:
+
+- Art, animation, audio, music, video, character names and story text taken
+  from or based on "Library of Ruina", "Lobotomy Corporation" and other
+  Project Moon works (c) Project Moon. Non-commercial fan use only.
+- addons/mega_text/ is part of Slay the Spire 2 (c) Mega Crit Games.
+- fonts/ contains third-party fonts under their own licenses
+  (Noto Sans CJK and the Nanum family: SIL Open Font License 1.1;
+  Arita-buri: (c) AMOREPACIFIC, free font license).
+
+上方 MIT 许可只覆盖本模组自己编写的源码与工程文件。仓库内为了能打开和构建工程而附带的
+第三方素材（Project Moon 作品的美术、动画、音频、视频、角色与剧情文本，Mega Crit 的
+addons/mega_text，以及 fonts/ 下的字体）版权归各自权利人所有，不在 MIT 授权范围内。
