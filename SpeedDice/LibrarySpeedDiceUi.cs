@@ -736,11 +736,19 @@ internal sealed partial class LibrarySpeedDiceUi : Control
         CardModel? card = _state.Slots[slotIndex].Card;
         if (card != null)
         {
+#if STS2_0_114_0
+            // 0.114.0 移除了 HoverTipAlignment.Center，改用 SetAlignmentBelow 把提示挂在控件下方，位置与旧版一致。
+            NHoverTipSet.CreateAndShow(
+                    owner,
+                    HoverTipFactory.FromCard(card))
+                ?.SetAlignmentBelow(owner.GlobalPosition + Vector2.Down * owner.Size.Y * 1.5f);
+#else
             NHoverTipSet.CreateAndShow(
                 owner,
                 HoverTipFactory.FromCard(card),
                 //新版本删掉了Center，为了保证能够编译，先设置成left
                 HoverTipAlignment.Left);
+#endif
         }
     }
 }

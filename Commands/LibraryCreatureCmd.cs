@@ -1,5 +1,6 @@
 using Godot;
 using LibraryLib.Combat;
+using LibraryLib.Compat;
 using LibraryLib.Entities.Creatures;
 using LibraryLib.Hooks;
 using LibraryLib.Localization.Dice;
@@ -183,7 +184,7 @@ public static class LibraryCreatureCmd
 				continue;
 			unblockedDamage = LibraryHooks.ModifyHpLostAfterOsty(runState, combatState, unblockedDamageTarget, unblockedDamage, props, dealer, cardSource, out modifiers,type);
 			await LibraryHooks.AfterModifyingHpLostAfterOsty(runState, combatState, modifiers,type);
-			DamageResult unblockedDamageResult = unblockedDamageTarget.LoseHpInternal(unblockedDamage, props);
+			DamageResult unblockedDamageResult = unblockedDamageTarget.LoseHpWithResult(unblockedDamage, props);
 			List<DamageResult> damageResults = new List<DamageResult>(1) { unblockedDamageResult };
 			bool wasBlockBroken = modifiedTarget.Block <= 0 && blockedDamage > 0m;
 			bool wasFullyBlocked =
@@ -201,7 +202,7 @@ public static class LibraryCreatureCmd
 			{
 				decimal originalTargetDamage = LibraryHooks.ModifyHpLostAfterOsty(runState, combatState, modifiedTarget, unblockedDamageResult.OverkillDamage, props, dealer, cardSource, out modifiers,type);
 				await LibraryHooks.AfterModifyingHpLostAfterOsty(runState, combatState, modifiers,type);
-				DamageResult damageResult = ((!(originalTargetDamage > 0m)) ? new DamageResult(modifiedTarget, props) : modifiedTarget.LoseHpInternal(originalTargetDamage, props));
+				DamageResult damageResult = ((!(originalTargetDamage > 0m)) ? new DamageResult(modifiedTarget, props) : modifiedTarget.LoseHpWithResult(originalTargetDamage, props));
 				damageResult.BlockedDamage = (int)blockedDamage;
 				damageResult.WasBlockBroken = wasBlockBroken;
 				damageResult.WasFullyBlocked = wasFullyBlocked;
