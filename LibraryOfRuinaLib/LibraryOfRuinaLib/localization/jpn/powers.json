@@ -88,5 +88,8 @@
   "LIBRARY_TURN_POWER_PROMPT": "この効果は[blue]{Turns}[/blue]ターン後に[blue]{Amount}[/blue]層減少する。",
   "LIBRARY_NULLIFY_POWER.title": "威力無効",
   "LIBRARY_NULLIFY_POWER.description": "このターン、このキャラクターのカードによる攻撃・[gold]ブロック[/gold]とモンスターの行動は[gold]威力の増減[/gold]の影響を受けない。レリック・パワー・ポーションなどが独立して与えるダメージと[gold]ブロック[/gold]は通常どおり処理される。",
-  "LIBRARY_NULLIFY_POWER.smartDescription": "このターン、このキャラクターのカードによる攻撃・[gold]ブロック[/gold]とモンスターの行動は[gold]威力の増減[/gold]の影響を受けない。レリック・パワー・ポーションなどが独立して与えるダメージと[gold]ブロック[/gold]は通常どおり処理される。"
+  "LIBRARY_NULLIFY_POWER.smartDescription": "このターン、このキャラクターのカードによる攻撃・[gold]ブロック[/gold]とモンスターの行動は[gold]威力の増減[/gold]の影響を受けない。レリック・パワー・ポーションなどが独立して与えるダメージと[gold]ブロック[/gold]は通常どおり処理される。",
+  "LIBRARY_UNTARGETABLE_POWER.description": "対象に選択できず、攻撃も命中しない。",
+  "LIBRARY_UNTARGETABLE_POWER.smartDescription": "[gold]対象に選択[/gold]できず、攻撃も命中しない。",
+  "LIBRARY_UNTARGETABLE_POWER.title": "対象選択不可"
 }

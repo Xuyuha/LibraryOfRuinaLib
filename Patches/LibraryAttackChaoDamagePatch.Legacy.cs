@@ -34,6 +34,8 @@ internal static partial class LibraryAttackChaoDamagePatch
         ref Task<IEnumerable<DamageResult>> __result)
     {
         __state = null;
+        // Match the official-target guard before any early return or library interception.
+        targets = LibraryUntargetable.FilterHittable(targets);
         if (props.HasFlag(ValueProp.Unpowered))
             return true;
 
