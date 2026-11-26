@@ -1,8 +1,10 @@
 Adapted from s1f102500012/LibraryOfRuina, revision 9cab269d83cd0ab58ca85efe2ef983e514cdc27d.
 https://github.com/s1f102500012/LibraryOfRuina
 
-Sources: CorrosionFollowUpPower.cs, RnfmabjPowers.cs, TurnParticipants.cs, NullifyPower.cs and powers localization.
-Icons nullify_power.png and rnfmabj_corrosion_power.png retain their original third-party terms below.
+Sources: CorrosionFollowUpPower.cs, RnfmabjPowers.cs, TurnParticipants.cs, NullifyPower.cs,
+UntargetablePower.cs, the generic portions of UntargetableInteractionPatch.cs, and powers localization.
+Icons nullify_power.png, rnfmabj_corrosion_power.png and spider_bud_untargetable_power.png
+retain their original third-party terms below.
 
 MIT License
 

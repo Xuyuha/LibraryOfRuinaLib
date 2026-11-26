@@ -1,4 +1,4 @@
-#if STS2_0_113_0
+#if STS2_0_113_1
 #nullable enable
 using MegaCrit.Sts2.Core.Entities.Creatures;
 

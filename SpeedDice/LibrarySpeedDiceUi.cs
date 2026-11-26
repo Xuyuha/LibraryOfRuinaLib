@@ -24,6 +24,7 @@ internal sealed partial class LibrarySpeedDiceUi : Control
         "res://LibraryOfRuinaLib/images/ui/speed_dice_broken_line.png";
     private const string FontPath =
         "res://themes/kreon_bold_glyph_space_one.tres";
+    private const int InfiniteSpeedThreshold = 999;
     private const float SlotWidth = 68f;
     private const float SlotHeight = 74f;
     private const float SlotGap = 4f;
@@ -59,6 +60,7 @@ internal sealed partial class LibrarySpeedDiceUi : Control
         public AtlasTexture? RouletteAtlas { get; init; }
         public required Label RangeLabel { get; init; }
         public required Label ValueLabel { get; init; }
+        public required TextureRect InfinityValue { get; init; }
         public required TextureRect Broken { get; init; }
         public required TextureRect BrokenLine { get; init; }
         public bool IsFocused { get; set; }
@@ -185,6 +187,10 @@ internal sealed partial class LibrarySpeedDiceUi : Control
             ResourceLoader.Load<Texture2D>(BrokenDicePath);
         Texture2D? brokenLineTexture =
             ResourceLoader.Load<Texture2D>(BrokenLinePath);
+        Texture2D? infinityTexture =
+            ResourceLoader.Exists(LibrarySpeedDice.InfinityTexturePath)
+                ? ResourceLoader.Load<Texture2D>(LibrarySpeedDice.InfinityTexturePath)
+                : null;
         Font? font = ResourceLoader.Load<Font>(FontPath);
 
         for (int i = 0; i < _state.Slots.Count; i++)
@@ -239,6 +245,17 @@ internal sealed partial class LibrarySpeedDiceUi : Control
             valueLabel.Visible = false;
             root.AddChild(valueLabel);
 
+            var infinitySize = new Vector2(42f, 23.52f);
+            TextureRect infinityValue = CreateFullTexture(
+                "InfinityValue",
+                infinityTexture,
+                (new Vector2(SlotWidth, valueLabel.OffsetTop + valueLabel.OffsetBottom)
+                    - infinitySize) * 0.5f,
+                infinitySize,
+                Colors.White);
+            infinityValue.Visible = false;
+            root.AddChild(infinityValue);
+
             TextureRect broken = CreateFullTexture(
                 "Broken",
                 brokenTexture,
@@ -274,6 +291,7 @@ internal sealed partial class LibrarySpeedDiceUi : Control
                 RouletteAtlas = rouletteAtlas,
                 RangeLabel = rangeLabel,
                 ValueLabel = valueLabel,
+                InfinityValue = infinityValue,
                 Broken = broken,
                 BrokenLine = brokenLine,
             };
@@ -454,10 +472,14 @@ internal sealed partial class LibrarySpeedDiceUi : Control
             view.Normal.Visible = !isBroken;
             view.Roulette.Visible = isRolling;
             view.RangeLabel.Visible = isRolling;
-            view.ValueLabel.Visible = !isRolling && !isBroken;
+            bool showValue = !isRolling && !isBroken;
+            bool isInfinite = slot.FinalValue >= InfiniteSpeedThreshold;
+            bool showInfinity = showValue && isInfinite && view.InfinityValue.Texture != null;
+            view.InfinityValue.Visible = showInfinity;
+            view.ValueLabel.Visible = showValue && !showInfinity;
             view.Broken.Visible = isBroken;
             view.BrokenLine.Visible = isBroken;
-            view.ValueLabel.Text = slot.FinalValue.ToString();
+            view.ValueLabel.Text = isInfinite ? "∞" : slot.FinalValue.ToString();
 
             if (isRolling)
             {
@@ -724,7 +746,8 @@ internal sealed partial class LibrarySpeedDiceUi : Control
             NHoverTipSet.CreateAndShow(
                 owner,
                 HoverTipFactory.FromCard(card),
-                HoverTipAlignment.Center);
+                //新版本删掉了Center，为了保证能够编译，先设置成left
+                HoverTipAlignment.Left);
 #endif
         }
     }

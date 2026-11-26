@@ -8,6 +8,10 @@ namespace LibraryLib.SpeedDice;
 
 public static class LibrarySpeedDice
 {
+    /// <summary>The shared texture for a settled speed roll of 999 or higher.</summary>
+    public const string InfinityTexturePath =
+        "res://LibraryOfRuinaLib/images/ui/speed_dice_infinity.png";
+
     /// <summary>
     /// Sets the volume (dB) of the finger-snap SFX played when speed dice
     /// advance. The default is 0 dB; negative values are quieter.

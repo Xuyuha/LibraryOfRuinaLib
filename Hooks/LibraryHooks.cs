@@ -1268,9 +1268,9 @@ public static class LibraryHooks
         {
             if (model is ILibraryAbstractModel libraryModel)
             {
-                if (!libraryModel.TryPowerEffect(choiceContext, power, dealer, cardSource, out ILibraryAbstractModel modifier1))
+                if (!libraryModel.TryPowerEffect(choiceContext, power, dealer, cardSource))
                 {
-                    modifier = modifier1;
+                    modifier = libraryModel;
                     return false;
                 }
             }
@@ -1284,9 +1284,9 @@ public static class LibraryHooks
         {
             if (model is ILibraryAbstractModel libraryModel)
             {
-                if (!libraryModel.TryPowerReduce(choiceContext, power, dealer, cardSource,out ILibraryAbstractModel modifier1))
+                if (!libraryModel.TryPowerReduce(choiceContext, power, dealer, cardSource))
                 {
-                    modifier = modifier1;
+                    modifier = libraryModel;
                     return false;
                 }
             }

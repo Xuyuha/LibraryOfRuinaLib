@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <RollForward>Major</RollForward>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <DefineConstants>$(DefineConstants);STS2_0_113_1</DefineConstants>
+  </PropertyGroup>
+  <!-- Production rules and patch handlers; command/model boundaries below are test doubles. -->
+  <ItemGroup>
+    <Compile Include="../../Powers/LibraryUntargetablePower.cs" Link="Production/LibraryUntargetablePower.cs" />
+    <Compile Include="../../Combat/LibraryUntargetable.cs" Link="Production/LibraryUntargetable.cs" />
+    <Compile Include="../../Combat/LibraryAttackTargets.cs" Link="Production/LibraryAttackTargets.cs" />
+    <Compile Include="../../Patches/LibraryUntargetablePatches.cs" Link="Production/LibraryUntargetablePatches.cs" />
+    <Compile Include="../../Compat/DamageTargetDataCompat.cs" Link="Production/DamageTargetDataCompat.cs" />
+  </ItemGroup>
+</Project>

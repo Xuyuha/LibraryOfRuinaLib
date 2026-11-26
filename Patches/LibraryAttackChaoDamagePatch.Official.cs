@@ -21,7 +21,7 @@ using MegaCrit.Sts2.Core.ValueProps;
 namespace LibraryLib.Patches;
 internal static partial class LibraryAttackChaoDamagePatch
 {
-#if STS2_0_113_0
+#if STS2_0_113_1
     [HarmonyPrefix]
     [HarmonyPriority(Priority.Last)]
     private static bool Prefix(
@@ -73,6 +73,9 @@ internal static partial class LibraryAttackChaoDamagePatch
         ref Task<IEnumerable<DamageResult>> __result)
     {
         __state = null;
+        // Also guard unpowered/direct damage and Library cards before the early exits below.
+        // On 0.113.1 the outer Prefix rebuilds DamageTargetData from the retained snapshot.
+        targets = LibraryUntargetable.FilterHittable(targets);
         if (props.HasFlag(ValueProp.Unpowered))
             return true;
 
@@ -144,7 +147,7 @@ internal static partial class LibraryAttackChaoDamagePatch
     [HarmonyPriority(Priority.Last)]
     private static void Postfix(
         PlayerChoiceContext choiceContext,
-#if !STS2_0_113_0
+#if !STS2_0_113_1
         ref IEnumerable<Creature> targets,
 #endif
         decimal amount,
