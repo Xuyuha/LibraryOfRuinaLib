@@ -1117,6 +1117,18 @@ foreach (LibrarySpeedDiceSlot slot in state.Slots)
 不要从下游反射修改 `FinalValue` 或 `DisplayValue`。现行公共入口是
 `state.SetSlotRollValue(...)`。
 
+需要显示无限速度时，把相应槽位的速度设为 999。已定值且未破坏的速度骰在
+`FinalValue >= 999` 时显示 `∞`，速度排序仍使用实际数值。独立 UI 可使用
+`ResourceLoader.Load<Texture2D>(LibrarySpeedDice.InfinityTexturePath)` 读取
+共享贴图。发布时重新导出 `LibraryOfRuinaLib.pck`，使其包含
+`res://LibraryOfRuinaLib/images/ui/speed_dice_infinity.png`。若加载的是旧 PCK，
+基础库自己的速度骰会回退到字符 `∞`。
+
+贴图由原版《废墟图书馆》的 `Railway Fast 32 SDF` 图集提取。来源为
+`SpeedDiceUI.ChangeSprite` 达到 999 时显示的 U+221E，字形编号 382，图集矩形
+(343, 129, 46, 24) 从左下计。将距离场转为 50×28 的透明 PNG，保留原白色字形
+与透明边距。字体和字形素材保留各自权利人的条款。
+
 ### 4.4 YourMod 的 Light Policy
 
 ```csharp
