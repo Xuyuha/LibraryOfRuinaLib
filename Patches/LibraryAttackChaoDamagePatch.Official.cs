@@ -21,7 +21,7 @@ using MegaCrit.Sts2.Core.ValueProps;
 namespace LibraryLib.Patches;
 internal static partial class LibraryAttackChaoDamagePatch
 {
-#if STS2_0_113_1
+#if STS2_0_113_1 || STS2_0_114_0
     [HarmonyPrefix]
     [HarmonyPriority(Priority.Last)]
     private static bool Prefix(
@@ -147,7 +147,7 @@ internal static partial class LibraryAttackChaoDamagePatch
     [HarmonyPriority(Priority.Last)]
     private static void Postfix(
         PlayerChoiceContext choiceContext,
-#if !STS2_0_113_1
+#if !STS2_0_113_1 && !STS2_0_114_0
         ref IEnumerable<Creature> targets,
 #endif
         decimal amount,

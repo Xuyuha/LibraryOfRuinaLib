@@ -12,7 +12,7 @@ namespace LibraryLib.Patches;
 [HarmonyPatch(typeof(CreatureCmd), nameof(CreatureCmd.Damage))]
 public static class DamageTargetPatch
 {
-#if STS2_0_113_1
+#if STS2_0_113_1 || STS2_0_114_0
     // 0.113.0 的伤害统一汇入以 DamageTargetData 为目标的重载。
     [HarmonyPatch(typeof(CreatureCmd), "Damage", new Type[]
     {
@@ -60,7 +60,7 @@ public static class DamageTargetPatch
         typeof(CardModel)
     })]
 #endif
-#if !STS2_0_113_1
+#if !STS2_0_113_1 && !STS2_0_114_0
     private static void Prefix(
 #endif
         PlayerChoiceContext choiceContext,

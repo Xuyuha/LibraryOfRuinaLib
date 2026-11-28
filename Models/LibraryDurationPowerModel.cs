@@ -20,7 +20,7 @@ public abstract class LibraryDurationPowerModel : DynamicPowerModel, ISecondaryD
         public int TurnsRemaining = 1;
     }
 
-#if STS2_0_113_1
+#if STS2_0_113_1 || STS2_0_114_0
     // 0.113.0 的 DynamicVar 数值转换不再可重写，统一读取 PreviewValue；剩余回合数由 SyncTurnsVar 写回变量。
     private sealed class TurnsVar() : DynamicVar("Turns", 0m)
     {
@@ -106,7 +106,7 @@ public abstract class LibraryDurationPowerModel : DynamicPowerModel, ISecondaryD
             return false;
 
         data.TurnsRemaining = clamped;
-#if STS2_0_113_1
+#if STS2_0_113_1 || STS2_0_114_0
         SyncTurnsVar();
 #endif
         if (notifyDisplay)

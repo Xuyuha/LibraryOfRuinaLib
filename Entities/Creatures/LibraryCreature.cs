@@ -5,7 +5,7 @@ using MegaCrit.Sts2.Core.Combat;
 using MegaCrit.Sts2.Core.Entities.Creatures;
 using MegaCrit.Sts2.Core.Logging;
 using MegaCrit.Sts2.Core.Models;
-#if !STS2_0_113_1
+#if !STS2_0_113_1 && !STS2_0_114_0
 using MegaCrit.Sts2.Core.Models.Singleton;
 #endif
 using MegaCrit.Sts2.Core.MonsterMoves.Intents;

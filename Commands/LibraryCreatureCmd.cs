@@ -183,7 +183,18 @@ public static class LibraryCreatureCmd
 				continue;
 			unblockedDamage = LibraryHooks.ModifyHpLostAfterOsty(runState, combatState, unblockedDamageTarget, unblockedDamage, props, dealer, cardSource, out modifiers,type);
 			await LibraryHooks.AfterModifyingHpLostAfterOsty(runState, combatState, modifiers,type);
+			#if STS2_0_114_0
+			// 0.114.0 起 LoseHpInternal 只回报损失量，DamageResult 改由调用方组装。
+			HpLossResult unblockedDamageLoss = unblockedDamageTarget.LoseHpInternal(unblockedDamage, dryRun: false);
+			DamageResult unblockedDamageResult = new DamageResult(unblockedDamageTarget, props)
+			{
+				UnblockedDamage = unblockedDamageLoss.hpLost,
+				OverkillDamage = unblockedDamageLoss.overkillAmount,
+				WasTargetKilled = unblockedDamageLoss.killed
+			};
+#else
 			DamageResult unblockedDamageResult = unblockedDamageTarget.LoseHpInternal(unblockedDamage, props);
+#endif
 			List<DamageResult> damageResults = new List<DamageResult>(1) { unblockedDamageResult };
 			bool wasBlockBroken = modifiedTarget.Block <= 0 && blockedDamage > 0m;
 			bool wasFullyBlocked =
@@ -201,7 +212,25 @@ public static class LibraryCreatureCmd
 			{
 				decimal originalTargetDamage = LibraryHooks.ModifyHpLostAfterOsty(runState, combatState, modifiedTarget, unblockedDamageResult.OverkillDamage, props, dealer, cardSource, out modifiers,type);
 				await LibraryHooks.AfterModifyingHpLostAfterOsty(runState, combatState, modifiers,type);
+				#if STS2_0_114_0
+				DamageResult damageResult;
+				if (!(originalTargetDamage > 0m))
+				{
+					damageResult = new DamageResult(modifiedTarget, props);
+				}
+				else
+				{
+					HpLossResult originalTargetLoss = modifiedTarget.LoseHpInternal(originalTargetDamage, dryRun: false);
+					damageResult = new DamageResult(modifiedTarget, props)
+					{
+						UnblockedDamage = originalTargetLoss.hpLost,
+						OverkillDamage = originalTargetLoss.overkillAmount,
+						WasTargetKilled = originalTargetLoss.killed
+					};
+				}
+#else
 				DamageResult damageResult = ((!(originalTargetDamage > 0m)) ? new DamageResult(modifiedTarget, props) : modifiedTarget.LoseHpInternal(originalTargetDamage, props));
+#endif
 				damageResult.BlockedDamage = (int)blockedDamage;
 				damageResult.WasBlockBroken = wasBlockBroken;
 				damageResult.WasFullyBlocked = wasFullyBlocked;
